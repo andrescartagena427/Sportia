@@ -1,0 +1,577 @@
+﻿@{
+    ViewData["Title"] = "Panel del Cliente";
+}
+
+<div class="container-fluid bg-dark min-vh-100 py-4">
+
+    <div class="container-fluid px-4">
+
+        <!-- =====================================================
+             ENCABEZADO
+        ====================================================== -->
+
+        <div class="d-flex flex-column flex-md-row
+            justify-content-between
+            align-items-md-center
+            mb-4">
+
+            <div>
+
+                <h1 class="text-white fw-bold mb-1">
+                    <i class="bi bi-house-door-fill text-success me-2"></i>
+                    Bienvenido a Sportia
+                </h1>
+
+                <p class="text-secondary mb-0">
+                    Encuentra y reserva tu escenario deportivo favorito.
+                </p>
+
+            </div>
+
+            <div class="mt-3 mt-md-0">
+
+                <span class="badge bg-success px-3 py-2">
+                    <i class="bi bi-person-fill me-1"></i>
+                    Cliente
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             MENSAJE PRINCIPAL
+        ====================================================== -->
+
+        <div class="card bg-black border-secondary shadow-lg mb-4">
+
+            <div class="card-body p-4 p-md-5">
+
+                <div class="row align-items-center">
+
+                    <div class="col-lg-8">
+
+                        <span class="badge bg-success bg-opacity-10
+                            text-success border border-success
+                            mb-3">
+
+                            SPORTIA
+
+                        </span>
+
+                        <h2 class="text-white fw-bold">
+
+                            ¡Todo listo para jugar! ⚽
+
+                        </h2>
+
+                        <p class="text-secondary fs-5 mb-4">
+
+                            Consulta nuestros escenarios deportivos,
+                            revisa su disponibilidad y realiza tu reserva
+                            de forma rápida y sencilla.
+
+                        </p>
+
+                        <a href="#canchas"
+                           class="btn btn-success btn-lg fw-bold">
+
+                            <i class="bi bi-search me-2"></i>
+
+                            Buscar una cancha
+
+                        </a>
+
+                    </div>
+
+
+                    <div class="col-lg-4 text-center mt-4 mt-lg-0">
+
+                        <div class="d-inline-flex
+                            align-items-center
+                            justify-content-center
+                            rounded-circle
+                            border border-success
+                            bg-success bg-opacity-10"
+                             style="width:150px;height:150px;">
+
+                            <i class="bi bi-trophy-fill
+                            text-success"
+                               style="font-size:70px;"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             OPCIONES DEL CLIENTE
+        ====================================================== -->
+
+        <div class="row g-4 mb-5">
+
+            <!-- CANCHAS -->
+
+            <div class="col-12 col-md-4">
+
+                <div class="card bg-black border-secondary
+                    shadow h-100">
+
+                    <div class="card-body p-4">
+
+                        <div class="bg-success bg-opacity-10
+                            border border-success
+                            rounded-circle
+                            d-flex align-items-center
+                            justify-content-center mb-3"
+                             style="width:60px;height:60px;">
+
+                            <i class="bi bi-dribbble
+                            text-success fs-3"></i>
+
+                        </div>
+
+                        <h4 class="text-white fw-bold">
+                            Canchas disponibles
+                        </h4>
+
+                        <p class="text-secondary">
+
+                            Consulta los escenarios deportivos
+                            disponibles en Sportia.
+
+                        </p>
+
+                        <a href="#canchas"
+                           class="btn btn-outline-success w-100">
+
+                            Ver canchas
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RESERVAR -->
+
+            <div class="col-12 col-md-4">
+
+                <div class="card bg-black border-secondary
+                    shadow h-100">
+
+                    <div class="card-body p-4">
+
+                        <div class="bg-primary bg-opacity-10
+                            border border-primary
+                            rounded-circle
+                            d-flex align-items-center
+                            justify-content-center mb-3"
+                             style="width:60px;height:60px;">
+
+                            <i class="bi bi-calendar-plus
+                            text-primary fs-3"></i>
+
+                        </div>
+
+                        <h4 class="text-white fw-bold">
+                            Reservar cancha
+                        </h4>
+
+                        <p class="text-secondary">
+
+                            Selecciona una cancha, fecha y horario
+                            para realizar tu reserva.
+
+                        </p>
+
+                        <a href="#canchas"
+                           class="btn btn-outline-primary w-100">
+
+                            Reservar ahora
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- MIS RESERVAS -->
+
+            <div class="col-12 col-md-4">
+
+                <div class="card bg-black border-secondary
+                    shadow h-100">
+
+                    <div class="card-body p-4">
+
+                        <div class="bg-warning bg-opacity-10
+                            border border-warning
+                            rounded-circle
+                            d-flex align-items-center
+                            justify-content-center mb-3"
+                             style="width:60px;height:60px;">
+
+                            <i class="bi bi-calendar-check
+                            text-warning fs-3"></i>
+
+                        </div>
+
+                        <h4 class="text-white fw-bold">
+                            Mis reservas
+                        </h4>
+
+                        <p class="text-secondary">
+
+                            Consulta las reservas que has realizado
+                            anteriormente.
+
+                        </p>
+
+                        <a href="#mis-reservas"
+                           class="btn btn-outline-warning w-100">
+
+                            Ver mis reservas
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             ESCENARIOS DISPONIBLES
+        ====================================================== -->
+
+        <div id="canchas"
+             class="card bg-black border-secondary shadow mb-4">
+
+            <div class="card-body p-4">
+
+                <div class="d-flex justify-content-between
+                    align-items-center mb-4">
+
+                    <div>
+
+                        <h3 class="text-white fw-bold mb-1">
+
+                            <i class="bi bi-building text-success me-2"></i>
+
+                            Escenarios deportivos
+
+                        </h3>
+
+                        <p class="text-secondary mb-0">
+
+                            Explora los escenarios disponibles.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     AQUÍ DESPUÉS CARGAREMOS LAS CANCHAS DE MYSQL
+                ================================================== -->
+
+                <div class="row g-4">
+
+                    <!-- CANCHA 1 -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <div class="card bg-dark border-secondary h-100">
+
+                            <div class="card-body p-4">
+
+                                <div class="text-center mb-3">
+
+                                    <div class="d-inline-flex
+                                        align-items-center
+                                        justify-content-center
+                                        rounded-circle
+                                        bg-success bg-opacity-10
+                                        border border-success"
+                                         style="width:75px;height:75px;">
+
+                                        <i class="bi bi-dribbble
+                                        text-success fs-2"></i>
+
+                                    </div>
+
+                                </div>
+
+                                <h5 class="text-white text-center fw-bold">
+
+                                    Cancha deportiva
+
+                                </h5>
+
+                                <p class="text-secondary text-center">
+
+                                    Escenario deportivo disponible
+                                    para reservas.
+
+                                </p>
+
+                                <div class="d-flex
+                                    justify-content-between
+                                    mb-3">
+
+                                    <span class="text-secondary">
+
+                                        <i class="bi bi-clock me-1"></i>
+
+                                        Disponible
+
+                                    </span>
+
+                                    <span class="text-success fw-bold">
+
+                                        Disponible
+
+                                    </span>
+
+                                </div>
+
+                                <button class="btn btn-success w-100">
+
+                                    <i class="bi bi-calendar-plus me-2"></i>
+
+                                    Reservar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CANCHA 2 -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <div class="card bg-dark border-secondary h-100">
+
+                            <div class="card-body p-4">
+
+                                <div class="text-center mb-3">
+
+                                    <div class="d-inline-flex
+                                        align-items-center
+                                        justify-content-center
+                                        rounded-circle
+                                        bg-success bg-opacity-10
+                                        border border-success"
+                                         style="width:75px;height:75px;">
+
+                                        <i class="bi bi-trophy
+                                        text-success fs-2"></i>
+
+                                    </div>
+
+                                </div>
+
+                                <h5 class="text-white text-center fw-bold">
+
+                                    Escenario deportivo
+
+                                </h5>
+
+                                <p class="text-secondary text-center">
+
+                                    Consulta disponibilidad y horarios.
+
+                                </p>
+
+                                <div class="d-flex
+                                    justify-content-between
+                                    mb-3">
+
+                                    <span class="text-secondary">
+
+                                        <i class="bi bi-clock me-1"></i>
+
+                                        Horarios
+
+                                    </span>
+
+                                    <span class="text-success fw-bold">
+
+                                        Disponibles
+
+                                    </span>
+
+                                </div>
+
+                                <button class="btn btn-success w-100">
+
+                                    <i class="bi bi-calendar-plus me-2"></i>
+
+                                    Reservar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CANCHA 3 -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <div class="card bg-dark border-secondary h-100">
+
+                            <div class="card-body p-4">
+
+                                <div class="text-center mb-3">
+
+                                    <div class="d-inline-flex
+                                        align-items-center
+                                        justify-content-center
+                                        rounded-circle
+                                        bg-success bg-opacity-10
+                                        border border-success"
+                                         style="width:75px;height:75px;">
+
+                                        <i class="bi bi-star-fill
+                                        text-success fs-2"></i>
+
+                                    </div>
+
+                                </div>
+
+                                <h5 class="text-white text-center fw-bold">
+
+                                    Nuevo escenario
+
+                                </h5>
+
+                                <p class="text-secondary text-center">
+
+                                    Encuentra el espacio ideal
+                                    para practicar.
+
+                                </p>
+
+                                <div class="d-flex
+                                    justify-content-between
+                                    mb-3">
+
+                                    <span class="text-secondary">
+
+                                        <i class="bi bi-clock me-1"></i>
+
+                                        Estado
+
+                                    </span>
+
+                                    <span class="text-success fw-bold">
+
+                                        Disponible
+
+                                    </span>
+
+                                </div>
+
+                                <button class="btn btn-success w-100">
+
+                                    <i class="bi bi-calendar-plus me-2"></i>
+
+                                    Reservar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             MIS RESERVAS
+        ====================================================== -->
+
+        <div id="mis-reservas"
+             class="card bg-black border-secondary shadow mb-4">
+
+            <div class="card-body p-4">
+
+                <h3 class="text-white fw-bold mb-1">
+
+                    <i class="bi bi-calendar-check text-success me-2"></i>
+
+                    Mis reservas
+
+                </h3>
+
+                <p class="text-secondary">
+
+                    Aquí podrás consultar tus reservas.
+
+                </p>
+
+                <div class="alert alert-dark border-secondary mb-0">
+
+                    <i class="bi bi-info-circle text-success me-2"></i>
+
+                    Cuando realices una reserva aparecerá aquí.
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             PIE
+        ====================================================== -->
+
+        <div class="text-center py-3">
+
+            <p class="text-secondary small mb-0">
+
+                <i class="bi bi-shield-check text-success me-1"></i>
+
+                Sportia · Gestión de escenarios deportivos
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>

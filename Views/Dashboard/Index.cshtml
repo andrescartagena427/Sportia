@@ -1,0 +1,501 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Administrador";
+}
+
+<div class="container-fluid bg-dark min-vh-100 py-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
+
+    <div class="container-fluid px-4">
+
+        <div class="d-flex flex-column flex-md-row
+            justify-content-between
+            align-items-md-center
+            mb-4">
+
+            <div>
+
+                <h1 class="text-white fw-bold mb-1">
+                    <i class="bi bi-speedometer2 text-success me-2"></i>
+                    Dashboard
+                </h1>
+
+                <p class="text-secondary mb-0">
+                    Panel de administración de Sportia
+                </p>
+
+            </div>
+
+            <div class="mt-3 mt-md-0">
+
+                <span class="badge bg-success px-3 py-2">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Administrador
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TARJETAS DE ESTADÍSTICAS
+        ================================================== -->
+
+        <div class="row g-4 mb-4">
+
+            <!-- USUARIOS -->
+
+            <div class="col-12 col-sm-6 col-xl-3">
+
+                <div class="card bg-black border-secondary shadow h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex
+                            justify-content-between
+                            align-items-center">
+
+                            <div>
+
+                                <p class="text-secondary mb-1">
+                                    Usuarios
+                                </p>
+
+                                <h2 class="text-white fw-bold mb-0">
+                                    @ViewBag.TotalUsuarios
+                                </h2>
+
+                            </div>
+
+                            <div class="bg-success bg-opacity-10
+                                border border-success
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-people-fill
+                                text-success fs-4"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- CLIENTES -->
+
+            <div class="col-12 col-sm-6 col-xl-3">
+
+                <div class="card bg-black border-secondary shadow h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex
+                            justify-content-between
+                            align-items-center">
+
+                            <div>
+
+                                <p class="text-secondary mb-1">
+                                    Clientes
+                                </p>
+
+                                <h2 class="text-white fw-bold mb-0">
+                                    @ViewBag.TotalClientes
+                                </h2>
+
+                            </div>
+
+                            <div class="bg-primary bg-opacity-10
+                                border border-primary
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-person-check-fill
+                                text-primary fs-4"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ESCENARIOS -->
+
+            <div class="col-12 col-sm-6 col-xl-3">
+
+                <div class="card bg-black border-secondary shadow h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex
+                            justify-content-between
+                            align-items-center">
+
+                            <div>
+
+                                <p class="text-secondary mb-1">
+                                    Escenarios
+                                </p>
+
+                                <h2 class="text-white fw-bold mb-0">
+                                    @ViewBag.TotalEscenarios
+                                </h2>
+
+                            </div>
+
+                            <div class="bg-warning bg-opacity-10
+                                border border-warning
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-dribbble
+                                text-warning fs-4"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RESERVAS -->
+
+            <div class="col-12 col-sm-6 col-xl-3">
+
+                <div class="card bg-black border-secondary shadow h-100">
+
+                    <div class="card-body">
+
+                        <div class="d-flex
+                            justify-content-between
+                            align-items-center">
+
+                            <div>
+
+                                <p class="text-secondary mb-1">
+                                    Reservas
+                                </p>
+
+                                <h2 class="text-white fw-bold mb-0">
+                                    @ViewBag.TotalReservas
+                                </h2>
+
+                            </div>
+
+                            <div class="bg-danger bg-opacity-10
+                                border border-danger
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-calendar-check-fill
+                                text-danger fs-4"></i>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SEGUNDA FILA
+        ================================================== -->
+
+        <div class="row g-4 mb-4">
+
+            <!-- EMPRESAS -->
+
+            <div class="col-12 col-md-6">
+
+                <div class="card bg-black border-secondary shadow">
+
+                    <div class="card-body">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="bg-info bg-opacity-10
+                                border border-info
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center me-3"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-building
+                                text-info fs-4"></i>
+
+                            </div>
+
+                            <div>
+
+                                <h5 class="text-white mb-1">
+                                    Empresas
+                                </h5>
+
+                                <h3 class="text-info fw-bold mb-0">
+                                    @ViewBag.TotalEmpresas
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAGOS -->
+
+            <div class="col-12 col-md-6">
+
+                <div class="card bg-black border-secondary shadow">
+
+                    <div class="card-body">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="bg-success bg-opacity-10
+                                border border-success
+                                rounded-circle
+                                d-flex align-items-center
+                                justify-content-center me-3"
+                                 style="width:55px;height:55px;">
+
+                                <i class="bi bi-cash-stack
+                                text-success fs-4"></i>
+
+                            </div>
+
+                            <div>
+
+                                <h5 class="text-white mb-1">
+                                    Pagos registrados
+                                </h5>
+
+                                <h3 class="text-success fw-bold mb-0">
+                                    @ViewBag.TotalPagos
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ADMINISTRACIÓN
+        ================================================== -->
+
+        <div class="card bg-black border-secondary shadow">
+
+            <div class="card-body p-4">
+
+                <h4 class="text-white fw-bold mb-4">
+
+                    <i class="bi bi-gear-fill text-success me-2"></i>
+
+                    Administración de Sportia
+
+                </h4>
+
+
+                <div class="row g-3">
+
+
+                    <!-- USUARIOS -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-people-fill
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Gestionar usuarios</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Administrar usuarios del sistema
+                            </div>
+
+                        </a>
+
+                    </div>
+
+
+                    <!-- CLIENTES -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-person-lines-fill
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Gestionar clientes</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Consultar información de clientes
+                            </div>
+
+                        </a>
+
+                    </div>
+
+
+                    <!-- ESCENARIOS -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-building-fill
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Escenarios deportivos</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Administrar canchas y escenarios
+                            </div>
+
+                        </a>
+
+                    </div>
+
+
+                    <!-- RESERVAS -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-calendar-check-fill
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Gestionar reservas</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Consultar y administrar reservas
+                            </div>
+
+                        </a>
+
+                    </div>
+
+
+                    <!-- PAGOS -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-credit-card-fill
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Pagos</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Consultar pagos realizados
+                            </div>
+
+                        </a>
+
+                    </div>
+
+
+                    <!-- TARIFAS -->
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <a href="#"
+                           class="btn btn-outline-light
+                            w-100 p-3 text-start">
+
+                            <i class="bi bi-currency-dollar
+                            text-success fs-4 me-2"></i>
+
+                            <strong>Tarifas</strong>
+
+                            <div class="small text-secondary mt-1">
+                                Administrar precios de escenarios
+                            </div>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             PIE DEL DASHBOARD
+        ================================================== -->
+
+        <div class="text-center mt-4">
+
+            <p class="text-secondary small mb-0">
+
+                <i class="bi bi-shield-check text-success me-1"></i>
+
+                Panel exclusivo para administradores de Sportia
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>

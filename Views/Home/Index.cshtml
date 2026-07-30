@@ -1,0 +1,124 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+}
+
+<!-- Sección Hero -->
+<section class="hero-banner">
+    <div class="container">
+        <h1 class="hero-title font-heading">Reserva tu cancha en segundos</h1>
+        <p class="hero-subtitle">Encuentra horarios disponibles, asegura tu espacio y juega sin complicaciones.</p>
+
+        <!-- Widget de Búsqueda -->
+        <div class="search-widget">
+            <form class="row g-3 align-items-end text-start">
+                <div class="col-12 col-md-3">
+                    <label>Deporte</label>
+                    <select class="form-select">
+                        <option>Fútbol 5 / Sintética</option>
+                        <option>Pádel</option>
+                        <option>Tenis</option>
+                        <option>Baloncesto</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label>Fecha</label>
+                    <input type="date" class="form-control" />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label>Sede / Ubicación</label>
+                    <select class="form-select">
+                        <option>Todas las sedes</option>
+                        <option>Sede Norte</option>
+                        <option>Sede Central</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <button type="submit" class="btn-accent w-100 border-0 d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Sección de Canchas Destacadas -->
+<section id="canchas" class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="font-heading fw-bold h3 mb-0">Canchas destacadas</h2>
+        <a href="#" class="text-decoration-none fw-semibold small" style="color: var(--accent-green);">
+            Ver todas <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Tarjeta 1 -->
+        <div class="col-12 col-md-4">
+            <div class="court-card">
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1529900748604-0756c9d33876?auto=format&fit=crop&w=600&q=80" alt="Cancha Sintética" class="court-img" />
+                    <span class="court-badge">Fútbol 5</span>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-heading fw-bold fs-5 mb-1">Cancha El Campito - Sintética A</h3>
+                    <p class="small text-secondary mb-3">
+                        <i class="bi bi-geo-alt-fill" style="color: var(--accent-green);"></i> Sede Norte, Calle 100
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
+                        <div>
+                            <span class="small text-secondary d-block">Desde</span>
+                            <span class="court-price">$60.000 <span class="small text-secondary fw-normal">/ hora</span></span>
+                        </div>
+                        <a href="#" class="btn-court">Ver disponibilidad</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="col-12 col-md-4">
+            <div class="court-card">
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=600&q=80" alt="Cancha de Pádel" class="court-img" />
+                    <span class="court-badge">Pádel</span>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-heading fw-bold fs-5 mb-1">Smash Pádel Club</h3>
+                    <p class="small text-secondary mb-3">
+                        <i class="bi bi-geo-alt-fill" style="color: var(--accent-green);"></i> Sede Central
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
+                        <div>
+                            <span class="small text-secondary d-block">Desde</span>
+                            <span class="court-price">$80.000 <span class="small text-secondary fw-normal">/ hora</span></span>
+                        </div>
+                        <a href="#" class="btn-court">Ver disponibilidad</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3 -->
+        <div class="col-12 col-md-4">
+            <div class="court-card">
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80" alt="Cancha de Baloncesto" class="court-img" />
+                    <span class="court-badge">Baloncesto</span>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-heading fw-bold fs-5 mb-1">Coliseo Indoor Pro</h3>
+                    <p class="small text-secondary mb-3">
+                        <i class="bi bi-geo-alt-fill" style="color: var(--accent-green);"></i> Sede Norte
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25">
+                        <div>
+                            <span class="small text-secondary d-block">Desde</span>
+                            <span class="court-price">$50.000 <span class="small text-secondary fw-normal">/ hora</span></span>
+                        </div>
+                        <a href="#" class="btn-court">Ver disponibilidad</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,230 @@
+﻿@{
+    ViewData["Title"] = "Crear cuenta";
+}
+
+<div class="container-fluid bg-dark min-vh-100 d-flex align-items-center justify-content-center py-5">
+
+    <div class="row w-100 justify-content-center">
+
+        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+
+            <div class="card bg-dark border border-secondary shadow-lg rounded-4">
+
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- ICONO -->
+                    <div class="text-center mb-4">
+
+                        <div class="d-inline-flex align-items-center justify-content-center
+                            bg-success bg-opacity-10 border border-success
+                            rounded-circle"
+                             style="width:70px;height:70px;">
+
+                            <i class="bi bi-person-plus-fill text-success fs-2"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- TITULO -->
+                    <h2 class="text-white text-center fw-bold mb-2">
+                        Crear cuenta
+                    </h2>
+
+                    <p class="text-secondary text-center mb-4">
+                        Regístrate en Sportia para reservar tus escenarios deportivos.
+                    </p>
+
+
+                    <!-- ERROR -->
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+                            @ViewBag.Error
+                        </div>
+                    }
+
+
+                    <form asp-controller="Login"
+                          asp-action="Register"
+                          method="post">
+
+
+                        <!-- NOMBRES -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-person text-success me-1"></i>
+                                Nombres
+                            </label>
+
+                            <input type="text"
+                                   name="nombres"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese sus nombres"
+                                   required />
+
+                        </div>
+
+
+                        <!-- APELLIDOS -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-person text-success me-1"></i>
+                                Apellidos
+                            </label>
+
+                            <input type="text"
+                                   name="apellidos"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese sus apellidos"
+                                   required />
+
+                        </div>
+
+
+                        <!-- DOCUMENTO -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-card-text text-success me-1"></i>
+                                Documento
+                            </label>
+
+                            <input type="text"
+                                   name="documento"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese su documento"
+                                   required />
+
+                        </div>
+
+
+                        <!-- TELEFONO -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-telephone text-success me-1"></i>
+                                Teléfono
+                            </label>
+
+                            <input type="tel"
+                                   name="telefono"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese su teléfono"
+                                   required />
+
+                        </div>
+
+
+                        <!-- CORREO -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-envelope text-success me-1"></i>
+                                Correo electrónico
+                            </label>
+
+                            <input type="email"
+                                   name="correo"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese su correo"
+                                   required />
+
+                        </div>
+
+
+                        <!-- CONTRASEÑA -->
+                        <div class="mb-3">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-lock text-success me-1"></i>
+                                Contraseña
+                            </label>
+
+                            <input type="password"
+                                   name="contrasena"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Ingrese una contraseña"
+                                   required />
+
+                        </div>
+
+
+                        <!-- CONFIRMAR -->
+                        <div class="mb-4">
+
+                            <label class="form-label text-white">
+                                <i class="bi bi-shield-lock text-success me-1"></i>
+                                Confirmar contraseña
+                            </label>
+
+                            <input type="password"
+                                   name="confirmarContrasena"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Repita la contraseña"
+                                   required />
+
+                        </div>
+
+
+                        <!-- BOTON -->
+                        <div class="d-grid">
+
+                            <button type="submit"
+                                    class="btn btn-success btn-lg fw-bold">
+
+                                <i class="bi bi-person-check-fill me-2"></i>
+
+                                Crear cuenta
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+
+                    <!-- SEPARADOR -->
+                    <div class="d-flex align-items-center my-4">
+
+                        <hr class="flex-grow-1 border-secondary">
+
+                        <span class="text-secondary px-3">
+                            O
+                        </span>
+
+                        <hr class="flex-grow-1 border-secondary">
+
+                    </div>
+
+
+                    <!-- LOGIN -->
+                    <div class="text-center">
+
+                        <span class="text-secondary">
+                            ¿Ya tienes una cuenta?
+                        </span>
+
+                        <a asp-controller="Login"
+                           asp-action="Index"
+                           class="text-success fw-bold text-decoration-none">
+
+                            Iniciar sesión
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
