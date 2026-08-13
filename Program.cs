@@ -3,8 +3,6 @@ using Sportia.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< HEAD
-// Servicios MVC
 builder.Services.AddControllersWithViews();
 
 // ---------------------------------------------------------
