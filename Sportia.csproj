@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-
     <Compile Remove="Views\NewFolder\**" />
     <Content Remove="Views\NewFolder\**" />
     <EmbeddedResource Remove="Views\NewFolder\**" />
@@ -15,8 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-=======
->>>>>>> aada5e8aef8b4681a63ef3455cee3bdcfb1c91ad
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.18">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
