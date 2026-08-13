@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Sportia</title>
 
+
     <!-- Bootstrap CSS local de tu proyecto -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <!-- Bootstrap CSS por CDN (respaldo, por si el archivo local no carga o no existe) -->
@@ -267,8 +268,8 @@
 
     <!-- Cuerpo principal dinámico -->
     <main role="main">
-        @RenderBody()
-    </main>
+            @RenderBody()
+        </main>
 
     <!-- Footer -->
     <footer class="footer-sportia">
@@ -282,7 +283,11 @@
             </div>
             <div>
                 <span>Políticas de privacidad (Referencias de privacidad con Habeas Data)</span>
-            </div>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - Sportia - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
