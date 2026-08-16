@@ -1,0 +1,277 @@
+﻿@model Sportia.Models.Usuario
+
+@{
+    ViewData["Title"] = "Mi perfil";
+    Layout = "_ClienteLayout";
+
+    string inicial = !string.IsNullOrWhiteSpace(Model.Nombres)
+        ? Model.Nombres.Substring(0, 1).ToUpper()
+        : "U";
+}
+
+<div class="min-h-screen bg-slate-950 text-white">
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        <!-- ENCABEZADO -->
+
+        <div class="mb-8">
+
+            <a asp-controller="Cliente"
+               asp-action="Index"
+               class="inline-flex items-center gap-2
+                text-sm text-slate-400
+                hover:text-emerald-400 transition mb-6">
+
+                ← Volver al panel
+
+            </a>
+
+            <p class="text-emerald-400 text-xs font-bold
+                uppercase tracking-[0.2em]">
+
+                Cuenta
+
+            </p>
+
+            <h1 class="text-3xl sm:text-4xl font-black mt-2">
+
+                Mi perfil
+
+            </h1>
+
+            <p class="text-slate-500 mt-2">
+
+                Consulta y administra la información de tu cuenta.
+
+            </p>
+
+        </div>
+
+
+        <!-- TARJETA DEL PERFIL -->
+
+        <div class="rounded-3xl
+            border border-white/10
+            bg-white/[0.03]
+            overflow-hidden">
+
+            <!-- PARTE SUPERIOR -->
+
+            <div class="p-6 sm:p-8
+                border-b border-white/10
+                flex flex-col sm:flex-row
+                items-center sm:items-start
+                gap-5">
+
+                <!-- INICIAL -->
+
+                <div class="w-20 h-20 rounded-2xl
+                    bg-gradient-to-br
+                    from-emerald-400
+                    to-emerald-700
+                    flex items-center
+                    justify-center
+                    text-3xl
+                    font-black
+                    shadow-lg
+                    shadow-emerald-500/20">
+
+                    @inicial
+
+                </div>
+
+
+                <div class="text-center sm:text-left">
+
+                    <h2 class="text-2xl font-black">
+
+                        @Model.Nombres @Model.Apellidos
+
+                    </h2>
+
+                    <p class="text-slate-500 mt-1">
+
+                        @Model.Correo
+
+                    </p>
+
+                    <span class="inline-flex
+                        mt-3
+                        px-3 py-1
+                        rounded-full
+                        bg-emerald-500/10
+                        border border-emerald-500/20
+                        text-emerald-400
+                        text-xs font-bold">
+
+                        Cuenta activa
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- INFORMACIÓN -->
+
+            <div class="p-6 sm:p-8">
+
+                <h3 class="text-lg font-bold mb-5">
+
+                    Información personal
+
+                </h3>
+
+
+                <div class="grid sm:grid-cols-2 gap-5">
+
+                    <!-- NOMBRE -->
+
+                    <div class="rounded-2xl
+                        bg-white/[0.03]
+                        border border-white/10
+                        p-4">
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Nombre completo
+
+                        </p>
+
+                        <p class="font-semibold mt-2">
+
+                            @Model.Nombres @Model.Apellidos
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- CORREO -->
+
+                    <div class="rounded-2xl
+                        bg-white/[0.03]
+                        border border-white/10
+                        p-4">
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Correo electrónico
+
+                        </p>
+
+                        <p class="font-semibold mt-2 break-all">
+
+                            @Model.Correo
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- DOCUMENTO -->
+
+                    <div class="rounded-2xl
+                        bg-white/[0.03]
+                        border border-white/10
+                        p-4">
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Documento
+
+                        </p>
+
+                        <p class="font-semibold mt-2">
+
+                            @Model.Documento
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- TELÉFONO -->
+
+                    <div class="rounded-2xl
+                        bg-white/[0.03]
+                        border border-white/10
+                        p-4">
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Teléfono
+
+                        </p>
+
+                        <p class="font-semibold mt-2">
+
+                            @(string.IsNullOrWhiteSpace(Model.Telefono)
+                                ? "No registrado"
+                                : Model.Telefono)
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BOTONES -->
+
+                <div class="mt-8 pt-6
+                    border-t border-white/10
+                    flex flex-col sm:flex-row
+                    gap-3">
+
+                    <a asp-controller="Usuario"
+                       asp-action="EditarPerfil"
+                       class="inline-flex items-center
+                        justify-center
+                        px-5 py-3
+                        rounded-xl
+                        bg-emerald-500
+                        hover:bg-emerald-400
+                        font-bold
+                        transition">
+
+                        Editar perfil
+
+                    </a>
+
+
+                    <a asp-controller="Usuario"
+                       asp-action="CambiarPassword"
+                       class="inline-flex items-center
+                        justify-center
+                        px-5 py-3
+                        rounded-xl
+                        bg-white/5
+                        border border-white/10
+                        hover:bg-white/10
+                        font-semibold
+                        transition">
+
+                        Cambiar contraseña
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>

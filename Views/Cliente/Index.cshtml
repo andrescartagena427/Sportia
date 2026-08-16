@@ -1,83 +1,1604 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+
+@{
     ViewData["Title"] = "Panel del Cliente";
+    Layout = "_ClienteLayout";
+
+    // =========================================================
+    // INFORMACIÓN DEL CLIENTE DESDE LA SESIÓN
+    // =========================================================
+
+    var nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "Cliente";
+
+    var correoUsuario = Context.Session.GetString("CorreoUsuario") ?? "Sin correo";
+
+    var rolUsuario = Context.Session.GetString("Rol") ?? "Cliente";
+
+    // Primera letra del nombre real
+    var inicialUsuario = !string.IsNullOrWhiteSpace(nombreUsuario)
+        ? nombreUsuario.Trim().Substring(0, 1).ToUpper()
+        : "C";
 }
 
-<div class="container-fluid bg-dark min-vh-100 py-4">
+<div class="min-h-screen bg-slate-950 text-white">
 
-    <div class="container-fluid px-4">
+    <!-- =========================================================
+         HEADER DEL CLIENTE
+    ========================================================== -->
 
-        <!-- =====================================================
-             ENCABEZADO
-        ====================================================== -->
+    <header class="border-b border-white/10 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-50">
 
-        <div class="d-flex flex-column flex-md-row
-            justify-content-between
-            align-items-md-center
-            mb-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            <div>
+            <div class="h-20 flex items-center justify-between">
 
-                <h1 class="text-white fw-bold mb-1">
-                    <i class="bi bi-house-door-fill text-success me-2"></i>
-                    Bienvenido a Sportia
-                </h1>
+                <!-- =================================================
+                     LOGO
+                ================================================== -->
 
-                <p class="text-secondary mb-0">
-                    Encuentra y reserva tu escenario deportivo favorito.
-                </p>
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="flex items-center gap-3 group">
 
-            </div>
+                    <div class="w-10 h-10 rounded-xl
+                        bg-emerald-500
+                        flex items-center justify-center
+                        shadow-lg shadow-emerald-500/20
+                        group-hover:scale-105 transition">
 
-            <div class="mt-3 mt-md-0">
+                        <svg class="w-6 h-6 text-white"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
 
-                <span class="badge bg-success px-3 py-2">
-                    <i class="bi bi-person-fill me-1"></i>
-                    Cliente
-                </span>
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M12 4v16m8-8H4" />
+
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <span class="block text-xl font-black tracking-tight">
+                            SPORTIA
+                        </span>
+
+                        <span class="block text-[10px] uppercase
+                            tracking-[0.2em]
+                            text-slate-500">
+                            Sports Booking
+                        </span>
+
+                    </div>
+
+                </a>
+
+
+                <!-- =================================================
+                     NAVEGACIÓN
+                ================================================== -->
+
+                <nav class="hidden md:flex items-center gap-8">
+
+                    <a href="#inicio"
+                       class="text-sm font-medium text-emerald-400">
+                        Inicio
+                    </a>
+
+                    <a href="#escenarios"
+                       class="text-sm font-medium text-slate-400
+                        hover:text-white transition">
+                        Escenarios
+                    </a>
+
+                    <a href="#reservas"
+                       class="text-sm font-medium text-slate-400
+                        hover:text-white transition">
+                        Mis reservas
+                    </a>
+
+                    <a href="#ayuda"
+                       class="text-sm font-medium text-slate-400
+                        hover:text-white transition">
+                        Ayuda
+                    </a>
+
+                </nav>
+
+
+                <!-- =================================================
+                     PERFIL DEL CLIENTE
+                ================================================== -->
+
+                <div class="flex items-center gap-3">
+
+
+                    <!-- NOTIFICACIONES -->
+
+                    <button type="button"
+                            class="hidden sm:flex w-10 h-10
+                        rounded-xl
+                        border border-white/10
+                        bg-white/5
+                        items-center justify-center
+                        text-slate-400
+                        hover:text-white
+                        hover:bg-white/10
+                        transition">
+
+                        <svg class="w-5 h-5"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
+
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M15 17h5l-1.5-2A7 7 0 0012 5a7 7 0 00-6.5 10L4 17h5m6 0a3 3 0 11-6 0" />
+
+                        </svg>
+
+                    </button>
+
+
+                    <!-- =================================================
+                         CONTENEDOR DEL PERFIL
+                    ================================================== -->
+                    <!-- =================================================
+     CONTENEDOR DEL PERFIL
+================================================== -->
+
+                    <div class="pl-3 border-l border-white/10 relative shrink-0">
+
+
+                        <!-- BOTÓN DE LA INICIAL -->
+
+                        <button id="clientMenuButton"
+                                type="button"
+                                onclick="toggleClientMenu()"
+                                class="flex items-center gap-3
+                            rounded-xl
+                            p-1.5
+                            hover:bg-white/5
+                            transition">
+
+
+                            <!-- INICIAL REAL -->
+
+                            <div style="
+                                width: 40px;
+                                height: 40px;
+                                min-width: 40px;
+                                min-height: 40px;
+                                max-width: 40px;
+                                max-height: 40px;
+                                flex: 0 0 40px;
+                                aspect-ratio: 1 / 1;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                overflow: hidden;
+                                box-sizing: border-box;
+                                background: linear-gradient(135deg, #34d399, #047857);
+                                color: white;
+                                font-weight: 700;
+                                line-height: 1;
+                                text-align: center;
+                                ">
+
+                                @inicialUsuario
+
+                            </div>
+
+
+                            <!-- NOMBRE -->
+
+                            <div class="hidden lg:block text-left">
+
+                                <p class="text-sm font-semibold max-w-[160px] truncate">
+                                    @nombreUsuario
+                                </p>
+
+                                <p class="text-xs text-slate-500">
+                                    Cuenta activa
+                                </p>
+
+                            </div>
+
+
+                            <!-- FLECHA -->
+
+                            <svg class="hidden sm:block w-4 h-4 text-slate-500"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M19 9l-7 7-7-7" />
+
+                            </svg>
+
+                        </button>
+
+
+                        <!-- =================================================
+                             MENÚ DEL CLIENTE
+                        ================================================== -->
+
+                        <div id="clientMenu"
+                             class="hidden
+                            fixed
+                            right-5
+                            top-20
+                            w-80
+                            rounded-2xl
+                            border border-white/10
+                            bg-slate-900/95
+                            backdrop-blur-xl
+                            shadow-2xl
+                            shadow-black/40
+                            overflow-hidden
+                            z-[9999]">
+
+
+                            <!-- =================================================
+                                 INFORMACIÓN DEL USUARIO
+                            ================================================== -->
+
+                            <div class="p-5
+                                border-b border-white/10
+                                bg-gradient-to-br
+                                from-emerald-500/10
+                                to-transparent">
+
+                                <div class="flex items-center gap-3">
+
+
+                                    <!-- INICIAL -->
+
+                                    <div class="w-12 h-12
+                                        rounded-full
+                                        bg-gradient-to-br
+                                        from-emerald-400
+                                        to-emerald-700
+                                        flex items-center
+                                        justify-center
+                                        font-bold
+                                        text-lg">
+
+                                        @inicialUsuario
+
+                                    </div>
+
+
+                                    <!-- DATOS -->
+
+                                    <div class="min-w-0">
+
+                                        <p class="font-bold truncate">
+                                            @nombreUsuario
+                                        </p>
+
+                                        <p class="text-xs
+                                            text-slate-500
+                                            truncate
+                                            mt-1">
+
+                                            @correoUsuario
+
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- =================================================
+                                 DATOS DEL CLIENTE
+                            ================================================== -->
+
+                            <div class="px-5 py-4
+                                border-b border-white/10">
+
+
+                                <!-- NOMBRE -->
+
+                                <div class="flex items-center justify-between gap-3">
+
+                                    <span class="text-xs text-slate-500">
+                                        Nombre
+                                    </span>
+
+                                    <span class="text-sm
+                                        font-medium
+                                        text-white
+                                        max-w-[180px]
+                                        truncate">
+
+                                        @nombreUsuario
+
+                                    </span>
+
+                                </div>
+
+
+                                <!-- CORREO -->
+
+                                <div class="flex items-center
+                                    justify-between
+                                    gap-3
+                                    mt-3">
+
+                                    <span class="text-xs text-slate-500">
+                                        Correo
+                                    </span>
+
+                                    <span class="text-sm
+                                        text-slate-300
+                                        max-w-[180px]
+                                        truncate">
+
+                                        @correoUsuario
+
+                                    </span>
+
+                                </div>
+
+
+                                <!-- ROL -->
+
+                                <div class="flex items-center
+                                    justify-between
+                                    gap-3
+                                    mt-3">
+
+                                    <span class="text-xs text-slate-500">
+                                        Tipo de cuenta
+                                    </span>
+
+                                    <span class="text-sm
+                                        text-slate-300">
+
+                                        @rolUsuario
+
+                                    </span>
+
+                                </div>
+
+
+                                <!-- ESTADO -->
+
+                                <div class="flex items-center
+                                    justify-between
+                                    mt-3">
+
+                                    <span class="text-xs text-slate-500">
+                                        Estado
+                                    </span>
+
+                                    <span class="inline-flex
+                                        items-center
+                                        gap-1.5
+                                        text-xs
+                                        font-semibold
+                                        text-emerald-400">
+
+                                        <span class="w-2 h-2
+                                            rounded-full
+                                            bg-emerald-400">
+                                        </span>
+
+                                        Activo
+
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- =================================================
+                                 OPCIONES
+                            ================================================== -->
+
+                            <div class="p-2">
+
+
+                                <!-- MI PERFIL -->
+
+                                <a asp-controller="Usuario"
+                                   asp-action="Perfil"
+                                   class="flex items-center gap-3
+                                    w-full
+                                    px-3 py-3
+                                    rounded-xl
+                                    text-sm
+                                    text-slate-300
+                                    hover:bg-white/5
+                                    hover:text-white
+                                    transition">
+
+
+                                    <div class="w-9 h-9
+                                        rounded-lg
+                                        bg-white/5
+                                        flex items-center
+                                        justify-center">
+
+                                        👤
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <p class="font-semibold">
+                                            Mi perfil
+                                        </p>
+
+                                        <p class="text-xs text-slate-500">
+                                            Ver y editar mis datos
+                                        </p>
+
+                                    </div>
+
+                                </a>
+
+
+                                <!-- MIS RESERVAS -->
+
+                                <a href="#reservas"
+                                   onclick="toggleClientMenu()"
+                                   class="flex items-center gap-3
+                                    w-full
+                                    px-3 py-3
+                                    rounded-xl
+                                    text-sm
+                                    text-slate-300
+                                    hover:bg-white/5
+                                    hover:text-white
+                                    transition">
+
+
+                                    <div class="w-9 h-9
+                                        rounded-lg
+                                        bg-emerald-500/10
+                                        flex items-center
+                                        justify-center">
+
+                                        📅
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <p class="font-semibold">
+                                            Mis reservas
+                                        </p>
+
+                                        <p class="text-xs text-slate-500">
+                                            Consultar mis reservas
+                                        </p>
+
+                                    </div>
+
+                                </a>
+
+
+                                <!-- CAMBIAR CONTRASEÑA -->
+
+                                <a asp-controller="Usuario"
+                                   asp-action="CambiarPassword"
+                                   class="flex items-center gap-3
+                                    w-full
+                                    px-3 py-3
+                                    rounded-xl
+                                    text-sm
+                                    text-slate-300
+                                    hover:bg-white/5
+                                    hover:text-white
+                                    transition">
+
+
+                                    <div class="w-9 h-9
+                                        rounded-lg
+                                        bg-cyan-500/10
+                                        flex items-center
+                                        justify-center">
+
+                                        🔑
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <p class="font-semibold">
+                                            Cambiar contraseña
+                                        </p>
+
+                                        <p class="text-xs text-slate-500">
+                                            Actualiza tu contraseña
+                                        </p>
+
+                                    </div>
+
+                                </a>
+
+                            </div>
+
+
+                            <!-- =================================================
+                                 CERRAR SESIÓN
+                            ================================================== -->
+
+                            <div class="p-2 border-t border-white/10">
+
+                                <form asp-controller="Login"
+                                      asp-action="Logout"
+                                      method="post">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="flex items-center gap-3
+                                        w-full
+                                        px-3 py-3
+                                        rounded-xl
+                                        text-sm
+                                        text-red-400
+                                        hover:bg-red-500/10
+                                        hover:text-red-300
+                                        transition">
+
+
+                                        <div class="w-9 h-9
+                                            rounded-lg
+                                            bg-red-500/10
+                                            flex items-center
+                                            justify-center">
+
+                                            🚪
+
+                                        </div>
+
+
+                                        <div class="text-left">
+
+                                            <p class="font-semibold">
+                                                Cerrar sesión
+                                            </p>
+
+                                            <p class="text-xs text-slate-600">
+                                                Salir de mi cuenta
+                                            </p>
+
+                                        </div>
+
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
             </div>
 
         </div>
 
+    </header>
+
+
+    <!-- =========================================================
+         CONTENIDO
+    ========================================================== -->
+
+    <main id="inicio"
+          class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
 
         <!-- =====================================================
-             MENSAJE PRINCIPAL
+             BIENVENIDA
         ====================================================== -->
 
-        <div class="card bg-black border-secondary shadow-lg mb-4">
+        <section class="relative overflow-hidden
+            rounded-3xl
+            border border-white/10
+            bg-gradient-to-br
+            from-emerald-500/20
+            via-slate-900
+            to-slate-950
+            p-6 sm:p-10 mb-8">
 
-            <div class="card-body p-4 p-md-5">
 
-                <div class="row align-items-center">
+            <!-- DECORACIÓN -->
 
-                    <div class="col-lg-8">
+            <div class="absolute -right-20 -top-20
+                w-72 h-72
+                bg-emerald-500/10
+                rounded-full blur-3xl">
+            </div>
 
-                        <span class="badge bg-success bg-opacity-10
-                            text-success border border-success
-                            mb-3">
+            <div class="absolute -left-20 -bottom-20
+                w-60 h-60
+                bg-cyan-500/10
+                rounded-full blur-3xl">
+            </div>
 
-                            SPORTIA
 
+            <div class="relative z-10
+                grid lg:grid-cols-[1fr_280px]
+                gap-8 items-center">
+
+
+                <div>
+
+
+                    <div class="inline-flex items-center gap-2
+                        px-3 py-1.5
+                        rounded-full
+                        bg-emerald-500/10
+                        border border-emerald-500/20
+                        text-emerald-400
+                        text-xs font-semibold
+                        mb-5">
+
+                        <span class="w-2 h-2
+                            bg-emerald-400
+                            rounded-full
+                            animate-pulse">
                         </span>
 
-                        <h2 class="text-white fw-bold">
+                        Plataforma disponible
 
-                            ¡Todo listo para jugar! ⚽
+                    </div>
 
-                        </h2>
 
-                        <p class="text-secondary fs-5 mb-4">
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl
+                        font-black
+                        tracking-tight
+                        leading-tight">
 
-                            Consulta nuestros escenarios deportivos,
-                            revisa su disponibilidad y realiza tu reserva
-                            de forma rápida y sencilla.
+                        Tu próximo partido
+
+                        <span class="text-emerald-400">
+                            empieza aquí.
+                        </span>
+
+                    </h1>
+
+
+                    <p class="mt-4 max-w-2xl
+                        text-slate-400
+                        text-base sm:text-lg
+                        leading-relaxed">
+
+                        Encuentra escenarios deportivos,
+                        consulta horarios disponibles y
+                        reserva tu espacio favorito en pocos pasos.
+
+                    </p>
+
+
+                    <div class="mt-7 flex flex-wrap gap-3">
+
+
+                        <a href="#escenarios"
+                           class="inline-flex items-center gap-2
+                            px-5 py-3
+                            rounded-xl
+                            bg-emerald-500
+                            hover:bg-emerald-400
+                            text-white
+                            font-bold
+                            shadow-lg
+                            shadow-emerald-500/20
+                            transition">
+
+
+                            <svg class="w-5 h-5"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
+
+                            </svg>
+
+                            Buscar escenario
+
+                        </a>
+
+
+                        <a href="#reservas"
+                           class="inline-flex items-center gap-2
+                            px-5 py-3
+                            rounded-xl
+                            bg-white/5
+                            border border-white/10
+                            hover:bg-white/10
+                            text-white
+                            font-semibold
+                            transition">
+
+                            Mis reservas
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ELEMENTO VISUAL -->
+
+                <div class="hidden lg:flex justify-center">
+
+                    <div class="relative w-56 h-56">
+
+                        <div class="absolute inset-0
+                            rounded-full
+                            border border-emerald-500/20">
+                        </div>
+
+                        <div class="absolute inset-6
+                            rounded-full
+                            border border-emerald-500/20">
+                        </div>
+
+                        <div class="absolute inset-12
+                            rounded-full
+                            bg-emerald-500/10
+                            border border-emerald-500/30
+                            flex items-center justify-center">
+
+
+                            <svg class="w-20 h-20 text-emerald-400"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24">
+
+                                <circle cx="12"
+                                        cy="12"
+                                        r="9"
+                                        stroke-width="1.5" />
+
+                                <path stroke-width="1.5"
+                                      d="M8 5.5l4 3 4-3M5.5 16l4-3m5 0l4 3M12 8.5v7" />
+
+                            </svg>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             ESTADÍSTICAS
+        ====================================================== -->
+
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+
+
+            <!-- RESERVAS -->
+
+            <div class="rounded-2xl
+                border border-white/10
+                bg-white/[0.03]
+                p-5
+                hover:bg-white/[0.05]
+                transition">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Reservas
 
                         </p>
 
-                        <a href="#canchas"
-                           class="btn btn-success btn-lg fw-bold">
+                        <p class="text-3xl font-black mt-2">
+                            0
+                        </p>
 
-                            <i class="bi bi-search me-2"></i>
+                    </div>
+
+
+                    <div class="w-11 h-11
+                        rounded-xl
+                        bg-emerald-500/10
+                        text-emerald-400
+                        flex items-center
+                        justify-center">
+
+                        📅
+
+                    </div>
+
+                </div>
+
+
+                <p class="text-xs text-slate-500 mt-3">
+                    Reservas realizadas
+                </p>
+
+            </div>
+
+
+            <!-- PRÓXIMAS -->
+
+            <div class="rounded-2xl
+                border border-white/10
+                bg-white/[0.03]
+                p-5
+                hover:bg-white/[0.05]
+                transition">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Próximas
+
+                        </p>
+
+                        <p class="text-3xl font-black mt-2">
+                            0
+                        </p>
+
+                    </div>
+
+
+                    <div class="w-11 h-11
+                        rounded-xl
+                        bg-cyan-500/10
+                        text-cyan-400
+                        flex items-center
+                        justify-center">
+
+                        ⚡
+
+                    </div>
+
+                </div>
+
+
+                <p class="text-xs text-slate-500 mt-3">
+                    Reservas próximas
+                </p>
+
+            </div>
+
+
+            <!-- ESCENARIOS -->
+
+            <div class="rounded-2xl
+                border border-white/10
+                bg-white/[0.03]
+                p-5
+                hover:bg-white/[0.05]
+                transition">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Escenarios
+
+                        </p>
+
+                        <p class="text-3xl font-black mt-2">
+                            3
+                        </p>
+
+                    </div>
+
+
+                    <div class="w-11 h-11
+                        rounded-xl
+                        bg-violet-500/10
+                        text-violet-400
+                        flex items-center
+                        justify-center">
+
+                        🏟️
+
+                    </div>
+
+                </div>
+
+
+                <p class="text-xs text-slate-500 mt-3">
+                    Disponibles actualmente
+                </p>
+
+            </div>
+
+
+            <!-- ESTADO -->
+
+            <div class="rounded-2xl
+                border border-white/10
+                bg-white/[0.03]
+                p-5
+                hover:bg-white/[0.05]
+                transition">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-xs uppercase
+                            tracking-wider
+                            text-slate-500">
+
+                            Estado
+
+                        </p>
+
+                        <p class="text-xl font-black
+                            text-emerald-400 mt-2">
+
+                            Activo
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="w-11 h-11
+                        rounded-xl
+                        bg-emerald-500/10
+                        text-emerald-400
+                        flex items-center
+                        justify-center">
+
+                        ✓
+
+                    </div>
+
+                </div>
+
+
+                <p class="text-xs text-slate-500 mt-3">
+                    Cuenta disponible
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             ESCENARIOS
+        ====================================================== -->
+
+        <section id="escenarios" class="mb-10">
+
+
+            <div class="flex flex-col sm:flex-row
+                sm:items-end
+                justify-between
+                gap-4 mb-6">
+
+
+                <div>
+
+                    <p class="text-emerald-400
+                        text-xs
+                        font-bold
+                        uppercase
+                        tracking-[0.2em]">
+
+                        Explora
+
+                    </p>
+
+
+                    <h2 class="text-2xl sm:text-3xl
+                        font-black mt-1">
+
+                        Escenarios deportivos
+
+                    </h2>
+
+
+                    <p class="text-slate-500 mt-2">
+
+                        Encuentra el lugar perfecto para jugar.
+
+                    </p>
+
+                </div>
+
+
+                <!-- BUSCADOR -->
+
+                <div class="relative w-full sm:w-72">
+
+                    <input type="text"
+                           placeholder="Buscar escenario..."
+                           class="w-full
+                    bg-white/[0.04]
+                    border border-white/10
+                    rounded-xl
+                    py-3 pl-11 pr-4
+                    text-sm
+                    text-white
+                    placeholder:text-slate-600
+                    focus:outline-none
+                    focus:border-emerald-500/50
+                    focus:ring-2
+                    focus:ring-emerald-500/10">
+
+
+                    <svg class="absolute left-4 top-3.5
+                        w-5 h-5
+                        text-slate-500"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+
+            <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+
+
+                <!-- =================================================
+                     CANCHA 1
+                ================================================== -->
+
+                <article class="group
+                    overflow-hidden
+                    rounded-2xl
+                    border border-white/10
+                    bg-slate-900
+                    hover:border-emerald-500/40
+                    transition">
+
+
+                    <div class="relative h-48 overflow-hidden">
+
+                        <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80"
+                             class="w-full h-full object-cover
+                        group-hover:scale-105
+                        transition duration-500"
+                             alt="Cancha de fútbol">
+
+
+                        <div class="absolute inset-0
+                            bg-gradient-to-t
+                            from-slate-950
+                            via-transparent
+                            to-transparent">
+                        </div>
+
+
+                        <span class="absolute top-4 left-4
+                            px-3 py-1.5
+                            rounded-full
+                            bg-emerald-500
+                            text-white
+                            text-xs
+                            font-bold">
+
+                            DISPONIBLE
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="p-5">
+
+
+                        <div class="flex justify-between
+                            items-start gap-3">
+
+                            <div>
+
+                                <p class="text-xs
+                                    text-emerald-400
+                                    font-semibold
+                                    uppercase
+                                    tracking-wider">
+
+                                    Fútbol
+
+                                </p>
+
+
+                                <h3 class="text-xl font-bold mt-1">
+
+                                    Cancha deportiva
+
+                                </h3>
+
+                            </div>
+
+
+                            <span class="text-slate-500">
+                                ★ 4.8
+                            </span>
+
+                        </div>
+
+
+                        <p class="text-sm
+                            text-slate-500
+                            mt-3">
+
+                            Escenario deportivo ideal
+                            para partidos y entrenamientos.
+
+                        </p>
+
+
+                        <div class="flex items-center
+                            justify-between
+                            mt-5
+                            pt-4
+                            border-t
+                            border-white/10">
+
+
+                            <div>
+
+                                <p class="text-xs text-slate-600">
+                                    Estado
+                                </p>
+
+                                <p class="text-sm
+                                    text-emerald-400
+                                    font-semibold">
+
+                                    Disponible
+
+                                </p>
+
+                            </div>
+
+
+                            <button class="px-4 py-2.5
+                                rounded-xl
+                                bg-emerald-500
+                                hover:bg-emerald-400
+                                text-white
+                                text-sm
+                                font-bold
+                                transition">
+
+                                Reservar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================================
+                     CANCHA 2
+                ================================================== -->
+
+                <article class="group
+                    overflow-hidden
+                    rounded-2xl
+                    border border-white/10
+                    bg-slate-900
+                    hover:border-emerald-500/40
+                    transition">
+
+
+                    <div class="relative h-48 overflow-hidden">
+
+                        <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=80"
+                             class="w-full h-full object-cover
+                        group-hover:scale-105
+                        transition duration-500"
+                             alt="Cancha de baloncesto">
+
+
+                        <div class="absolute inset-0
+                            bg-gradient-to-t
+                            from-slate-950
+                            via-transparent
+                            to-transparent">
+                        </div>
+
+
+                        <span class="absolute top-4 left-4
+                            px-3 py-1.5
+                            rounded-full
+                            bg-emerald-500
+                            text-white
+                            text-xs
+                            font-bold">
+
+                            DISPONIBLE
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="p-5">
+
+
+                        <div class="flex justify-between
+                            items-start gap-3">
+
+                            <div>
+
+                                <p class="text-xs
+                                    text-cyan-400
+                                    font-semibold
+                                    uppercase
+                                    tracking-wider">
+
+                                    Baloncesto
+
+                                </p>
+
+
+                                <h3 class="text-xl font-bold mt-1">
+
+                                    Cancha de baloncesto
+
+                                </h3>
+
+                            </div>
+
+
+                            <span class="text-slate-500">
+                                ★ 4.7
+                            </span>
+
+                        </div>
+
+
+                        <p class="text-sm
+                            text-slate-500
+                            mt-3">
+
+                            Espacio preparado para partidos
+                            y actividades deportivas.
+
+                        </p>
+
+
+                        <div class="flex items-center
+                            justify-between
+                            mt-5
+                            pt-4
+                            border-t
+                            border-white/10">
+
+
+                            <div>
+
+                                <p class="text-xs text-slate-600">
+                                    Estado
+                                </p>
+
+                                <p class="text-sm
+                                    text-emerald-400
+                                    font-semibold">
+
+                                    Disponible
+
+                                </p>
+
+                            </div>
+
+
+                            <button class="px-4 py-2.5
+                                rounded-xl
+                                bg-emerald-500
+                                hover:bg-emerald-400
+                                text-white
+                                text-sm
+                                font-bold
+                                transition">
+
+                                Reservar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================================
+                     CANCHA 3
+                ================================================== -->
+
+                <article class="group
+                    overflow-hidden
+                    rounded-2xl
+                    border border-white/10
+                    bg-slate-900
+                    hover:border-emerald-500/40
+                    transition">
+
+
+                    <div class="relative h-48 overflow-hidden">
+
+                        <img src="https://images.unsplash.com/photo-1526232761682-d26e03ac5a1e?auto=format&fit=crop&w=900&q=80"
+                             class="w-full h-full object-cover
+                        group-hover:scale-105
+                        transition duration-500"
+                             alt="Escenario deportivo">
+
+
+                        <div class="absolute inset-0
+                            bg-gradient-to-t
+                            from-slate-950
+                            via-transparent
+                            to-transparent">
+                        </div>
+
+
+                        <span class="absolute top-4 left-4
+                            px-3 py-1.5
+                            rounded-full
+                            bg-emerald-500
+                            text-white
+                            text-xs
+                            font-bold">
+
+                            DISPONIBLE
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="p-5">
+
+
+                        <div class="flex justify-between
+                            items-start gap-3">
+
+                            <div>
+
+                                <p class="text-xs
+                                    text-violet-400
+                                    font-semibold
+                                    uppercase
+                                    tracking-wider">
+
+                                    Multideportivo
+
+                                </p>
+
+
+                                <h3 class="text-xl font-bold mt-1">
+
+                                    Nuevo escenario
+
+                                </h3>
+
+                            </div>
+
+
+                            <span class="text-slate-500">
+                                ★ 4.9
+                            </span>
+
+                        </div>
+
+
+                        <p class="text-sm
+                            text-slate-500
+                            mt-3">
+
+                            Un espacio versátil para
+                            diferentes actividades deportivas.
+
+                        </p>
+
+
+                        <div class="flex items-center
+                            justify-between
+                            mt-5
+                            pt-4
+                            border-t
+                            border-white/10">
+
+
+                            <div>
+
+                                <p class="text-xs text-slate-600">
+                                    Estado
+                                </p>
+
+                                <p class="text-sm
+                                    text-emerald-400
+                                    font-semibold">
+
+                                    Disponible
+
+                                </p>
+
+                            </div>
+
+
+                            <button class="px-4 py-2.5
+                                rounded-xl
+                                bg-emerald-500
+                                hover:bg-emerald-400
+                                text-white
+                                text-sm
+                                font-bold
+                                transition">
+
+                                Reservar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             MIS RESERVAS
+        ====================================================== -->
+
+        <section id="reservas"
+                 class="grid lg:grid-cols-3 gap-5 mb-10">
+
+
+            <!-- RESERVAS -->
+
+            <div class="lg:col-span-2
+                rounded-2xl
+                border border-white/10
+                bg-white/[0.03]
+                overflow-hidden">
+
+
+                <div class="p-5
+                    border-b border-white/10
+                    flex items-center
+                    justify-between">
+
+
+                    <div>
+
+                        <h2 class="font-bold text-lg">
+                            Mis próximas reservas
+                        </h2>
+
+                        <p class="text-sm text-slate-500 mt-1">
+                            Consulta tus próximas actividades.
+                        </p>
+
+                    </div>
+
+
+                    <a href="#"
+                       class="text-sm
+                        text-emerald-400
+                        hover:text-emerald-300
+                        font-semibold">
+
+                        Ver todas
+
+                    </a>
+
+                </div>
+
+
+                <div class="p-6">
+
+
+                    <div class="text-center py-10">
+
+
+                        <div class="w-16 h-16
+                            mx-auto
+                            rounded-2xl
+                            bg-white/5
+                            flex items-center
+                            justify-center
+                            mb-4">
+
+
+                            <img src="https://img.icons8.com/?size=100&id=14778&format=png&color=10B981"
+                                 alt="Calendario"
+                                 class="w-10 h-10">
+
+                        </div>
+
+
+                        <h3 class="font-bold text-lg">
+
+                            No tienes reservas todavía
+
+                        </h3>
+
+
+                        <p class="text-slate-500
+                            text-sm
+                            max-w-sm
+                            mx-auto
+                            mt-2">
+
+                            Cuando realices una reserva,
+                            aparecerá aquí para que puedas
+                            consultarla fácilmente.
+
+                        </p>
+
+
+                        <a href="#escenarios"
+                           class="inline-flex
+                            mt-5
+                            px-5 py-2.5
+                            rounded-xl
+                            bg-emerald-500
+                            hover:bg-emerald-400
+                            font-bold
+                            text-sm
+                            transition">
 
                             Buscar una cancha
 
@@ -85,493 +1606,113 @@
 
                     </div>
 
-
-                    <div class="col-lg-4 text-center mt-4 mt-lg-0">
-
-                        <div class="d-inline-flex
-                            align-items-center
-                            justify-content-center
-                            rounded-circle
-                            border border-success
-                            bg-success bg-opacity-10"
-                             style="width:150px;height:150px;">
-
-                            <i class="bi bi-trophy-fill
-                            text-success"
-                               style="font-size:70px;"></i>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             OPCIONES DEL CLIENTE
-        ====================================================== -->
-
-        <div class="row g-4 mb-5">
-
-            <!-- CANCHAS -->
-
-            <div class="col-12 col-md-4">
-
-                <div class="card bg-black border-secondary
-                    shadow h-100">
-
-                    <div class="card-body p-4">
-
-                        <div class="bg-success bg-opacity-10
-                            border border-success
-                            rounded-circle
-                            d-flex align-items-center
-                            justify-content-center mb-3"
-                             style="width:60px;height:60px;">
-
-                            <i class="bi bi-dribbble
-                            text-success fs-3"></i>
-
-                        </div>
-
-                        <h4 class="text-white fw-bold">
-                            Canchas disponibles
-                        </h4>
-
-                        <p class="text-secondary">
-
-                            Consulta los escenarios deportivos
-                            disponibles en Sportia.
-
-                        </p>
-
-                        <a href="#canchas"
-                           class="btn btn-outline-success w-100">
-
-                            Ver canchas
-
-                        </a>
-
-                    </div>
-
                 </div>
 
             </div>
 
 
-            <!-- RESERVAR -->
+            <!-- =================================================
+                 AYUDA
+            ================================================== -->
 
-            <div class="col-12 col-md-4">
-
-                <div class="card bg-black border-secondary
-                    shadow h-100">
-
-                    <div class="card-body p-4">
-
-                        <div class="bg-primary bg-opacity-10
-                            border border-primary
-                            rounded-circle
-                            d-flex align-items-center
-                            justify-content-center mb-3"
-                             style="width:60px;height:60px;">
-
-                            <i class="bi bi-calendar-plus
-                            text-primary fs-3"></i>
-
-                        </div>
-
-                        <h4 class="text-white fw-bold">
-                            Reservar cancha
-                        </h4>
-
-                        <p class="text-secondary">
-
-                            Selecciona una cancha, fecha y horario
-                            para realizar tu reserva.
-
-                        </p>
-
-                        <a href="#canchas"
-                           class="btn btn-outline-primary w-100">
-
-                            Reservar ahora
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
+            <div id="ayuda"
+                 class="rounded-2xl
+                border border-white/10
+                bg-gradient-to-br
+                from-emerald-500/10
+                to-transparent
+                p-6">
 
 
-            <!-- MIS RESERVAS -->
+                <div class="w-12 h-12
+                    rounded-xl
+                    bg-emerald-500/10
+                    border border-emerald-500/20
+                    flex items-center
+                    justify-center
+                    text-emerald-400
+                    mb-5">
 
-            <div class="col-12 col-md-4">
-
-                <div class="card bg-black border-secondary
-                    shadow h-100">
-
-                    <div class="card-body p-4">
-
-                        <div class="bg-warning bg-opacity-10
-                            border border-warning
-                            rounded-circle
-                            d-flex align-items-center
-                            justify-content-center mb-3"
-                             style="width:60px;height:60px;">
-
-                            <i class="bi bi-calendar-check
-                            text-warning fs-3"></i>
-
-                        </div>
-
-                        <h4 class="text-white fw-bold">
-                            Mis reservas
-                        </h4>
-
-                        <p class="text-secondary">
-
-                            Consulta las reservas que has realizado
-                            anteriormente.
-
-                        </p>
-
-                        <a href="#mis-reservas"
-                           class="btn btn-outline-warning w-100">
-
-                            Ver mis reservas
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             ESCENARIOS DISPONIBLES
-        ====================================================== -->
-
-        <div id="canchas"
-             class="card bg-black border-secondary shadow mb-4">
-
-            <div class="card-body p-4">
-
-                <div class="d-flex justify-content-between
-                    align-items-center mb-4">
-
-                    <div>
-
-                        <h3 class="text-white fw-bold mb-1">
-
-                            <i class="bi bi-building text-success me-2"></i>
-
-                            Escenarios deportivos
-
-                        </h3>
-
-                        <p class="text-secondary mb-0">
-
-                            Explora los escenarios disponibles.
-
-                        </p>
-
-                    </div>
+                    ?
 
                 </div>
 
 
-                <!-- =================================================
-                     AQUÍ DESPUÉS CARGAREMOS LAS CANCHAS DE MYSQL
-                ================================================== -->
+                <h3 class="text-xl font-bold">
 
-                <div class="row g-4">
-
-                    <!-- CANCHA 1 -->
-
-                    <div class="col-12 col-md-6 col-lg-4">
-
-                        <div class="card bg-dark border-secondary h-100">
-
-                            <div class="card-body p-4">
-
-                                <div class="text-center mb-3">
-
-                                    <div class="d-inline-flex
-                                        align-items-center
-                                        justify-content-center
-                                        rounded-circle
-                                        bg-success bg-opacity-10
-                                        border border-success"
-                                         style="width:75px;height:75px;">
-
-                                        <i class="bi bi-dribbble
-                                        text-success fs-2"></i>
-
-                                    </div>
-
-                                </div>
-
-                                <h5 class="text-white text-center fw-bold">
-
-                                    Cancha deportiva
-
-                                </h5>
-
-                                <p class="text-secondary text-center">
-
-                                    Escenario deportivo disponible
-                                    para reservas.
-
-                                </p>
-
-                                <div class="d-flex
-                                    justify-content-between
-                                    mb-3">
-
-                                    <span class="text-secondary">
-
-                                        <i class="bi bi-clock me-1"></i>
-
-                                        Disponible
-
-                                    </span>
-
-                                    <span class="text-success fw-bold">
-
-                                        Disponible
-
-                                    </span>
-
-                                </div>
-
-                                <button class="btn btn-success w-100">
-
-                                    <i class="bi bi-calendar-plus me-2"></i>
-
-                                    Reservar
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- CANCHA 2 -->
-
-                    <div class="col-12 col-md-6 col-lg-4">
-
-                        <div class="card bg-dark border-secondary h-100">
-
-                            <div class="card-body p-4">
-
-                                <div class="text-center mb-3">
-
-                                    <div class="d-inline-flex
-                                        align-items-center
-                                        justify-content-center
-                                        rounded-circle
-                                        bg-success bg-opacity-10
-                                        border border-success"
-                                         style="width:75px;height:75px;">
-
-                                        <i class="bi bi-trophy
-                                        text-success fs-2"></i>
-
-                                    </div>
-
-                                </div>
-
-                                <h5 class="text-white text-center fw-bold">
-
-                                    Escenario deportivo
-
-                                </h5>
-
-                                <p class="text-secondary text-center">
-
-                                    Consulta disponibilidad y horarios.
-
-                                </p>
-
-                                <div class="d-flex
-                                    justify-content-between
-                                    mb-3">
-
-                                    <span class="text-secondary">
-
-                                        <i class="bi bi-clock me-1"></i>
-
-                                        Horarios
-
-                                    </span>
-
-                                    <span class="text-success fw-bold">
-
-                                        Disponibles
-
-                                    </span>
-
-                                </div>
-
-                                <button class="btn btn-success w-100">
-
-                                    <i class="bi bi-calendar-plus me-2"></i>
-
-                                    Reservar
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- CANCHA 3 -->
-
-                    <div class="col-12 col-md-6 col-lg-4">
-
-                        <div class="card bg-dark border-secondary h-100">
-
-                            <div class="card-body p-4">
-
-                                <div class="text-center mb-3">
-
-                                    <div class="d-inline-flex
-                                        align-items-center
-                                        justify-content-center
-                                        rounded-circle
-                                        bg-success bg-opacity-10
-                                        border border-success"
-                                         style="width:75px;height:75px;">
-
-                                        <i class="bi bi-star-fill
-                                        text-success fs-2"></i>
-
-                                    </div>
-
-                                </div>
-
-                                <h5 class="text-white text-center fw-bold">
-
-                                    Nuevo escenario
-
-                                </h5>
-
-                                <p class="text-secondary text-center">
-
-                                    Encuentra el espacio ideal
-                                    para practicar.
-
-                                </p>
-
-                                <div class="d-flex
-                                    justify-content-between
-                                    mb-3">
-
-                                    <span class="text-secondary">
-
-                                        <i class="bi bi-clock me-1"></i>
-
-                                        Estado
-
-                                    </span>
-
-                                    <span class="text-success fw-bold">
-
-                                        Disponible
-
-                                    </span>
-
-                                </div>
-
-                                <button class="btn btn-success w-100">
-
-                                    <i class="bi bi-calendar-plus me-2"></i>
-
-                                    Reservar
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             MIS RESERVAS
-        ====================================================== -->
-
-        <div id="mis-reservas"
-             class="card bg-black border-secondary shadow mb-4">
-
-            <div class="card-body p-4">
-
-                <h3 class="text-white fw-bold mb-1">
-
-                    <i class="bi bi-calendar-check text-success me-2"></i>
-
-                    Mis reservas
+                    ¿Necesitas ayuda?
 
                 </h3>
 
-                <p class="text-secondary">
 
-                    Aquí podrás consultar tus reservas.
+                <p class="text-sm
+                    text-slate-500
+                    mt-2
+                    leading-relaxed">
+
+                    Si tienes problemas para realizar
+                    una reserva o necesitas información
+                    sobre nuestros escenarios, estamos
+                    aquí para ayudarte.
 
                 </p>
 
-                <div class="alert alert-dark border-secondary mb-0">
 
-                    <i class="bi bi-info-circle text-success me-2"></i>
+                <button class="w-full
+                    mt-6
+                    py-3
+                    rounded-xl
+                    border border-white/10
+                    bg-white/5
+                    hover:bg-white/10
+                    text-sm
+                    font-semibold
+                    transition">
 
-                    Cuando realices una reserva aparecerá aquí.
+                    Contactar soporte
 
-                </div>
+                </button>
 
             </div>
 
-        </div>
+        </section>
 
 
         <!-- =====================================================
-             PIE
+             FOOTER
         ====================================================== -->
 
-        <div class="text-center py-3">
+        <footer class="border-t border-white/10
+            pt-6 pb-8
+            flex flex-col sm:flex-row
+            justify-between
+            items-center
+            gap-3">
 
-            <p class="text-secondary small mb-0">
 
-                <i class="bi bi-shield-check text-success me-1"></i>
+            <p class="text-xs text-slate-600">
 
-                Sportia · Gestión de escenarios deportivos
+                © 2026 Sportia · Gestión de escenarios deportivos
 
             </p>
 
-        </div>
 
-    </div>
+            <div class="flex items-center gap-2
+                text-xs text-slate-600">
+
+
+                <span class="w-2 h-2
+                    rounded-full
+                    bg-emerald-500">
+                </span>
+
+
+                Plataforma funcionando correctamente
+
+            </div>
+
+        </footer>
+
+    </main>
 
 </div>

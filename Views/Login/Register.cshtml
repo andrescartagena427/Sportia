@@ -2,228 +2,405 @@
     ViewData["Title"] = "Crear cuenta";
 }
 
-<div class="container-fluid bg-dark min-vh-100 d-flex align-items-center justify-content-center py-5">
+<div class="min-h-screen bg-[#0B0F19] flex items-center justify-center px-4 py-12">
 
-    <div class="row w-100 justify-content-center">
+    <div class="w-full max-w-2xl">
 
-        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <!-- TARJETA -->
+        <div class="bg-[#1F2937] border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
 
-            <div class="card bg-dark border border-secondary shadow-lg rounded-4">
+            <div class="p-6 sm:p-8 md:p-10">
 
-                <div class="card-body p-4 p-md-5">
+                <!-- LOGO -->
+                <div class="text-center mb-8">
 
-                    <!-- ICONO -->
-                    <div class="text-center mb-4">
+                    <div class="mx-auto w-16 h-16 flex items-center justify-center
+                        rounded-full bg-emerald-500/10
+                        border border-emerald-500/30 mb-4">
 
-                        <div class="d-inline-flex align-items-center justify-content-center
-                            bg-success bg-opacity-10 border border-success
-                            rounded-circle"
-                             style="width:70px;height:70px;">
+                        <!-- Icono con SVG para no depender de Bootstrap Icons -->
+                        <svg class="w-8 h-8 text-emerald-400"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
 
-                            <i class="bi bi-person-plus-fill text-success fs-2"></i>
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3
+                            M15 7a3 3 0 11-6 0 3 3 0 016 0z
+                            M5 20a7 7 0 0114 0" />
 
-                        </div>
+                        </svg>
 
                     </div>
 
 
-                    <!-- TITULO -->
-                    <h2 class="text-white text-center fw-bold mb-2">
+                    <h1 class="text-3xl font-extrabold text-white tracking-tight">
                         Crear cuenta
-                    </h2>
+                    </h1>
 
-                    <p class="text-secondary text-center mb-4">
+                    <p class="text-gray-400 mt-2">
                         Regístrate en Sportia para reservar tus escenarios deportivos.
                     </p>
 
+                </div>
 
-                    <!-- ERROR -->
-                    @if (ViewBag.Error != null)
-                    {
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+
+                <!-- ERROR -->
+                @if (ViewBag.Error != null)
+                {
+                    <div class="mb-6 p-4 rounded-lg
+                        bg-red-500/10 border border-red-500/30
+                        text-red-400 flex items-start gap-3">
+
+                        <svg class="w-5 h-5 mt-0.5 flex-shrink-0"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
+
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M12 8v4m0 4h.01
+                            M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+
+                        </svg>
+
+                        <span>
                             @ViewBag.Error
-                        </div>
-                    }
+                        </span>
+
+                    </div>
+                }
 
 
-                    <form asp-controller="Login"
-                          asp-action="Register"
-                          method="post">
+                <!-- FORMULARIO -->
+                <form asp-controller="Login"
+                      asp-action="Register"
+                      method="post"
+                      class="space-y-5">
 
+
+                    <!-- NOMBRES Y APELLIDOS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                         <!-- NOMBRES -->
-                        <div class="mb-3">
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-person text-success me-1"></i>
+                            <label for="nombres"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Nombres
+
                             </label>
 
                             <input type="text"
+                                   id="nombres"
                                    name="nombres"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Ingrese sus nombres"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
 
 
                         <!-- APELLIDOS -->
-                        <div class="mb-3">
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-person text-success me-1"></i>
+                            <label for="apellidos"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Apellidos
+
                             </label>
 
                             <input type="text"
+                                   id="apellidos"
                                    name="apellidos"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Ingrese sus apellidos"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
 
+                    </div>
+
+
+                    <!-- DOCUMENTO Y TELÉFONO -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                         <!-- DOCUMENTO -->
-                        <div class="mb-3">
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-card-text text-success me-1"></i>
+                            <label for="documento"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Documento
+
                             </label>
 
                             <input type="text"
+                                   id="documento"
                                    name="documento"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Ingrese su documento"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
 
 
-                        <!-- TELEFONO -->
-                        <div class="mb-3">
+                        <!-- TELÉFONO -->
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-telephone text-success me-1"></i>
+                            <label for="telefono"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Teléfono
+
                             </label>
 
                             <input type="tel"
+                                   id="telefono"
                                    name="telefono"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Ingrese su teléfono"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
 
+                    </div>
 
-                        <!-- CORREO -->
-                        <div class="mb-3">
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-envelope text-success me-1"></i>
-                                Correo electrónico
-                            </label>
+                    <!-- CORREO -->
+                    <div>
 
-                            <input type="email"
-                                   name="correo"
-                                   class="form-control bg-dark text-white border-secondary"
-                                   placeholder="Ingrese su correo"
-                                   required />
+                        <label for="correo"
+                               class="block text-sm font-semibold text-gray-200 mb-2">
 
-                        </div>
+                            <span class="text-emerald-400">●</span>
+                            Correo electrónico
 
+                        </label>
+
+                        <input type="email"
+                               id="correo"
+                               name="correo"
+                               placeholder="Ingrese su correo electrónico"
+                               required
+                               class="w-full px-4 py-3
+                        bg-[#111827]
+                        border border-gray-700
+                        rounded-lg
+                        text-white
+                        placeholder-gray-500
+                        outline-none
+                        transition
+                        focus:border-emerald-500
+                        focus:ring-2
+                        focus:ring-emerald-500/20" />
+
+                    </div>
+
+
+                    <!-- CONTRASEÑAS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                         <!-- CONTRASEÑA -->
-                        <div class="mb-3">
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-lock text-success me-1"></i>
+                            <label for="contrasena"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Contraseña
+
                             </label>
 
                             <input type="password"
+                                   id="contrasena"
                                    name="contrasena"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Ingrese una contraseña"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
 
 
-                        <!-- CONFIRMAR -->
-                        <div class="mb-4">
+                        <!-- CONFIRMAR CONTRASEÑA -->
+                        <div>
 
-                            <label class="form-label text-white">
-                                <i class="bi bi-shield-lock text-success me-1"></i>
+                            <label for="confirmarContrasena"
+                                   class="block text-sm font-semibold text-gray-200 mb-2">
+
+                                <span class="text-emerald-400">●</span>
                                 Confirmar contraseña
+
                             </label>
 
                             <input type="password"
+                                   id="confirmarContrasena"
                                    name="confirmarContrasena"
-                                   class="form-control bg-dark text-white border-secondary"
                                    placeholder="Repita la contraseña"
-                                   required />
+                                   required
+                                   class="w-full px-4 py-3
+                            bg-[#111827]
+                            border border-gray-700
+                            rounded-lg
+                            text-white
+                            placeholder-gray-500
+                            outline-none
+                            transition
+                            focus:border-emerald-500
+                            focus:ring-2
+                            focus:ring-emerald-500/20" />
 
                         </div>
-
-
-                        <!-- BOTON -->
-                        <div class="d-grid">
-
-                            <button type="submit"
-                                    class="btn btn-success btn-lg fw-bold">
-
-                                <i class="bi bi-person-check-fill me-2"></i>
-
-                                Crear cuenta
-
-                            </button>
-
-                        </div>
-
-                    </form>
-
-
-                    <!-- SEPARADOR -->
-                    <div class="d-flex align-items-center my-4">
-
-                        <hr class="flex-grow-1 border-secondary">
-
-                        <span class="text-secondary px-3">
-                            O
-                        </span>
-
-                        <hr class="flex-grow-1 border-secondary">
 
                     </div>
 
 
-                    <!-- LOGIN -->
-                    <div class="text-center">
+                    <!-- BOTÓN -->
+                    <div class="pt-3">
 
-                        <span class="text-secondary">
-                            ¿Ya tienes una cuenta?
-                        </span>
+                        <button type="submit"
+                                class="w-full py-3.5
+                            bg-emerald-500
+                            hover:bg-emerald-600
+                            text-white
+                            font-bold
+                            rounded-lg
+                            transition duration-200
+                            shadow-lg
+                            shadow-emerald-500/20
+                            hover:shadow-emerald-500/30
+                            focus:outline-none
+                            focus:ring-2
+                            focus:ring-emerald-500
+                            focus:ring-offset-2
+                            focus:ring-offset-[#1F2937]">
 
-                        <a asp-controller="Login"
-                           asp-action="Index"
-                           class="text-success fw-bold text-decoration-none">
+                            Crear cuenta
 
-                            Iniciar sesión
-
-                        </a>
+                        </button>
 
                     </div>
+
+                </form>
+
+
+                <!-- SEPARADOR -->
+                <div class="flex items-center gap-4 my-7">
+
+                    <div class="flex-1 h-px bg-gray-700"></div>
+
+                    <span class="text-gray-500 text-sm">
+                        O
+                    </span>
+
+                    <div class="flex-1 h-px bg-gray-700"></div>
+
+                </div>
+
+
+                <!-- LOGIN -->
+                <div class="text-center">
+
+                    <span class="text-gray-400">
+                        ¿Ya tienes una cuenta?
+                    </span>
+
+                    <a asp-controller="Login"
+                       asp-action="Index"
+                       class="ml-1 text-emerald-400
+                        font-bold
+                        hover:text-emerald-300
+                        transition">
+
+                        Iniciar sesión
+
+                    </a>
+
+                </div>
+
+
+                <!-- VOLVER -->
+                <div class="text-center mt-5">
+
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       class="text-sm text-gray-500
+                        hover:text-emerald-400
+                        transition">
+
+                        ← Volver al inicio
+
+                    </a>
 
                 </div>
 
             </div>
 
         </div>
+
+        <!-- TEXTO INFERIOR -->
+        <p class="text-center text-gray-600 text-xs mt-5">
+            © 2026 Sportia · Gestión deportiva inteligente
+        </p>
 
     </div>
 

@@ -178,6 +178,10 @@ namespace Sportia.Controllers
                 usuario.Nombres + " " + usuario.Apellidos);
 
             HttpContext.Session.SetString(
+                "CorreoUsuario",
+                usuario.Correo);
+
+            HttpContext.Session.SetString(
                 "Rol",
                 usuario.IdRolNavigation.Nombre);
 

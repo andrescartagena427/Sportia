@@ -2,180 +2,133 @@
     ViewData["Title"] = "Iniciar sesión";
 }
 
-<div class="login-container">
-    <div class="login-card">
+<div class="min-h-[calc(100vh-72px)] bg-[#0B0F19] flex items-center justify-center px-5 py-10">
 
-        <div class="text-center mb-4">
-            <div class="login-logo">
-                <i class="bi bi-dribbble"></i>
-            </div>
+    <div class="w-full max-w-[430px]">
 
-            <h1>SPORTIA</h1>
-            <p>Inicia sesión en tu cuenta</p>
-        </div>
+        <!-- TARJETA -->
+        <div class="bg-[#1F2937] border border-[#374151] rounded-[18px] p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
 
-        <form asp-controller="Login" asp-action="Index" method="post">
 
-            <div class="mb-3">
-                <label for="correo" class="form-label">
-                    Correo electrónico
-                </label>
+            <!-- LOGO Y TÍTULO -->
+            <div class="text-center mb-8">
 
-                <input type="email"
-                       id="correo"
-                       name="correo"
-                       class="form-control"
-                       placeholder="Ingresa tu correo"
-                       required />
-            </div>
-
-            <div class="mb-3">
-                <label for="contrasena" class="form-label">
-                    Contraseña
-                </label>
-
-                <input type="password"
-                       id="contrasena"
-                       name="contrasena"
-                       class="form-control"
-                       placeholder="Ingresa tu contraseña"
-                       required />
-            </div>
-
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger">
-                    @ViewBag.Error
+                <div class="text-[45px] text-[#10B981] mb-2">
+                    <i class="bi bi-dribbble"></i>
                 </div>
-            }
 
-            <button type="submit" class="btn-login">
-                Iniciar sesión
-            </button>
+                <h1 class="text-white font-['Montserrat'] font-extrabold text-3xl mb-1">
+                    SPORTIA
+                </h1>
 
-        </form>
+                <p class="text-[#9CA3AF] mb-0">
+                    Inicia sesión en tu cuenta
+                </p>
 
-        <div class="register-link">
-            <span>¿No tienes una cuenta?</span>
+            </div>
 
-            <a asp-controller="Login" asp-action="Register">
-                Registrarse
-            </a>
-        </div>
 
-        <div class="text-center mt-3">
-            <a asp-controller="Home" asp-action="Index" class="back-home">
-                ← Volver al inicio
-            </a>
+            <!-- FORMULARIO -->
+            <form asp-controller="Login"
+                  asp-action="Index"
+                  method="post">
+
+
+                <!-- CORREO -->
+                <div class="mb-5">
+
+                    <label for="correo"
+                           class="block text-[#E5E7EB] font-semibold text-sm mb-2">
+
+                        Correo electrónico
+
+                    </label>
+
+                    <input type="email"
+                           id="correo"
+                           name="correo"
+                           placeholder="Ingresa tu correo"
+                           required
+                           class="w-full bg-[#111827] border border-[#374151] text-white placeholder-[#6B7280] px-3 py-3 rounded-[10px] outline-none transition-all duration-200 focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/15" />
+
+                </div>
+
+
+                <!-- CONTRASEÑA -->
+                <div class="mb-5">
+
+                    <label for="contrasena"
+                           class="block text-[#E5E7EB] font-semibold text-sm mb-2">
+
+                        Contraseña
+
+                    </label>
+
+                    <input type="password"
+                           id="contrasena"
+                           name="contrasena"
+                           placeholder="Ingresa tu contraseña"
+                           required
+                           class="w-full bg-[#111827] border border-[#374151] text-white placeholder-[#6B7280] px-3 py-3 rounded-[10px] outline-none transition-all duration-200 focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/15" />
+
+                </div>
+
+
+                <!-- MENSAJE DE ERROR -->
+                @if (ViewBag.Error != null)
+                {
+                    <div class="mb-5 rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                        @ViewBag.Error
+                    </div>
+                }
+
+
+                <!-- BOTÓN -->
+                <button type="submit"
+                        class="w-full border-0 bg-[#10B981] text-white py-3 px-4 rounded-[10px] font-semibold mt-1 transition-all duration-200 hover:bg-[#059669] hover:-translate-y-[1px] hover:shadow-[0_6px_20px_rgba(16,185,129,0.25)]">
+
+                    <i class="bi bi-box-arrow-in-right mr-2"></i>
+
+                    Iniciar sesión
+
+                </button>
+
+            </form>
+
+
+            <!-- REGISTRO -->
+            <div class="text-center mt-6 text-[#9CA3AF] text-sm">
+
+                <span>
+                    ¿No tienes una cuenta?
+                </span>
+
+                <a asp-controller="Login"
+                   asp-action="Register"
+                   class="text-[#10B981] font-semibold ml-1 hover:text-[#059669] hover:underline">
+
+                    Registrarse
+
+                </a>
+
+            </div>
+
+
+            <!-- VOLVER -->
+            <div class="text-center mt-4">
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="text-[#9CA3AF] text-sm no-underline transition-colors duration-200 hover:text-[#10B981]">
+
+                    ← Volver al inicio
+
+                </a>
+
+            </div>
+
         </div>
 
     </div>
+
 </div>
-
-<style>
-
-    .login-container {
-        min-height: calc(100vh - 80px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 40px 20px;
-        background: #0B0F19;
-    }
-
-    .login-card {
-        width: 100%;
-        max-width: 430px;
-        background: #1F2937;
-        padding: 40px;
-        border-radius: 18px;
-        border: 1px solid #374151;
-        box-shadow: 0 20px 50px rgba(0,0,0,.4);
-    }
-
-    .login-logo {
-        font-size: 45px;
-        color: #10B981;
-        margin-bottom: 10px;
-    }
-
-    .login-card h1 {
-        color: #fff;
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 800;
-        margin-bottom: 5px;
-    }
-
-    .login-card p {
-        color: #9CA3AF;
-        margin-bottom: 30px;
-    }
-
-    .login-card .form-label {
-        color: #E5E7EB;
-        font-weight: 600;
-    }
-
-    .login-card .form-control {
-        background: #111827;
-        border: 1px solid #374151;
-        color: #fff;
-        padding: 12px;
-        border-radius: 10px;
-    }
-
-        .login-card .form-control:focus {
-            background: #111827;
-            color: #fff;
-            border-color: #10B981;
-            box-shadow: 0 0 0 2px rgba(16,185,129,.15);
-        }
-
-        .login-card .form-control::placeholder {
-            color: #6B7280;
-        }
-
-    .btn-login {
-        width: 100%;
-        border: none;
-        background: #10B981;
-        color: white;
-        padding: 12px;
-        border-radius: 10px;
-        font-weight: 600;
-        margin-top: 10px;
-        transition: .2s;
-    }
-
-        .btn-login:hover {
-            background: #059669;
-        }
-
-    .register-link {
-        text-align: center;
-        margin-top: 25px;
-        color: #9CA3AF;
-    }
-
-        .register-link a {
-            color: #10B981;
-            text-decoration: none;
-            font-weight: 600;
-            margin-left: 5px;
-        }
-
-            .register-link a:hover {
-                text-decoration: underline;
-            }
-
-    .back-home {
-        color: #9CA3AF;
-        text-decoration: none;
-        font-size: 14px;
-    }
-
-        .back-home:hover {
-            color: #10B981;
-        }
-
-</style>

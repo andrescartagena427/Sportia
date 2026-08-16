@@ -1,0 +1,185 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Http
+@using Sportia.Models
+
+@inject SportiaDbContext _context
+
+@{
+    var idUsuario = Context.Session.GetInt32("IdUsuario");
+
+    var nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "Cliente";
+
+    var correoUsuario = Context.Session.GetString("CorreoUsuario") ?? "Sin correo";
+
+    var rolUsuario = Context.Session.GetString("Rol") ?? "Cliente";
+
+    // Obtener la primera letra del nombre real
+    var inicialUsuario = !string.IsNullOrWhiteSpace(nombreUsuario)
+        ? nombreUsuario.Trim().Substring(0, 1).ToUpper()
+        : "C";
+
+    // Contar reservas del usuario
+    var cantidadReservas = idUsuario.HasValue
+        ? await _context.Reservas.CountAsync(r => r.IdUsuario == idUsuario.Value)
+        : 0;
+}
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Sportia</title>
+
+
+    <!-- =====================================================
+         TAILWIND CSS
+    ====================================================== -->
+
+    <link rel="stylesheet"
+          href="~/css/output.css"
+          asp-append-version="true" />
+
+
+    <!-- =====================================================
+         GOOGLE FONTS
+    ====================================================== -->
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap"
+          rel="stylesheet">
+
+
+    <!-- =====================================================
+         ESTILOS
+    ====================================================== -->
+
+    <style>
+
+            html {
+                scroll-behavior: smooth;
+            }
+
+            body {
+                margin: 0;
+                font-family: 'Inter', sans-serif;
+                background: #020617;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                font-family: 'Montserrat', sans-serif;
+            }
+
+            /* Scroll */
+
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: #020617;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #10b981;
+                border-radius: 9999px;
+            }
+
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #34d399;
+                }
+
+            /* Selección */
+
+            ::selection {
+                background: #10b981;
+                color: white;
+            }
+
+    </style>
+
+</head>
+
+
+<body class="min-h-screen bg-slate-950 text-white antialiased">
+
+
+    <!-- =====================================================
+         CONTENIDO DEL CLIENTE
+    ====================================================== -->
+    @RenderBody()
+
+
+    <!-- =====================================================
+         SCRIPTS
+    ====================================================== -->
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
+
+    <!-- =====================================================
+         MENÚ DEL CLIENTE
+    ====================================================== -->
+
+    <script>
+
+            function toggleClientMenu() {
+
+                const menu = document.getElementById('clientMenu');
+
+                if (menu) {
+                    menu.classList.toggle('hidden');
+                }
+            }
+
+
+            // Cerrar menú al hacer clic fuera
+
+            document.addEventListener('click', function(event) {
+
+                const menu = document.getElementById('clientMenu');
+
+                const button = document.getElementById('clientMenuButton');
+
+                if (!menu || !button) {
+                    return;
+                }
+
+                if (!menu.contains(event.target) &&
+                    !button.contains(event.target)) {
+
+                    menu.classList.add('hidden');
+
+                }
+
+            });
+
+    </script>
+
+
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false
+    )
+
+</body>
+
+</html>
