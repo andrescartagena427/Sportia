@@ -15,30 +15,104 @@
         Math.Max(escenarios, reservas)
     );
 
-    var usuariosWidth = maxValor > 0 ? (usuarios * 100 / maxValor) : 0;
-    var clientesWidth = maxValor > 0 ? (clientes * 100 / maxValor) : 0;
-    var escenariosWidth = maxValor > 0 ? (escenarios * 100 / maxValor) : 0;
-    var reservasWidth = maxValor > 0 ? (reservas * 100 / maxValor) : 0;
+    var usuariosWidth = maxValor > 0 ? usuarios * 100 / maxValor : 0;
+    var clientesWidth = maxValor > 0 ? clientes * 100 / maxValor : 0;
+    var escenariosWidth = maxValor > 0 ? escenarios * 100 / maxValor : 0;
+    var reservasWidth = maxValor > 0 ? reservas * 100 / maxValor : 0;
 
     var totalDistribucion = usuarios + clientes + escenarios + reservas;
 
-    var usuariosPercent = totalDistribucion > 0 ? usuarios * 100 / totalDistribucion : 0;
-    var clientesPercent = totalDistribucion > 0 ? clientes * 100 / totalDistribucion : 0;
-    var escenariosPercent = totalDistribucion > 0 ? escenarios * 100 / totalDistribucion : 0;
-    var reservasPercent = totalDistribucion > 0 ? reservas * 100 / totalDistribucion : 0;
+    var usuariosPercent = totalDistribucion > 0
+        ? usuarios * 100 / totalDistribucion
+        : 0;
+
+    var clientesPercent = totalDistribucion > 0
+        ? clientes * 100 / totalDistribucion
+        : 0;
+
+    var escenariosPercent = totalDistribucion > 0
+        ? escenarios * 100 / totalDistribucion
+        : 0;
+
+    var reservasPercent = totalDistribucion > 0
+        ? reservas * 100 / totalDistribucion
+        : 0;
 }
 
-<div class="min-h-screen bg-[#070b14] text-slate-200">
+<style>
+
+    /* =========================================================
+           DASHBOARD SPORTIA
+        ========================================================= */
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background: #050816 !important;
+    }
+
+    .sportia-dashboard {
+        background: radial-gradient(circle at 75% 10%, rgba(16, 185, 129, .08), transparent 25%), radial-gradient(circle at 20% 30%, rgba(59, 130, 246, .06), transparent 30%), #050816;
+        min-height: 100vh;
+    }
+
+    .glass-card {
+        background: rgba(11, 18, 32, .82);
+        border: 1px solid rgba(255,255,255,.08);
+        box-shadow: 0 20px 50px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.025);
+        backdrop-filter: blur(18px);
+    }
+
+        .glass-card:hover {
+            border-color: rgba(16,185,129,.22);
+        }
+
+    .sidebar-glow {
+        box-shadow: 15px 0 50px rgba(0,0,0,.18), inset -1px 0 rgba(255,255,255,.04);
+    }
+
+    .stat-card {
+        transition: all .25s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+
+    .chart-bar {
+        transition: width .8s ease;
+    }
+
+    .dashboard-scroll::-webkit-scrollbar {
+        width: 7px;
+    }
+
+    .dashboard-scroll::-webkit-scrollbar-track {
+        background: #050816;
+    }
+
+    .dashboard-scroll::-webkit-scrollbar-thumb {
+        background: #10b981;
+        border-radius: 999px;
+    }
+
+</style>
+
+
+<div class="sportia-dashboard min-h-screen text-slate-200">
+
 
     <!-- =========================================================
          SIDEBAR
     ========================================================== -->
 
-    <aside class="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-white/10 bg-[#0b111d] lg:block">
+    <aside class="sidebar-glow fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-white/[0.06] bg-[#080d18] lg:block">
 
         <!-- LOGO -->
 
-        <div class="flex h-20 items-center border-b border-white/10 px-6">
+        <div class="flex h-20 items-center border-b border-white/[0.06] px-6">
 
             <a asp-controller="Home"
                asp-action="Index"
@@ -51,19 +125,9 @@
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <circle cx="12"
-                                cy="12"
-                                r="9"
-                                stroke-width="2" />
-
-                        <path d="M3 12h18"
-                              stroke-width="2" />
-
-                        <path d="M12 3c3 3 4 6 4 9s-1 6-4 9"
-                              stroke-width="2" />
-
-                        <path d="M12 3c-3 3-4 6-4 9s1 6 4 9"
-                              stroke-width="2" />
+                        <path d="M12 3v18M3 12h18"
+                              stroke-width="2.5"
+                              stroke-linecap="round" />
 
                     </svg>
 
@@ -71,12 +135,12 @@
 
                 <div>
 
-                    <h1 class="font-heading text-xl font-extrabold tracking-wide text-white">
+                    <h1 class="text-xl font-black tracking-wide text-white">
                         SPORTIA
                     </h1>
 
-                    <p class="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                        Administración
+                    <p class="text-[9px] font-semibold uppercase tracking-[.25em] text-slate-500">
+                        Sports Booking
                     </p>
 
                 </div>
@@ -88,17 +152,17 @@
 
         <!-- MENU -->
 
-        <div class="px-4 py-6">
+        <div class="px-4 py-7">
 
-            <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.22em] text-slate-600">
                 Principal
             </p>
 
             <nav class="space-y-1">
 
-                <!-- Dashboard -->
+                <!-- DASHBOARD -->
 
-                <a href="#"
+                <a href="#inicio"
                    class="flex items-center gap-3 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400">
 
                     <svg class="h-5 w-5"
@@ -106,10 +170,9 @@
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M4 13h6V4H4v9zm0 7h6v-4H4v4zm10 0h6v-9h-6v9zm0-16v4h6V4h-6z" />
+                        <path d="M4 13h6V4H4v9zm0 7h6v-4H4v4zm10 0h6v-9h-6v9zm0-16v4h6V4h-6z"
+                              stroke-width="1.8"
+                              stroke-linejoin="round" />
 
                     </svg>
 
@@ -118,20 +181,20 @@
                 </a>
 
 
-                <!-- Usuarios -->
+                <!-- USUARIOS -->
 
                 <a href="#usuarios"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
+                        <path d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8z"
+                              stroke-width="1.8"
                               stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8zm6 4a3 3 0 10-6 0" />
+                              stroke-linejoin="round" />
 
                     </svg>
 
@@ -140,20 +203,20 @@
                 </a>
 
 
-                <!-- Clientes -->
+                <!-- CLIENTES -->
 
                 <a href="#clientes"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
+                        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8z"
+                              stroke-width="1.8"
                               stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8zm9 8v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                              stroke-linejoin="round" />
 
                     </svg>
 
@@ -162,20 +225,20 @@
                 </a>
 
 
-                <!-- Escenarios -->
+                <!-- ESCENARIOS -->
 
                 <a href="#escenarios"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
+                        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"
+                              stroke-width="1.8"
                               stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                              stroke-linejoin="round" />
 
                     </svg>
 
@@ -184,10 +247,10 @@
                 </a>
 
 
-                <!-- Reservas -->
+                <!-- RESERVAS -->
 
                 <a href="#reservas"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
@@ -199,10 +262,11 @@
                               width="18"
                               height="17"
                               rx="2"
-                              stroke-width="2" />
+                              stroke-width="1.8" />
 
-                        <path d="M16 2v4M8 2v4M3 10h18"
-                              stroke-width="2" />
+                        <path d="M8 2v4M16 2v4M3 10h18"
+                              stroke-width="1.8"
+                              stroke-linecap="round" />
 
                     </svg>
 
@@ -213,24 +277,25 @@
             </nav>
 
 
-            <p class="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            <!-- GESTIÓN -->
+
+            <p class="mb-3 mt-9 px-3 text-[10px] font-bold uppercase tracking-[.22em] text-slate-600">
                 Gestión
             </p>
 
             <nav class="space-y-1">
 
                 <a href="#pagos"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7" />
+                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"
+                              stroke-width="1.8"
+                              stroke-linecap="round" />
 
                     </svg>
 
@@ -240,17 +305,16 @@
 
 
                 <a href="#tarifas"
-                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white">
+                   class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-500 transition hover:bg-white/[.04] hover:text-white">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M12 8c-3 0-5 1.5-5 3.5S9 15 12 15s5 1.5 5 3.5S15 22 12 22M12 2v20" />
+                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"
+                              stroke-width="1.8"
+                              stroke-linecap="round" />
 
                     </svg>
 
@@ -265,21 +329,20 @@
 
         <!-- ADMINISTRADOR -->
 
-        <div class="absolute bottom-0 left-0 right-0 border-t border-white/10 p-4">
+        <div class="absolute bottom-0 left-0 right-0 border-t border-white/[.06] p-4">
 
-            <div class="flex items-center gap-3 rounded-xl bg-white/5 p-3">
+            <div class="flex items-center gap-3 rounded-xl border border-white/[.05] bg-white/[.025] p-3">
 
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
 
                     <svg class="h-5 w-5"
                          fill="none"
                          stroke="currentColor"
                          viewBox="0 0 24 24">
 
-                        <path stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M5.1 17.5A7 7 0 0112 14a7 7 0 016.9 3.5M15 9a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path d="M5.1 17.5A7 7 0 0112 14a7 7 0 016.9 3.5M15 9a3 3 0 11-6 0 3 3 0 016 0z"
+                              stroke-width="1.8"
+                              stroke-linecap="round" />
 
                     </svg>
 
@@ -291,11 +354,13 @@
                         Administrador
                     </p>
 
-                    <p class="truncate text-xs text-slate-500">
+                    <p class="truncate text-xs text-slate-600">
                         Panel de control
                     </p>
 
                 </div>
+
+                <span class="ml-auto h-2 w-2 rounded-full bg-emerald-400"></span>
 
             </div>
 
@@ -305,7 +370,7 @@
 
 
     <!-- =========================================================
-         CONTENIDO PRINCIPAL
+         CONTENIDO
     ========================================================== -->
 
     <main class="min-h-screen lg:ml-64">
@@ -313,17 +378,17 @@
 
         <!-- TOPBAR -->
 
-        <header class="sticky top-0 z-30 border-b border-white/10 bg-[#070b14]/90 backdrop-blur-xl">
+        <header class="sticky top-0 z-30 border-b border-white/[.06] bg-[#050816]/85 backdrop-blur-xl">
 
             <div class="flex h-20 items-center justify-between px-5 sm:px-8">
 
                 <div>
 
-                    <p class="text-xs text-slate-500">
+                    <p class="text-xs font-medium text-slate-600">
                         Panel de administración
                     </p>
 
-                    <h2 class="text-lg font-bold text-white">
+                    <h2 class="mt-0.5 text-lg font-bold text-white">
                         Resumen general
                     </h2>
 
@@ -332,16 +397,36 @@
 
                 <div class="flex items-center gap-3">
 
-                    <span class="hidden rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-400 sm:block">
+                    <!-- ESTADO -->
 
-                        ● Sistema activo
+                    <div class="hidden items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 sm:flex">
 
-                    </span>
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
 
+                        <span class="text-xs font-semibold text-emerald-400">
+                            Sistema activo
+                        </span>
+
+                    </div>
+
+
+                    <!-- VOLVER -->
 
                     <a asp-controller="Home"
                        asp-action="Index"
-                       class="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
+                       class="flex h-10 items-center gap-2 rounded-xl border border-white/[.08] bg-white/[.03] px-4 text-xs font-semibold text-slate-400 transition hover:bg-white/[.06] hover:text-white">
+
+                        <svg class="h-4 w-4"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24">
+
+                            <path d="M15 18l-6-6 6-6"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round" />
+
+                        </svg>
 
                         Volver al sitio
 
@@ -354,59 +439,87 @@
         </header>
 
 
-        <!-- CONTENIDO -->
+        <!-- =====================================================
+             CONTENIDO DEL DASHBOARD
+        ====================================================== -->
 
-        <div class="px-5 py-8 sm:px-8">
+        <div id="inicio" class="px-5 py-8 sm:px-8">
 
 
             <!-- BIENVENIDA -->
 
-            <section class="mb-8">
+            <section class="mb-7">
 
-                <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#0d1725] to-[#0b111d] p-6 sm:p-8">
+                <div class="glass-card relative overflow-hidden rounded-3xl p-7 sm:p-9">
+
+                    <!-- LUCES -->
+
+                    <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-emerald-500/[.08] blur-3xl"></div>
+
+                    <div class="absolute -bottom-28 right-60 h-64 w-64 rounded-full bg-blue-500/[.07] blur-3xl"></div>
+
 
                     <div class="relative z-10 max-w-2xl">
 
-                        <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+                        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[.08] px-3 py-1.5">
 
                             <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
 
-                            SPORTIA ADMIN
+                            <span class="text-[10px] font-bold uppercase tracking-[.15em] text-emerald-400">
+                                Sportia Admin
+                            </span>
 
                         </div>
 
-                        <h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
 
-                            Bienvenido al Dashboard 👋
+                        <h1 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
+
+                            Bienvenido al
+                            <span class="text-emerald-400">
+                                Dashboard
+                            </span>
 
                         </h1>
 
-                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-400 sm:text-base">
+
+                        <p class="mt-4 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
 
                             Administra usuarios, clientes, escenarios deportivos,
                             reservas y pagos desde un solo lugar.
 
                         </p>
 
+
+                        <div class="mt-6 flex flex-wrap gap-3">
+
+                            <a href="#usuarios"
+                               class="rounded-xl bg-emerald-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400">
+
+                                Ver estadísticas
+
+                            </a>
+
+                            <a href="#administracion"
+                               class="rounded-xl border border-white/[.08] bg-white/[.03] px-5 py-3 text-xs font-bold text-slate-300 transition hover:bg-white/[.06] hover:text-white">
+
+                                Gestionar Sportia
+
+                            </a>
+
+                        </div>
+
                     </div>
-
-
-                    <!-- DECORACIÓN -->
-
-                    <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
-
-                    <div class="absolute -bottom-24 right-20 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl"></div>
 
                 </div>
 
             </section>
 
 
-            <!-- =================================================
-                 TARJETAS
-            ================================================== -->
+            <!-- =====================================================
+                 TARJETAS ESTADÍSTICAS
+            ====================================================== -->
 
-            <section class="mb-8">
+            <section class="mb-7">
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
@@ -414,33 +527,34 @@
                     <!-- USUARIOS -->
 
                     <div id="usuarios"
-                         class="group rounded-2xl border border-white/10 bg-[#0b111d] p-5 transition duration-300 hover:-translate-y-1 hover:border-emerald-500/30">
+                         class="stat-card glass-card rounded-2xl p-5">
 
                         <div class="flex items-start justify-between">
 
                             <div>
 
-                                <p class="text-sm text-slate-500">
+                                <p class="text-xs font-medium text-slate-600">
                                     Usuarios
                                 </p>
 
-                                <h3 class="mt-2 text-3xl font-extrabold text-white">
+                                <h3 class="mt-2 text-3xl font-black text-white">
                                     @usuarios
                                 </h3>
 
                             </div>
 
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
 
-                                <svg class="h-6 w-6"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+
+                                <svg class="h-5 w-5"
                                      fill="none"
                                      stroke="currentColor"
                                      viewBox="0 0 24 24">
 
-                                    <path stroke-width="2"
+                                    <path d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8z"
+                                          stroke-width="1.8"
                                           stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8z" />
+                                          stroke-linejoin="round" />
 
                                 </svg>
 
@@ -448,10 +562,14 @@
 
                         </div>
 
-                        <div class="mt-4 flex items-center gap-2 text-xs text-emerald-400">
 
-                            <span>●</span>
-                            Registros activos
+                        <div class="mt-5 flex items-center gap-2">
+
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+
+                            <span class="text-[11px] text-slate-600">
+                                Registros activos
+                            </span>
 
                         </div>
 
@@ -461,33 +579,34 @@
                     <!-- CLIENTES -->
 
                     <div id="clientes"
-                         class="group rounded-2xl border border-white/10 bg-[#0b111d] p-5 transition duration-300 hover:-translate-y-1 hover:border-cyan-500/30">
+                         class="stat-card glass-card rounded-2xl p-5">
 
                         <div class="flex items-start justify-between">
 
                             <div>
 
-                                <p class="text-sm text-slate-500">
+                                <p class="text-xs font-medium text-slate-600">
                                     Clientes
                                 </p>
 
-                                <h3 class="mt-2 text-3xl font-extrabold text-white">
+                                <h3 class="mt-2 text-3xl font-black text-white">
                                     @clientes
                                 </h3>
 
                             </div>
 
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
 
-                                <svg class="h-6 w-6"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+
+                                <svg class="h-5 w-5"
                                      fill="none"
                                      stroke="currentColor"
                                      viewBox="0 0 24 24">
 
-                                    <path stroke-width="2"
+                                    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8z"
+                                          stroke-width="1.8"
                                           stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8z" />
+                                          stroke-linejoin="round" />
 
                                 </svg>
 
@@ -495,8 +614,13 @@
 
                         </div>
 
-                        <div class="mt-4 text-xs text-cyan-400">
-                            Clientes registrados
+
+                        <div class="mt-5">
+
+                            <span class="text-[11px] text-blue-400">
+                                Clientes registrados
+                            </span>
+
                         </div>
 
                     </div>
@@ -505,33 +629,34 @@
                     <!-- ESCENARIOS -->
 
                     <div id="escenarios"
-                         class="group rounded-2xl border border-white/10 bg-[#0b111d] p-5 transition duration-300 hover:-translate-y-1 hover:border-yellow-500/30">
+                         class="stat-card glass-card rounded-2xl p-5">
 
                         <div class="flex items-start justify-between">
 
                             <div>
 
-                                <p class="text-sm text-slate-500">
+                                <p class="text-xs font-medium text-slate-600">
                                     Escenarios
                                 </p>
 
-                                <h3 class="mt-2 text-3xl font-extrabold text-white">
+                                <h3 class="mt-2 text-3xl font-black text-white">
                                     @escenarios
                                 </h3>
 
                             </div>
 
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
 
-                                <svg class="h-6 w-6"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
+
+                                <svg class="h-5 w-5"
                                      fill="none"
                                      stroke="currentColor"
                                      viewBox="0 0 24 24">
 
-                                    <path stroke-width="2"
+                                    <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"
+                                          stroke-width="1.8"
                                           stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                                          stroke-linejoin="round" />
 
                                 </svg>
 
@@ -539,8 +664,13 @@
 
                         </div>
 
-                        <div class="mt-4 text-xs text-yellow-400">
-                            Escenarios deportivos
+
+                        <div class="mt-5">
+
+                            <span class="text-[11px] text-purple-400">
+                                Escenarios deportivos
+                            </span>
+
                         </div>
 
                     </div>
@@ -549,25 +679,26 @@
                     <!-- RESERVAS -->
 
                     <div id="reservas"
-                         class="group rounded-2xl border border-white/10 bg-[#0b111d] p-5 transition duration-300 hover:-translate-y-1 hover:border-violet-500/30">
+                         class="stat-card glass-card rounded-2xl p-5">
 
                         <div class="flex items-start justify-between">
 
                             <div>
 
-                                <p class="text-sm text-slate-500">
+                                <p class="text-xs font-medium text-slate-600">
                                     Reservas
                                 </p>
 
-                                <h3 class="mt-2 text-3xl font-extrabold text-white">
+                                <h3 class="mt-2 text-3xl font-black text-white">
                                     @reservas
                                 </h3>
 
                             </div>
 
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
 
-                                <svg class="h-6 w-6"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
+
+                                <svg class="h-5 w-5"
                                      fill="none"
                                      stroke="currentColor"
                                      viewBox="0 0 24 24">
@@ -577,10 +708,11 @@
                                           width="18"
                                           height="17"
                                           rx="2"
-                                          stroke-width="2" />
+                                          stroke-width="1.8" />
 
                                     <path d="M8 2v4M16 2v4M3 10h18"
-                                          stroke-width="2" />
+                                          stroke-width="1.8"
+                                          stroke-linecap="round" />
 
                                 </svg>
 
@@ -588,8 +720,13 @@
 
                         </div>
 
-                        <div class="mt-4 text-xs text-violet-400">
-                            Reservas registradas
+
+                        <div class="mt-5">
+
+                            <span class="text-[11px] text-orange-400">
+                                Reservas registradas
+                            </span>
+
                         </div>
 
                     </div>
@@ -599,18 +736,18 @@
             </section>
 
 
-            <!-- =================================================
+            <!-- =====================================================
                  GRAFICOS
-            ================================================== -->
+            ====================================================== -->
 
-            <section class="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <section class="mb-7 grid grid-cols-1 gap-5 xl:grid-cols-3">
 
 
-                <!-- GRAFICO DE BARRAS -->
+                <!-- BARRAS -->
 
-                <div class="rounded-2xl border border-white/10 bg-[#0b111d] p-6 xl:col-span-2">
+                <div class="glass-card rounded-2xl p-6 xl:col-span-2">
 
-                    <div class="mb-8 flex items-center justify-between">
+                    <div class="mb-7 flex items-center justify-between">
 
                         <div>
 
@@ -618,14 +755,23 @@
                                 Resumen de registros
                             </h3>
 
-                            <p class="mt-1 text-xs text-slate-500">
-                                Comparación de los principales datos de Sportia
+                            <p class="mt-1 text-xs text-slate-600">
+                                Comparación general de Sportia
                             </p>
 
                         </div>
 
-                        <div class="rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-400">
-                            Total: @totalGeneral
+
+                        <div class="rounded-lg border border-white/[.06] bg-white/[.025] px-3 py-2">
+
+                            <span class="text-[10px] uppercase tracking-wider text-slate-600">
+                                Total
+                            </span>
+
+                            <span class="ml-1 text-xs font-bold text-white">
+                                @totalGeneral
+                            </span>
+
                         </div>
 
                     </div>
@@ -638,21 +784,21 @@
 
                         <div>
 
-                            <div class="mb-2 flex justify-between text-xs">
+                            <div class="mb-2 flex justify-between">
 
-                                <span class="font-medium text-slate-300">
+                                <span class="text-xs font-medium text-slate-400">
                                     Usuarios
                                 </span>
 
-                                <span class="text-slate-500">
+                                <span class="text-xs font-bold text-white">
                                     @usuarios
                                 </span>
 
                             </div>
 
-                            <div class="h-3 overflow-hidden rounded-full bg-white/5">
+                            <div class="h-2 overflow-hidden rounded-full bg-white/[.04]">
 
-                                <div class="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                                <div class="chart-bar h-full rounded-full bg-emerald-400"
                                      style="width:@usuariosWidth%;">
                                 </div>
 
@@ -665,21 +811,21 @@
 
                         <div>
 
-                            <div class="mb-2 flex justify-between text-xs">
+                            <div class="mb-2 flex justify-between">
 
-                                <span class="font-medium text-slate-300">
+                                <span class="text-xs font-medium text-slate-400">
                                     Clientes
                                 </span>
 
-                                <span class="text-slate-500">
+                                <span class="text-xs font-bold text-white">
                                     @clientes
                                 </span>
 
                             </div>
 
-                            <div class="h-3 overflow-hidden rounded-full bg-white/5">
+                            <div class="h-2 overflow-hidden rounded-full bg-white/[.04]">
 
-                                <div class="h-full rounded-full bg-cyan-500 transition-all duration-700"
+                                <div class="chart-bar h-full rounded-full bg-blue-400"
                                      style="width:@clientesWidth%;">
                                 </div>
 
@@ -692,21 +838,21 @@
 
                         <div>
 
-                            <div class="mb-2 flex justify-between text-xs">
+                            <div class="mb-2 flex justify-between">
 
-                                <span class="font-medium text-slate-300">
+                                <span class="text-xs font-medium text-slate-400">
                                     Escenarios
                                 </span>
 
-                                <span class="text-slate-500">
+                                <span class="text-xs font-bold text-white">
                                     @escenarios
                                 </span>
 
                             </div>
 
-                            <div class="h-3 overflow-hidden rounded-full bg-white/5">
+                            <div class="h-2 overflow-hidden rounded-full bg-white/[.04]">
 
-                                <div class="h-full rounded-full bg-yellow-500 transition-all duration-700"
+                                <div class="chart-bar h-full rounded-full bg-purple-400"
                                      style="width:@escenariosWidth%;">
                                 </div>
 
@@ -719,21 +865,21 @@
 
                         <div>
 
-                            <div class="mb-2 flex justify-between text-xs">
+                            <div class="mb-2 flex justify-between">
 
-                                <span class="font-medium text-slate-300">
+                                <span class="text-xs font-medium text-slate-400">
                                     Reservas
                                 </span>
 
-                                <span class="text-slate-500">
+                                <span class="text-xs font-bold text-white">
                                     @reservas
                                 </span>
 
                             </div>
 
-                            <div class="h-3 overflow-hidden rounded-full bg-white/5">
+                            <div class="h-2 overflow-hidden rounded-full bg-white/[.04]">
 
-                                <div class="h-full rounded-full bg-violet-500 transition-all duration-700"
+                                <div class="chart-bar h-full rounded-full bg-orange-400"
                                      style="width:@reservasWidth%;">
                                 </div>
 
@@ -746,17 +892,17 @@
                 </div>
 
 
-                <!-- DISTRIBUCION -->
+                <!-- DISTRIBUCIÓN -->
 
-                <div class="rounded-2xl border border-white/10 bg-[#0b111d] p-6">
+                <div class="glass-card rounded-2xl p-6">
 
-                    <div class="mb-6">
+                    <div>
 
                         <h3 class="font-bold text-white">
                             Distribución
                         </h3>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Registros generales
                         </p>
 
@@ -765,18 +911,22 @@
 
                     <!-- CIRCULO -->
 
-                    <div class="mx-auto flex h-48 w-48 items-center justify-center rounded-full border-[18px] border-emerald-500/20">
+                    <div class="mt-7 flex justify-center">
 
-                        <div class="text-center">
+                        <div class="relative flex h-44 w-44 items-center justify-center rounded-full"
+                             style="background: conic-gradient(#10b981 0% @usuariosPercent%, #60a5fa @usuariosPercent% @(usuariosPercent + clientesPercent)%, #a78bfa @(usuariosPercent + clientesPercent)% @(usuariosPercent + clientesPercent + escenariosPercent)%, #fb923c @(usuariosPercent + clientesPercent + escenariosPercent)% 100%);">
 
-                            <p class="text-3xl font-extrabold text-white">
-                                @totalGeneral
-                            </p>
+                            <div class="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[#0b1220]">
 
-                            <p class="text-xs text-slate-500">
-                                registros
+                                <span class="text-3xl font-black text-white">
+                                    @totalGeneral
+                                </span>
 
-                            </p>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-600">
+                                    registros
+                                </span>
+
+                            </div>
 
                         </div>
 
@@ -787,19 +937,20 @@
 
                     <div class="mt-7 space-y-3">
 
+
                         <div class="flex items-center justify-between">
 
                             <div class="flex items-center gap-2">
 
-                                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
 
-                                <span class="text-xs text-slate-400">
+                                <span class="text-xs text-slate-500">
                                     Usuarios
                                 </span>
 
                             </div>
 
-                            <span class="text-xs font-semibold text-white">
+                            <span class="text-xs font-bold text-white">
                                 @usuariosPercent%
                             </span>
 
@@ -810,15 +961,15 @@
 
                             <div class="flex items-center gap-2">
 
-                                <span class="h-2.5 w-2.5 rounded-full bg-cyan-500"></span>
+                                <span class="h-2 w-2 rounded-full bg-blue-400"></span>
 
-                                <span class="text-xs text-slate-400">
+                                <span class="text-xs text-slate-500">
                                     Clientes
                                 </span>
 
                             </div>
 
-                            <span class="text-xs font-semibold text-white">
+                            <span class="text-xs font-bold text-white">
                                 @clientesPercent%
                             </span>
 
@@ -829,15 +980,15 @@
 
                             <div class="flex items-center gap-2">
 
-                                <span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+                                <span class="h-2 w-2 rounded-full bg-purple-400"></span>
 
-                                <span class="text-xs text-slate-400">
+                                <span class="text-xs text-slate-500">
                                     Escenarios
                                 </span>
 
                             </div>
 
-                            <span class="text-xs font-semibold text-white">
+                            <span class="text-xs font-bold text-white">
                                 @escenariosPercent%
                             </span>
 
@@ -848,15 +999,15 @@
 
                             <div class="flex items-center gap-2">
 
-                                <span class="h-2.5 w-2.5 rounded-full bg-violet-500"></span>
+                                <span class="h-2 w-2 rounded-full bg-orange-400"></span>
 
-                                <span class="text-xs text-slate-400">
+                                <span class="text-xs text-slate-500">
                                     Reservas
                                 </span>
 
                             </div>
 
-                            <span class="text-xs font-semibold text-white">
+                            <span class="text-xs font-bold text-white">
                                 @reservasPercent%
                             </span>
 
@@ -869,46 +1020,47 @@
             </section>
 
 
-            <!-- =================================================
-                 EMPRESAS / PAGOS
-            ================================================== -->
+            <!-- =====================================================
+                 EMPRESAS Y PAGOS
+            ====================================================== -->
 
-            <section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <section class="mb-7 grid grid-cols-1 gap-5 md:grid-cols-2">
 
 
                 <!-- EMPRESAS -->
 
-                <div class="rounded-2xl border border-white/10 bg-[#0b111d] p-6">
+                <div class="glass-card rounded-2xl p-6">
 
                     <div class="flex items-center justify-between">
 
                         <div>
 
-                            <p class="text-sm text-slate-500">
+                            <p class="text-xs text-slate-600">
                                 Empresas registradas
                             </p>
 
-                            <h3 class="mt-2 text-3xl font-extrabold text-white">
+                            <h3 class="mt-2 text-3xl font-black text-white">
                                 @empresas
                             </h3>
 
-                            <p class="mt-2 text-xs text-cyan-400">
+                            <p class="mt-2 text-[11px] text-blue-400">
                                 Empresas vinculadas a Sportia
                             </p>
 
                         </div>
 
-                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400">
+
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
 
                             <svg class="h-7 w-7"
                                  fill="none"
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
+                                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"
+                                      stroke-width="1.8"
                                       stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                                      stroke-linejoin="round" />
 
                             </svg>
 
@@ -922,25 +1074,26 @@
                 <!-- PAGOS -->
 
                 <div id="pagos"
-                     class="rounded-2xl border border-white/10 bg-[#0b111d] p-6">
+                     class="glass-card rounded-2xl p-6">
 
                     <div class="flex items-center justify-between">
 
                         <div>
 
-                            <p class="text-sm text-slate-500">
+                            <p class="text-xs text-slate-600">
                                 Pagos registrados
                             </p>
 
-                            <h3 class="mt-2 text-3xl font-extrabold text-white">
+                            <h3 class="mt-2 text-3xl font-black text-white">
                                 @pagos
                             </h3>
 
-                            <p class="mt-2 text-xs text-emerald-400">
+                            <p class="mt-2 text-[11px] text-emerald-400">
                                 Movimientos registrados
                             </p>
 
                         </div>
+
 
                         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
 
@@ -949,10 +1102,9 @@
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7" />
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"
+                                      stroke-width="1.8"
+                                      stroke-linecap="round" />
 
                             </svg>
 
@@ -965,23 +1117,24 @@
             </section>
 
 
-            <!-- =================================================
-                 ADMINISTRACION
-            ================================================== -->
+            <!-- =====================================================
+                 ADMINISTRACIÓN
+            ====================================================== -->
 
-            <section class="rounded-2xl border border-white/10 bg-[#0b111d] p-6 sm:p-8">
+            <section id="administracion"
+                     class="glass-card rounded-2xl p-6 sm:p-8">
 
-                <div class="mb-6">
+                <div class="mb-7">
 
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+                    <p class="text-[10px] font-bold uppercase tracking-[.2em] text-emerald-400">
                         Gestión del sistema
                     </p>
 
-                    <h3 class="mt-2 text-2xl font-extrabold text-white">
+                    <h3 class="mt-2 text-2xl font-black text-white">
                         Administración de Sportia
                     </h3>
 
-                    <p class="mt-2 text-sm text-slate-500">
+                    <p class="mt-2 text-sm text-slate-600">
                         Accede rápidamente a las principales funciones administrativas.
                     </p>
 
@@ -993,8 +1146,8 @@
 
                     <!-- USUARIOS -->
 
-                    <a href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-emerald-500/30 hover:bg-emerald-500/[0.03]">
+                    <a href="#usuarios"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:bg-emerald-500/[.03]">
 
                         <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
 
@@ -1003,10 +1156,9 @@
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8z" />
+                                <path d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-10a4 4 0 110 8 4 4 0 010-8z"
+                                      stroke-width="1.8"
+                                      stroke-linecap="round" />
 
                             </svg>
 
@@ -1016,11 +1168,11 @@
                             Gestionar usuarios
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Administrar usuarios del sistema.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-emerald-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-emerald-400">
                             Administrar →
                         </span>
 
@@ -1029,20 +1181,19 @@
 
                     <!-- CLIENTES -->
 
-                    <a href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-cyan-500/30">
+                    <a href="#clientes"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:bg-blue-500/[.03]">
 
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
+                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
 
                             <svg class="h-5 w-5"
                                  fill="none"
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8z" />
+                                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-8a4 4 0 100-8 4 4 0 000 8z"
+                                      stroke-width="1.8"
+                                      stroke-linecap="round" />
 
                             </svg>
 
@@ -1052,11 +1203,11 @@
                             Gestionar clientes
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Consultar información de clientes.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-cyan-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-blue-400">
                             Administrar →
                         </span>
 
@@ -1065,20 +1216,19 @@
 
                     <!-- ESCENARIOS -->
 
-                    <a href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-yellow-500/30">
+                    <a href="#escenarios"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-purple-500/30 hover:bg-purple-500/[.03]">
 
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
+                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
 
                             <svg class="h-5 w-5"
                                  fill="none"
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M3 21h18M5 21V7l7-4 7 4v14" />
+                                <path d="M3 21h18M5 21V7l7-4 7 4v14"
+                                      stroke-width="1.8"
+                                      stroke-linecap="round" />
 
                             </svg>
 
@@ -1088,11 +1238,11 @@
                             Escenarios deportivos
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Administrar canchas y escenarios.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-yellow-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-purple-400">
                             Administrar →
                         </span>
 
@@ -1101,10 +1251,10 @@
 
                     <!-- RESERVAS -->
 
-                    <a href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-violet-500/30">
+                    <a href="#reservas"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-orange-500/30 hover:bg-orange-500/[.03]">
 
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
 
                             <svg class="h-5 w-5"
                                  fill="none"
@@ -1116,10 +1266,10 @@
                                       width="18"
                                       height="17"
                                       rx="2"
-                                      stroke-width="2" />
+                                      stroke-width="1.8" />
 
                                 <path d="M8 2v4M16 2v4M3 10h18"
-                                      stroke-width="2" />
+                                      stroke-width="1.8" />
 
                             </svg>
 
@@ -1129,11 +1279,11 @@
                             Gestionar reservas
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Consultar y administrar reservas.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-violet-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-orange-400">
                             Administrar →
                         </span>
 
@@ -1142,10 +1292,10 @@
 
                     <!-- PAGOS -->
 
-                    <a href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-blue-500/30">
+                    <a href="#pagos"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-cyan-500/30 hover:bg-cyan-500/[.03]">
 
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
 
                             <svg class="h-5 w-5"
                                  fill="none"
@@ -1157,10 +1307,10 @@
                                       width="20"
                                       height="14"
                                       rx="2"
-                                      stroke-width="2" />
+                                      stroke-width="1.8" />
 
                                 <path d="M2 10h20"
-                                      stroke-width="2" />
+                                      stroke-width="1.8" />
 
                             </svg>
 
@@ -1170,11 +1320,11 @@
                             Pagos
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Consultar pagos realizados.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-blue-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-cyan-400">
                             Administrar →
                         </span>
 
@@ -1184,20 +1334,19 @@
                     <!-- TARIFAS -->
 
                     <a id="tarifas"
-                       href="#"
-                       class="group rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:-translate-y-1 hover:border-orange-500/30">
+                       href="#tarifas"
+                       class="group rounded-2xl border border-white/[.06] bg-white/[.02] p-5 transition duration-300 hover:-translate-y-1 hover:border-yellow-500/30 hover:bg-yellow-500/[.03]">
 
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
+                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400">
 
                             <svg class="h-5 w-5"
                                  fill="none"
                                  stroke="currentColor"
                                  viewBox="0 0 24 24">
 
-                                <path stroke-width="2"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7" />
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H7"
+                                      stroke-width="1.8"
+                                      stroke-linecap="round" />
 
                             </svg>
 
@@ -1207,11 +1356,11 @@
                             Tarifas
                         </h4>
 
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-xs text-slate-600">
                             Administrar precios de escenarios.
                         </p>
 
-                        <span class="mt-4 inline-block text-xs font-semibold text-orange-400">
+                        <span class="mt-4 inline-block text-xs font-bold text-yellow-400">
                             Administrar →
                         </span>
 
@@ -1222,11 +1371,11 @@
             </section>
 
 
-            <!-- PIE -->
+            <!-- FOOTER -->
 
-            <footer class="mt-8 border-t border-white/10 pt-6 text-center">
+            <footer class="mt-8 border-t border-white/[.06] py-6 text-center">
 
-                <p class="text-xs text-slate-600">
+                <p class="text-[11px] text-slate-700">
 
                     <span class="text-emerald-500">●</span>
 
