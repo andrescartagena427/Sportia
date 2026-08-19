@@ -1,0 +1,587 @@
+﻿@model IEnumerable<Sportia.Models.Cliente>
+
+@{
+    ViewData["Title"] = "Clientes";
+    Layout = "_DashboardLayout";
+}
+
+<div class="space-y-6">
+
+    <!-- ===================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ===================================================== -->
+
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+        <div>
+            <div class="flex items-center gap-3">
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                    <svg class="h-6 w-6"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+
+                    </svg>
+                </div>
+
+                <div>
+                    <h1 class="text-2xl font-bold text-white">
+                        Clientes
+                    </h1>
+
+                    <p class="text-sm text-slate-400">
+                        Administra los clientes registrados en Sportia
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- NUEVO CLIENTE -->
+
+        <a asp-controller="AdminCliente"
+           asp-action="Create"
+           class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+
+            <svg class="h-5 w-5"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 viewBox="0 0 24 24">
+
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+
+            </svg>
+
+            Nuevo cliente
+
+        </a>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- MENSAJES -->
+    <!-- ===================================================== -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+
+            <svg class="h-5 w-5"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 viewBox="0 0 24 24">
+
+                <path d="M20 6L9 17l-5-5" />
+
+            </svg>
+
+            @TempData["Success"]
+
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+
+            <svg class="h-5 w-5"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 viewBox="0 0 24 24">
+
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4" />
+                <path d="M12 16h.01" />
+
+            </svg>
+
+            @TempData["Error"]
+
+        </div>
+    }
+
+
+    <!-- ===================================================== -->
+    <!-- ESTADÍSTICAS -->
+    <!-- ===================================================== -->
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+        <!-- TOTAL -->
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Total clientes
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-white">
+                        @Model.Count()
+                    </p>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Registrados en el sistema
+                    </p>
+                </div>
+
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+
+                    <svg class="h-6 w-6"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- CON CORREO -->
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Con correo
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-emerald-400">
+                        @Model.Count(c => !string.IsNullOrWhiteSpace(c.Correo))
+                    </p>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Clientes con correo registrado
+                    </p>
+                </div>
+
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+
+                    <svg class="h-6 w-6"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="m3 7 9 6 9-6" />
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- TELEFONO -->
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Teléfonos
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-purple-400">
+                        @Model.Count(c => !string.IsNullOrWhiteSpace(c.Telefono))
+                    </p>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Clientes con teléfono
+                    </p>
+                </div>
+
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
+
+                    <svg class="h-6 w-6"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+                        19.79 19.79 0 0 1-8.63-3.07
+                        19.5 19.5 0 0 1-6-6
+                        19.79 19.79 0 0 1-3.07-8.67
+                        A2 2 0 0 1 4.11 2h3
+                        a2 2 0 0 1 2 1.72
+                        12.84 12.84 0 0 0 .7 2.81
+                        2 2 0 0 1-.45 2.11L8.09 9.91
+                        a16 16 0 0 0 6 6l1.27-1.27
+                        a2 2 0 0 1 2.11-.45
+                        12.84 12.84 0 0 0 2.81.7
+                        A2 2 0 0 1 22 16.92z" />
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- BUSCADOR -->
+    <!-- ===================================================== -->
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+
+        <form asp-controller="AdminCliente"
+              asp-action="Index"
+              method="get"
+              class="flex flex-col gap-3 md:flex-row">
+
+            <div class="relative flex-1">
+
+                <svg class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     viewBox="0 0 24 24">
+
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+
+                </svg>
+
+                <input type="text"
+                       name="buscar"
+                       value="@ViewBag.Buscar"
+                       placeholder="Buscar por nombre, documento, teléfono o correo..."
+                       class="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-12 pr-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-500" />
+
+            </div>
+
+            <button type="submit"
+                    class="rounded-xl border border-slate-700 bg-slate-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
+
+                Buscar
+
+            </button>
+
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Buscar))
+            {
+                <a asp-action="Index"
+                   class="rounded-xl border border-slate-700 px-6 py-3 text-center text-sm font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white">
+
+                    Limpiar
+
+                </a>
+            }
+
+        </form>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- TABLA -->
+    <!-- ===================================================== -->
+
+    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <h2 class="text-lg font-bold text-white">
+                Clientes registrados
+            </h2>
+
+            <p class="mt-1 text-sm text-slate-500">
+                Consulta y administra los clientes de Sportia
+            </p>
+
+        </div>
+
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full min-w-[900px]">
+
+                <thead class="border-b border-slate-800 bg-slate-950/50">
+
+                    <tr>
+
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Cliente
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Documento
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Teléfono
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Correo
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Registro
+                        </th>
+
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody class="divide-y divide-slate-800">
+
+                    @if (Model.Any())
+                    {
+                        foreach (var cliente in Model)
+                        {
+                            <tr class="transition hover:bg-slate-800/40">
+
+                                <!-- CLIENTE -->
+
+                                <td class="px-6 py-5">
+
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 font-bold text-emerald-400">
+
+                                            @cliente.Nombres.Substring(0, 1).ToUpper()
+
+                                        </div>
+
+                                        <div>
+
+                                            <p class="font-semibold text-white">
+                                                @cliente.Nombres @cliente.Apellidos
+                                            </p>
+
+                                            <p class="text-xs text-slate-500">
+                                                ID #@cliente.IdCliente
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- DOCUMENTO -->
+
+                                <td class="px-6 py-5">
+
+                                    @if (!string.IsNullOrWhiteSpace(cliente.Documento))
+                                    {
+                                        <span class="text-sm text-slate-300">
+                                            @cliente.Documento
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-600">
+                                            No registrado
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <!-- TELEFONO -->
+
+                                <td class="px-6 py-5">
+
+                                    <span class="text-sm text-slate-300">
+                                        @cliente.Telefono
+                                    </span>
+
+                                </td>
+
+
+                                <!-- CORREO -->
+
+                                <td class="px-6 py-5">
+
+                                    @if (!string.IsNullOrWhiteSpace(cliente.Correo))
+                                    {
+                                        <span class="text-sm text-slate-300">
+                                            @cliente.Correo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-600">
+                                            No registrado
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <!-- FECHA -->
+
+                                <td class="px-6 py-5">
+
+                                    <span class="text-sm text-slate-400">
+                                        @(cliente.FechaRegistro?.ToString("dd/MM/yyyy") ?? "Sin fecha")
+                                    </span>
+
+                                </td>
+
+
+                                <!-- ACCIONES -->
+
+                                <td class="px-6 py-5">
+
+                                    <div class="flex justify-end gap-2">
+
+                                        <!-- EDITAR -->
+
+                                        <a asp-controller="AdminCliente"
+                                           asp-action="Edit"
+                                           asp-route-id="@cliente.IdCliente"
+                                           class="inline-flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:bg-blue-500/20">
+
+                                            <svg class="h-4 w-4"
+                                                 fill="none"
+                                                 stroke="currentColor"
+                                                 stroke-width="2"
+                                                 viewBox="0 0 24 24">
+
+                                                <path d="M12 20h9" />
+                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+
+                                            </svg>
+
+                                            Editar
+
+                                        </a>
+
+
+                                        <!-- ELIMINAR -->
+
+                                        <form asp-controller="AdminCliente"
+                                              asp-action="Delete"
+                                              asp-route-id="@cliente.IdCliente"
+                                              method="post"
+                                              onsubmit="return confirm('¿Está seguro de eliminar este cliente?');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20">
+
+                                                <svg class="h-4 w-4"
+                                                     fill="none"
+                                                     stroke="currentColor"
+                                                     stroke-width="2"
+                                                     viewBox="0 0 24 24">
+
+                                                    <path d="M3 6h18" />
+                                                    <path d="M8 6V4h8v2" />
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                                    <path d="M10 11v6" />
+                                                    <path d="M14 11v6" />
+
+                                                </svg>
+
+                                                Eliminar
+
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+
+                            <td colspan="6"
+                                class="px-6 py-16 text-center">
+
+                                <div class="mx-auto flex max-w-md flex-col items-center">
+
+                                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800 text-slate-500">
+
+                                        <svg class="h-8 w-8"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+
+                                        </svg>
+
+                                    </div>
+
+                                    <h3 class="mt-4 text-lg font-bold text-white">
+                                        No hay clientes
+                                    </h3>
+
+                                    <p class="mt-1 text-sm text-slate-500">
+                                        No encontramos clientes con la búsqueda realizada.
+                                    </p>
+
+                                    <a asp-action="Create"
+                                       class="mt-5 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-emerald-400">
+
+                                        Crear cliente
+
+                                    </a>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>

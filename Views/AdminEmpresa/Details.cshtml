@@ -1,0 +1,455 @@
+﻿@model Sportia.Models.Empresa
+
+@{
+    ViewData["Title"] = "Detalle de empresa";
+    Layout = "_DashboardLayout";
+}
+
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+        <div class="flex items-center gap-4">
+
+            <a asp-action="Index"
+               class="w-10 h-10 rounded-xl
+                border border-slate-800
+                bg-slate-900
+                hover:bg-slate-800
+                flex items-center justify-center
+                text-slate-400 hover:text-white">
+
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+
+            </a>
+
+            <div>
+
+                <h1 class="text-2xl font-bold text-white">
+                    @Model.Nombre
+                </h1>
+
+                <p class="text-sm text-slate-400">
+                    Información de la empresa
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <a asp-action="Edit"
+           asp-route-id="@Model.IdEmpresa"
+           class="inline-flex items-center gap-2
+            rounded-xl
+            bg-blue-500/10
+            border border-blue-500/20
+            hover:bg-blue-500/20
+            px-5 py-2.5
+            text-sm font-semibold
+            text-blue-300">
+
+            <i data-lucide="pencil" class="w-4 h-4"></i>
+
+            Editar empresa
+
+        </a>
+
+    </div>
+
+
+    <!-- INFORMACION PRINCIPAL -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="p-6">
+
+            <div class="flex flex-col md:flex-row gap-6">
+
+                <!-- ICONO -->
+                <div class="w-20 h-20 rounded-2xl
+                    bg-emerald-500/10
+                    border border-emerald-500/20
+                    flex items-center justify-center">
+
+                    <i data-lucide="building-2"
+                       class="w-10 h-10 text-emerald-400"></i>
+
+                </div>
+
+
+                <div class="flex-1">
+
+                    <h2 class="text-2xl font-bold text-white">
+                        @Model.Nombre
+                    </h2>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                        Empresa #@Model.IdEmpresa
+                    </p>
+
+
+                    <div class="mt-3">
+
+                        @if (Model.Estado == true)
+                        {
+                            <span class="inline-flex items-center gap-2
+                                rounded-lg
+                                bg-emerald-500/10
+                                border border-emerald-500/20
+                                px-3 py-1
+                                text-xs text-emerald-300">
+
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+
+                                Empresa activa
+
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center gap-2
+                                rounded-lg
+                                bg-red-500/10
+                                border border-red-500/20
+                                px-3 py-1
+                                text-xs text-red-300">
+
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+
+                                Empresa inactiva
+
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- DATOS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- CONTACTO -->
+        <div class="rounded-2xl
+            border border-slate-800
+            bg-slate-900/60">
+
+            <div class="border-b border-slate-800 px-6 py-4">
+
+                <h2 class="text-base font-semibold text-white">
+                    Información de contacto
+                </h2>
+
+            </div>
+
+            <div class="p-6 space-y-5">
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        NIT
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.Nit ?? "No registrado")
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Teléfono
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.Telefono ?? "No registrado")
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Correo
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.Correo ?? "No registrado")
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Dirección
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.Direccion ?? "No registrada")
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RESPONSABLE -->
+        <div class="rounded-2xl
+            border border-slate-800
+            bg-slate-900/60">
+
+            <div class="border-b border-slate-800 px-6 py-4">
+
+                <h2 class="text-base font-semibold text-white">
+                    Usuario responsable
+                </h2>
+
+            </div>
+
+            <div class="p-6">
+
+                @if (Model.IdUsuarioNavigation != null)
+                {
+                    <div class="flex items-center gap-4">
+
+                        <div class="w-12 h-12 rounded-xl
+                            bg-blue-500/10
+                            flex items-center justify-center
+                            text-blue-300
+                            font-semibold">
+
+                            @Model.IdUsuarioNavigation.Nombres
+                            .Substring(0, 1)
+                            .ToUpper()
+
+                        </div>
+
+                        <div>
+
+                            <p class="text-sm font-semibold text-white">
+                                @Model.IdUsuarioNavigation.Nombres
+                                @Model.IdUsuarioNavigation.Apellidos
+                            </p>
+
+                            <p class="text-xs text-slate-500">
+                                @Model.IdUsuarioNavigation.Correo
+                            </p>
+
+                        </div>
+
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-slate-500">
+                        No hay usuario responsable asociado.
+                    </p>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- DESCRIPCION -->
+    @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+    {
+        <div class="rounded-2xl
+            border border-slate-800
+            bg-slate-900/60
+            p-6">
+
+            <h2 class="text-base font-semibold text-white">
+                Descripción
+            </h2>
+
+            <p class="mt-3 text-sm leading-6 text-slate-400">
+                @Model.Descripcion
+            </p>
+
+        </div>
+    }
+
+
+    <!-- ESCENARIOS -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+
+                    <h2 class="text-base font-semibold text-white">
+                        Escenarios de la empresa
+                    </h2>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Escenarios deportivos pertenecientes a @Model.Nombre
+                    </p>
+
+                </div>
+
+                <div class="rounded-xl
+                    bg-blue-500/10
+                    px-4 py-2">
+
+                    <span class="text-sm font-semibold text-blue-300">
+                        @Model.Escenarios.Count
+                    </span>
+
+                    <span class="text-xs text-slate-500">
+                        escenarios
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        @if (Model.Escenarios.Any())
+        {
+            <div class="overflow-x-auto">
+
+                <table class="w-full">
+
+                    <thead class="border-b border-slate-800 bg-slate-950/50">
+
+                        <tr>
+
+                            <th class="px-6 py-4 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                                Escenario
+                            </th>
+
+                            <th class="px-6 py-4 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                                Capacidad
+                            </th>
+
+                            <th class="px-6 py-4 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                                Estado
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody class="divide-y divide-slate-800">
+
+                        @foreach (var escenario in Model.Escenarios)
+                        {
+                            <tr class="hover:bg-slate-800/30">
+
+                                <td class="px-6 py-4">
+
+                                    <p class="text-sm font-semibold text-white">
+                                        @escenario.Nombre
+                                    </p>
+
+                                    <p class="text-xs text-slate-500">
+                                        ID #@escenario.IdEscenario
+                                    </p>
+
+                                </td>
+
+
+                                <td class="px-6 py-4 text-sm text-slate-300">
+                                    @escenario.Capacidad personas
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <span class="inline-flex
+                                        rounded-lg
+                                        bg-slate-800
+                                        px-3 py-1
+                                        text-xs text-slate-300">
+
+                                        @escenario.Estado
+
+                                    </span>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+        else
+        {
+            <div class="px-6 py-12 text-center">
+
+                <i data-lucide="map-pin-off"
+                   class="mx-auto w-8 h-8 text-slate-600"></i>
+
+                <p class="mt-4 text-sm font-medium text-slate-300">
+                    Esta empresa no tiene escenarios
+                </p>
+
+                <p class="mt-1 text-xs text-slate-500">
+                    Los escenarios asociados aparecerán aquí.
+                </p>
+
+            </div>
+        }
+
+    </div>
+
+
+    <!-- VOLVER -->
+    <div class="flex justify-end">
+
+        <a asp-action="Index"
+           class="inline-flex items-center gap-2
+            rounded-xl
+            border border-slate-700
+            bg-slate-800
+            hover:bg-slate-700
+            px-5 py-2.5
+            text-sm font-semibold
+            text-slate-300
+            hover:text-white">
+
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+
+            Volver a empresas
+
+        </a>
+
+    </div>
+
+</div>
+
+<script>
+    lucide.createIcons();
+</script>

@@ -1,0 +1,121 @@
+﻿@{
+    ViewData["Title"] = "Contacto";
+    Layout = "_ClienteLayout";
+
+    var nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "Cliente";
+    var correoUsuario = Context.Session.GetString("CorreoUsuario") ?? "";
+}
+
+<div class="min-h-screen bg-slate-950 text-white">
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+        <div class="text-center mb-10">
+            <p class="text-emerald-400 text-xs font-bold uppercase tracking-[0.2em]">
+                Soporte
+            </p>
+            <h1 class="text-3xl sm:text-4xl font-black mt-2">
+                ¿Tuviste algún inconveniente?
+            </h1>
+            <p class="text-slate-500 mt-3">
+                Cuéntanos qué pasó y te responderemos directo a tu correo.
+            </p>
+        </div>
+
+        <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+
+            <div id="contactoMensajeEstado" class="hidden mb-5 text-sm font-semibold rounded-xl px-4 py-3"></div>
+
+            <form id="formContacto" class="space-y-5">
+
+                @Html.AntiForgeryToken()
+
+                <div>
+                    <label class="text-xs text-slate-500">Nombre</label>
+                    <input type="text" name="Nombre" required
+                           value="@nombreUsuario"
+                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-500">Correo</label>
+                    <input type="email" name="Correo" required
+                           value="@correoUsuario"
+                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-500">Asunto</label>
+                    <input type="text" name="Asunto" required
+                           placeholder="Problema con una reserva"
+                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-500">Mensaje</label>
+                    <textarea name="Mensaje" required rows="6"
+                              placeholder="Cuéntanos con detalle qué inconveniente tuviste..."
+                              class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white resize-none focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"></textarea>
+                </div>
+
+                <button type="submit" id="btnEnviarContacto"
+                        class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold transition">
+                    Enviar mensaje
+                </button>
+
+            </form>
+        </div>
+
+        <div class="text-center mt-8">
+            <a asp-controller="Cliente" asp-action="Index"
+               class="text-sm text-slate-500 hover:text-white transition">
+                ← Volver al panel
+            </a>
+        </div>
+
+    </main>
+
+</div>
+
+<script>
+    document.getElementById('formContacto')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const btn = document.getElementById('btnEnviarContacto');
+        const estado = document.getElementById('contactoMensajeEstado');
+        const formData = new FormData(this);
+
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+            const token = formData.get('__RequestVerificationToken');
+
+            const resp = await fetch('/Contacto/Enviar', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: formData
+            });
+
+            const data = await resp.json();
+
+            estado.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-300', 'bg-red-500/10', 'text-red-300');
+
+            if (data.ok) {
+                estado.classList.add('bg-emerald-500/10', 'text-emerald-300');
+                estado.textContent = data.aviso || 'Mensaje enviado. Te responderemos pronto.';
+                this.reset();
+            } else {
+                estado.classList.add('bg-red-500/10', 'text-red-300');
+                estado.textContent = data.error || 'No se pudo enviar el mensaje. Intenta de nuevo.';
+            }
+        } catch (err) {
+            estado.classList.remove('hidden');
+            estado.classList.add('bg-red-500/10', 'text-red-300');
+            estado.textContent = 'Error de conexión. Intenta de nuevo.';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Enviar mensaje';
+        }
+    });
+</script>

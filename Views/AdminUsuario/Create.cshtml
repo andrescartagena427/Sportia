@@ -1,0 +1,348 @@
+﻿@model Sportia.Models.Usuario
+
+@{
+    ViewData["Title"] = "Nuevo usuario";
+    Layout = "_DashboardLayout";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div class="flex items-center gap-4">
+
+        <a asp-action="Index"
+           class="w-10 h-10 rounded-xl
+            border border-slate-800
+            bg-slate-900
+            hover:bg-slate-800
+            flex items-center justify-center
+            text-slate-400 hover:text-white
+            transition">
+
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+
+        </a>
+
+        <div>
+
+            <h1 class="text-2xl font-bold text-white">
+                Nuevo usuario
+            </h1>
+
+            <p class="text-sm text-slate-400">
+                Registra un nuevo usuario para Sportia
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- FORMULARIO -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <h2 class="text-base font-semibold text-white">
+                Información del usuario
+            </h2>
+
+            <p class="mt-1 text-xs text-slate-500">
+                Complete todos los datos necesarios
+            </p>
+
+        </div>
+
+
+        <form asp-action="Create"
+              method="post"
+              class="p-6 space-y-6">
+
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly"
+                 class="rounded-xl
+                border border-red-500/20
+                bg-red-500/10
+                px-4 py-3
+                text-sm text-red-300">
+            </div>
+
+
+            <!-- NOMBRES Y APELLIDOS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Nombres"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Nombres
+                    </label>
+
+                    <input asp-for="Nombres"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    placeholder:text-slate-600
+                    focus:border-emerald-500
+                    focus:outline-none"
+                           placeholder="Ej. Juan Carlos" />
+
+                    <span asp-validation-for="Nombres"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="Apellidos"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Apellidos
+                    </label>
+
+                    <input asp-for="Apellidos"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none"
+                           placeholder="Ej. Pérez Gómez" />
+
+                    <span asp-validation-for="Apellidos"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- DOCUMENTO Y TELEFONO -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Documento"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Documento
+                    </label>
+
+                    <input asp-for="Documento"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none"
+                           placeholder="Número de documento" />
+
+                    <span asp-validation-for="Documento"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="Telefono"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Teléfono
+                    </label>
+
+                    <input asp-for="Telefono"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none"
+                           placeholder="Ej. 3001234567" />
+
+                    <span asp-validation-for="Telefono"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- CORREO Y ROL -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Correo"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Correo electrónico
+                    </label>
+
+                    <input asp-for="Correo"
+                           type="email"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none"
+                           placeholder="usuario@correo.com" />
+
+                    <span asp-validation-for="Correo"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="IdRol"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Rol
+                    </label>
+
+                    <select asp-for="IdRol"
+                            class="w-full rounded-xl
+                        border border-slate-800
+                        bg-slate-950
+                        px-4 py-3
+                        text-sm text-white
+                        focus:border-emerald-500
+                        focus:outline-none">
+
+                        <option value="">
+                            Seleccione un rol
+                        </option>
+
+                        @foreach (var rol in ViewBag.Roles)
+                        {
+                            <option value="@rol.IdRol">
+                                @rol.Nombre
+                            </option>
+                        }
+
+                    </select>
+
+                    <span asp-validation-for="IdRol"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- PASSWORD -->
+            <div>
+
+                <label asp-for="Password"
+                       class="block mb-2 text-sm font-medium text-slate-300">
+                    Contraseña
+                </label>
+
+                <input asp-for="Password"
+                       type="password"
+                       class="w-full rounded-xl
+                border border-slate-800
+                bg-slate-950
+                px-4 py-3
+                text-sm text-white
+                focus:border-emerald-500
+                focus:outline-none"
+                       placeholder="Ingrese la contraseña" />
+
+                <span asp-validation-for="Password"
+                      class="mt-1 block text-xs text-red-400"></span>
+
+            </div>
+
+
+            <!-- ESTADO -->
+            <div>
+
+                <label class="block mb-2 text-sm font-medium text-slate-300">
+                    Estado
+                </label>
+
+                <select asp-for="Estado"
+                        class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none">
+
+                    <option value="true">
+                        Activo
+                    </option>
+
+                    <option value="false">
+                        Inactivo
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- BOTONES -->
+            <div class="flex justify-end gap-3
+                border-t border-slate-800
+                pt-6">
+
+                <a asp-action="Index"
+                   class="rounded-xl
+                    border border-slate-700
+                    bg-slate-800
+                    hover:bg-slate-700
+                    px-5 py-2.5
+                    text-sm font-semibold
+                    text-slate-300
+                    hover:text-white
+                    transition">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="inline-flex items-center gap-2
+                    rounded-xl
+                    bg-emerald-500
+                    hover:bg-emerald-400
+                    px-5 py-2.5
+                    text-sm font-semibold
+                    text-slate-950
+                    transition">
+
+                    <i data-lucide="save" class="w-4 h-4"></i>
+
+                    Guardar usuario
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        lucide.createIcons();
+    </script>
+}

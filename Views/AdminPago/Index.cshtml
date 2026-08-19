@@ -1,0 +1,276 @@
+﻿@model IEnumerable<Sportia.Models.Pago>
+
+@{
+    ViewData["Title"] = "Pagos";
+    Layout = "_DashboardLayout";
+
+    var totalPagos = Model.Sum(p => p.MontoPagado);
+    var totalPendiente = Model
+        .GroupBy(p => p.IdReserva)
+        .Sum(g => g.OrderByDescending(p => p.IdPago)
+        .First().SaldoPendiente);
+}
+
+<div class="space-y-6">
+
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+        <div>
+            <h1 class="text-2xl font-bold text-white">
+                Pagos
+            </h1>
+
+            <p class="mt-1 text-sm text-slate-400">
+                Administra los pagos realizados por los clientes
+            </p>
+        </div>
+
+        <a asp-controller="AdminPago"
+           asp-action="Create"
+           class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+
+            <i data-lucide="plus" class="h-5 w-5"></i>
+
+            Registrar pago
+        </a>
+
+    </div>
+
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-400">
+            @TempData["Success"]
+        </div>
+    }
+
+
+    <!-- ESTADISTICAS -->
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Total pagos
+            </p>
+
+            <p class="mt-2 text-3xl font-bold text-white">
+                @Model.Count()
+            </p>
+
+        </div>
+
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Dinero recibido
+            </p>
+
+            <p class="mt-2 text-3xl font-bold text-emerald-400">
+                $@totalPagos.ToString("N0")
+            </p>
+
+        </div>
+
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Saldo pendiente
+            </p>
+
+            <p class="mt-2 text-3xl font-bold text-orange-400">
+                $@totalPendiente.ToString("N0")
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- BUSCADOR -->
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+
+        <form asp-action="Index"
+              method="get"
+              class="flex flex-col gap-3 md:flex-row">
+
+            <input type="text"
+                   name="buscar"
+                   value="@ViewBag.Buscar"
+                   placeholder="Buscar cliente, reserva, escenario o método..."
+                   class="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500" />
+
+            <button type="submit"
+                    class="rounded-xl bg-slate-800 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+
+                Buscar
+
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- TABLA -->
+
+    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full min-w-[1000px]">
+
+                <thead class="border-b border-slate-800 bg-slate-950/50">
+
+                    <tr>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Cliente
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Reserva
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Método
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Pagado
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Saldo
+                        </th>
+
+                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
+                            Fecha
+                        </th>
+
+                        <th class="px-6 py-4 text-right text-xs uppercase text-slate-500">
+                            Acción
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody class="divide-y divide-slate-800">
+
+                    @if (Model.Any())
+                    {
+                        foreach (var pago in Model)
+                        {
+                            <tr class="transition hover:bg-slate-800/40">
+
+                                <td class="px-6 py-4">
+
+                                    <p class="font-semibold text-white">
+                                        @pago.IdReservaNavigation.IdClienteNavigation.Nombres
+                                        @pago.IdReservaNavigation.IdClienteNavigation.Apellidos
+                                    </p>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <p class="text-sm font-semibold text-slate-300">
+                                        @pago.IdReservaNavigation.Codigo
+                                    </p>
+
+                                    <p class="text-xs text-slate-500">
+                                        @pago.IdReservaNavigation.IdEscenarioNavigation.Nombre
+                                    </p>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <span class="rounded-lg bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
+                                        @pago.IdMetodoNavigation.Nombre
+                                    </span>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <span class="font-bold text-emerald-400">
+                                        $@pago.MontoPagado.ToString("N0")
+                                    </span>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    @if (pago.SaldoPendiente <= 0)
+                                    {
+                                        <span class="rounded-lg bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+                                            Pagado
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="font-semibold text-orange-400">
+                                            $@pago.SaldoPendiente.ToString("N0")
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <td class="px-6 py-4 text-sm text-slate-400">
+
+                                    @(pago.FechaPago?.ToString("dd/MM/yyyy HH:mm")
+                                        ?? "Sin fecha")
+
+                                </td>
+
+
+                                <td class="px-6 py-4 text-right">
+
+                                    <a asp-action="Details"
+                                       asp-route-id="@pago.IdPago"
+                                       class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
+
+                                        Ver
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+
+                            <td colspan="7"
+                                class="px-6 py-16 text-center text-slate-500">
+
+                                No hay pagos registrados.
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>

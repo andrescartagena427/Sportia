@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Http
+@using Sportia.Models
 
 @{
     ViewData["Title"] = "Panel del Cliente";
@@ -18,6 +19,20 @@
     var inicialUsuario = !string.IsNullOrWhiteSpace(nombreUsuario)
         ? nombreUsuario.Trim().Substring(0, 1).ToUpper()
         : "C";
+
+    // =========================================================
+    // DATOS REALES DESDE EL CONTROLLER
+    // =========================================================
+
+    var totalReservas = (int)(ViewBag.TotalReservas ?? 0);
+    var reservasProximas = (int)(ViewBag.ReservasProximas ?? 0);
+    var totalEscenarios = (int)(ViewBag.TotalEscenarios ?? 0);
+
+    var escenarios = ViewBag.Escenarios as List<Escenario>
+        ?? new List<Escenario>();
+
+    const string imagenPorDefecto =
+        "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80";
 }
 
 <div class="min-h-screen bg-slate-950 text-white">
@@ -106,6 +121,14 @@
                         Ayuda
                     </a>
 
+                    <a asp-controller="Contacto"
+                       asp-action="Index"
+                       class="text-sm font-medium text-slate-400
+                        hover:text-white transition">
+                        Contacto
+                    </a>
+
+
                 </nav>
 
 
@@ -147,9 +170,6 @@
                     <!-- =================================================
                          CONTENEDOR DEL PERFIL
                     ================================================== -->
-                    <!-- =================================================
-     CONTENEDOR DEL PERFIL
-================================================== -->
 
                     <div class="pl-3 border-l border-white/10 relative shrink-0">
 
@@ -611,6 +631,21 @@
           class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
 
+        @if (TempData["MensajeReserva"] != null)
+        {
+            <div class="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 px-5 py-4 text-sm font-semibold">
+                @TempData["MensajeReserva"]
+            </div>
+        }
+
+        @if (TempData["ErrorReserva"] != null)
+        {
+            <div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-5 py-4 text-sm font-semibold">
+                @TempData["ErrorReserva"]
+            </div>
+        }
+
+
         <!-- =====================================================
              BIENVENIDA
         ====================================================== -->
@@ -797,7 +832,7 @@
 
 
         <!-- =====================================================
-             ESTADÍSTICAS
+             ESTADÍSTICAS (DATOS REALES)
         ====================================================== -->
 
         <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -825,7 +860,7 @@
                         </p>
 
                         <p class="text-3xl font-black mt-2">
-                            0
+                            @totalReservas
                         </p>
 
                     </div>
@@ -874,7 +909,7 @@
                         </p>
 
                         <p class="text-3xl font-black mt-2">
-                            0
+                            @reservasProximas
                         </p>
 
                     </div>
@@ -923,7 +958,7 @@
                         </p>
 
                         <p class="text-3xl font-black mt-2">
-                            3
+                            @totalEscenarios
                         </p>
 
                     </div>
@@ -1005,7 +1040,7 @@
 
 
         <!-- =====================================================
-             ESCENARIOS
+             ESCENARIOS (DATOS REALES DESDE LA BD)
         ====================================================== -->
 
         <section id="escenarios" class="mb-10">
@@ -1052,6 +1087,7 @@
                 <div class="relative w-full sm:w-72">
 
                     <input type="text"
+                           id="buscadorEscenarios"
                            placeholder="Buscar escenario..."
                            class="w-full
                     bg-white/[0.04]
@@ -1086,414 +1122,211 @@
             </div>
 
 
-            <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5" id="gridEscenarios">
+
+                @if (escenarios.Any())
+                {
+                    int posicion = 0;
+                    const int cardsPorPagina = 6;
+
+                    foreach (var esc in escenarios)
+                    {
+                        string imagenUrl = !string.IsNullOrWhiteSpace(esc.Imagen)
+                            ? esc.Imagen
+                            : imagenPorDefecto;
+
+                        string categoria = esc.IdTipoNavigation?.Nombre ?? "Deporte";
+
+                        bool disponible = esc.Estado == true;
+
+                        bool visibleInicialmente = posicion < cardsPorPagina;
+                        posicion++;
+
+                        <!-- =================================================
+                             CANCHA (@esc.Nombre)
+                        ================================================== -->
+
+                        <article class="group
+                            overflow-hidden
+                            rounded-2xl
+                            border border-white/10
+                            bg-slate-900
+                            hover:border-emerald-500/40
+                            transition escenario-card"
+                                 data-nombre="@esc.Nombre.ToLower()"
+                                 data-id-escenario="@esc.IdEscenario"
+                                 data-nombre-escenario="@esc.Nombre"
+                                 data-categoria="@categoria"
+                                 data-imagen="@imagenUrl"
+                                 data-descripcion="@(esc.Descripcion ?? "Escenario deportivo disponible para reservar.")"
+                                 data-capacidad="@(esc.Capacidad?.ToString() ?? "N/D")"
+                                 style="@(visibleInicialmente ? "" : "display:none;")">
 
 
-                <!-- =================================================
-                     CANCHA 1
-                ================================================== -->
+                            <div class="relative h-48 overflow-hidden">
 
-                <article class="group
-                    overflow-hidden
-                    rounded-2xl
-                    border border-white/10
-                    bg-slate-900
-                    hover:border-emerald-500/40
-                    transition">
+                                <img src="@imagenUrl"
+                                     class="w-full h-full object-cover
+                                group-hover:scale-105
+                                transition duration-500"
+                                     alt="@esc.Nombre">
 
 
-                    <div class="relative h-48 overflow-hidden">
-
-                        <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80"
-                             class="w-full h-full object-cover
-                        group-hover:scale-105
-                        transition duration-500"
-                             alt="Cancha de fútbol">
-
-
-                        <div class="absolute inset-0
-                            bg-gradient-to-t
-                            from-slate-950
-                            via-transparent
-                            to-transparent">
-                        </div>
+                                <div class="absolute inset-0
+                                    bg-gradient-to-t
+                                    from-slate-950
+                                    via-transparent
+                                    to-transparent">
+                                </div>
 
 
-                        <span class="absolute top-4 left-4
-                            px-3 py-1.5
-                            rounded-full
-                            bg-emerald-500
-                            text-white
-                            text-xs
-                            font-bold">
+                                <span class="absolute top-4 left-4
+                                    px-3 py-1.5
+                                    rounded-full
+                                    @(disponible ? "bg-emerald-500" : "bg-slate-600")
+                                    text-white
+                                    text-xs
+                                    font-bold">
 
-                            DISPONIBLE
+                                    @(disponible ? "DISPONIBLE" : "NO DISPONIBLE")
 
-                        </span>
-
-                    </div>
-
-
-                    <div class="p-5">
-
-
-                        <div class="flex justify-between
-                            items-start gap-3">
-
-                            <div>
-
-                                <p class="text-xs
-                                    text-emerald-400
-                                    font-semibold
-                                    uppercase
-                                    tracking-wider">
-
-                                    Fútbol
-
-                                </p>
-
-
-                                <h3 class="text-xl font-bold mt-1">
-
-                                    Cancha deportiva
-
-                                </h3>
+                                </span>
 
                             </div>
 
 
-                            <span class="text-slate-500">
-                                ★ 4.8
-                            </span>
-
-                        </div>
+                            <div class="p-5">
 
 
-                        <p class="text-sm
-                            text-slate-500
-                            mt-3">
+                                <div class="flex justify-between
+                                    items-start gap-3">
 
-                            Escenario deportivo ideal
-                            para partidos y entrenamientos.
+                                    <div>
 
-                        </p>
+                                        <p class="text-xs
+                                            text-emerald-400
+                                            font-semibold
+                                            uppercase
+                                            tracking-wider">
 
+                                            @categoria
 
-                        <div class="flex items-center
-                            justify-between
-                            mt-5
-                            pt-4
-                            border-t
-                            border-white/10">
+                                        </p>
 
 
-                            <div>
+                                        <h3 class="text-xl font-bold mt-1">
 
-                                <p class="text-xs text-slate-600">
-                                    Estado
-                                </p>
+                                            @esc.Nombre
+
+                                        </h3>
+
+                                    </div>
+
+                                </div>
+
 
                                 <p class="text-sm
-                                    text-emerald-400
-                                    font-semibold">
+                                    text-slate-500
+                                    mt-3">
 
-                                    Disponible
+                                    @(!string.IsNullOrWhiteSpace(esc.Descripcion)
+                                        ? esc.Descripcion
+                                        : "Escenario deportivo disponible para reservar.")
 
                                 </p>
+
+
+                                <div class="flex items-center
+                                    justify-between
+                                    mt-5
+                                    pt-4
+                                    border-t
+                                    border-white/10">
+
+
+                                    <div>
+
+                                        <p class="text-xs text-slate-600">
+                                            Capacidad
+                                        </p>
+
+                                        <p class="text-sm
+                                            text-slate-300
+                                            font-semibold">
+
+                                            @(esc.Capacidad?.ToString() ?? "N/D") personas
+
+                                        </p>
+
+                                    </div>
+
+
+                                    @if (disponible)
+                                    {
+                                        <a asp-controller="Cliente"
+                                           asp-action="Reservar"
+                                           asp-route-idEscenario="@esc.IdEscenario"
+                                           class="px-4 py-2.5
+                                            rounded-xl
+                                            bg-emerald-500
+                                            hover:bg-emerald-400
+                                            text-white
+                                            text-sm
+                                            font-bold
+                                            transition">
+
+                                            Reservar
+
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-4 py-2.5
+                                            rounded-xl
+                                            bg-white/5
+                                            text-slate-500
+                                            text-sm
+                                            font-bold">
+
+                                            No disponible
+
+                                        </span>
+                                    }
+
+                                </div>
 
                             </div>
 
-
-                            <button class="px-4 py-2.5
-                                rounded-xl
-                                bg-emerald-500
-                                hover:bg-emerald-400
-                                text-white
-                                text-sm
-                                font-bold
-                                transition">
-
-                                Reservar
-
-                            </button>
-
-                        </div>
-
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="col-span-full text-center py-10 text-slate-500">
+                        No hay escenarios registrados todavía.
                     </div>
-
-                </article>
-
-
-                <!-- =================================================
-                     CANCHA 2
-                ================================================== -->
-
-                <article class="group
-                    overflow-hidden
-                    rounded-2xl
-                    border border-white/10
-                    bg-slate-900
-                    hover:border-emerald-500/40
-                    transition">
-
-
-                    <div class="relative h-48 overflow-hidden">
-
-                        <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=80"
-                             class="w-full h-full object-cover
-                        group-hover:scale-105
-                        transition duration-500"
-                             alt="Cancha de baloncesto">
-
-
-                        <div class="absolute inset-0
-                            bg-gradient-to-t
-                            from-slate-950
-                            via-transparent
-                            to-transparent">
-                        </div>
-
-
-                        <span class="absolute top-4 left-4
-                            px-3 py-1.5
-                            rounded-full
-                            bg-emerald-500
-                            text-white
-                            text-xs
-                            font-bold">
-
-                            DISPONIBLE
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="p-5">
-
-
-                        <div class="flex justify-between
-                            items-start gap-3">
-
-                            <div>
-
-                                <p class="text-xs
-                                    text-cyan-400
-                                    font-semibold
-                                    uppercase
-                                    tracking-wider">
-
-                                    Baloncesto
-
-                                </p>
-
-
-                                <h3 class="text-xl font-bold mt-1">
-
-                                    Cancha de baloncesto
-
-                                </h3>
-
-                            </div>
-
-
-                            <span class="text-slate-500">
-                                ★ 4.7
-                            </span>
-
-                        </div>
-
-
-                        <p class="text-sm
-                            text-slate-500
-                            mt-3">
-
-                            Espacio preparado para partidos
-                            y actividades deportivas.
-
-                        </p>
-
-
-                        <div class="flex items-center
-                            justify-between
-                            mt-5
-                            pt-4
-                            border-t
-                            border-white/10">
-
-
-                            <div>
-
-                                <p class="text-xs text-slate-600">
-                                    Estado
-                                </p>
-
-                                <p class="text-sm
-                                    text-emerald-400
-                                    font-semibold">
-
-                                    Disponible
-
-                                </p>
-
-                            </div>
-
-
-                            <button class="px-4 py-2.5
-                                rounded-xl
-                                bg-emerald-500
-                                hover:bg-emerald-400
-                                text-white
-                                text-sm
-                                font-bold
-                                transition">
-
-                                Reservar
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-
-                <!-- =================================================
-                     CANCHA 3
-                ================================================== -->
-
-                <article class="group
-                    overflow-hidden
-                    rounded-2xl
-                    border border-white/10
-                    bg-slate-900
-                    hover:border-emerald-500/40
-                    transition">
-
-
-                    <div class="relative h-48 overflow-hidden">
-
-                        <img src="https://images.unsplash.com/photo-1526232761682-d26e03ac5a1e?auto=format&fit=crop&w=900&q=80"
-                             class="w-full h-full object-cover
-                        group-hover:scale-105
-                        transition duration-500"
-                             alt="Escenario deportivo">
-
-
-                        <div class="absolute inset-0
-                            bg-gradient-to-t
-                            from-slate-950
-                            via-transparent
-                            to-transparent">
-                        </div>
-
-
-                        <span class="absolute top-4 left-4
-                            px-3 py-1.5
-                            rounded-full
-                            bg-emerald-500
-                            text-white
-                            text-xs
-                            font-bold">
-
-                            DISPONIBLE
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="p-5">
-
-
-                        <div class="flex justify-between
-                            items-start gap-3">
-
-                            <div>
-
-                                <p class="text-xs
-                                    text-violet-400
-                                    font-semibold
-                                    uppercase
-                                    tracking-wider">
-
-                                    Multideportivo
-
-                                </p>
-
-
-                                <h3 class="text-xl font-bold mt-1">
-
-                                    Nuevo escenario
-
-                                </h3>
-
-                            </div>
-
-
-                            <span class="text-slate-500">
-                                ★ 4.9
-                            </span>
-
-                        </div>
-
-
-                        <p class="text-sm
-                            text-slate-500
-                            mt-3">
-
-                            Un espacio versátil para
-                            diferentes actividades deportivas.
-
-                        </p>
-
-
-                        <div class="flex items-center
-                            justify-between
-                            mt-5
-                            pt-4
-                            border-t
-                            border-white/10">
-
-
-                            <div>
-
-                                <p class="text-xs text-slate-600">
-                                    Estado
-                                </p>
-
-                                <p class="text-sm
-                                    text-emerald-400
-                                    font-semibold">
-
-                                    Disponible
-
-                                </p>
-
-                            </div>
-
-
-                            <button class="px-4 py-2.5
-                                rounded-xl
-                                bg-emerald-500
-                                hover:bg-emerald-400
-                                text-white
-                                text-sm
-                                font-bold
-                                transition">
-
-                                Reservar
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </article>
+                }
 
             </div>
+
+            @if (escenarios.Count > 6)
+            {
+                <div class="flex justify-center mt-8">
+                    <button id="btnVerMasEscenarios"
+                            data-mostrados="6"
+                            data-total="@escenarios.Count"
+                            class="px-6 py-3
+                        rounded-xl
+                        border border-white/10
+                        bg-white/5
+                        hover:bg-white/10
+                        text-sm
+                        font-semibold
+                        transition">
+                        Ver más escenarios
+                    </button>
+                </div>
+            }
 
         </section>
 
@@ -1534,7 +1367,8 @@
                     </div>
 
 
-                    <a href="#"
+                    <a asp-controller="Reservas"
+                       asp-action="Mias"
                        class="text-sm
                         text-emerald-400
                         hover:text-emerald-300
@@ -1549,62 +1383,75 @@
 
                 <div class="p-6">
 
-
-                    <div class="text-center py-10">
-
-
-                        <div class="w-16 h-16
-                            mx-auto
-                            rounded-2xl
-                            bg-white/5
-                            flex items-center
-                            justify-center
-                            mb-4">
+                    @if (totalReservas == 0)
+                    {
+                        <div class="text-center py-10">
 
 
-                            <img src="https://img.icons8.com/?size=100&id=14778&format=png&color=10B981"
-                                 alt="Calendario"
-                                 class="w-10 h-10">
+                            <div class="w-16 h-16
+                                mx-auto
+                                rounded-2xl
+                                bg-white/5
+                                flex items-center
+                                justify-center
+                                mb-4">
+
+
+                                <img src="https://img.icons8.com/?size=100&id=14778&format=png&color=10B981"
+                                     alt="Calendario"
+                                     class="w-10 h-10">
+
+                            </div>
+
+
+                            <h3 class="font-bold text-lg">
+
+                                No tienes reservas todavía
+
+                            </h3>
+
+
+                            <p class="text-slate-500
+                                text-sm
+                                max-w-sm
+                                mx-auto
+                                mt-2">
+
+                                Cuando realices una reserva,
+                                aparecerá aquí para que puedas
+                                consultarla fácilmente.
+
+                            </p>
+
+
+                            <a href="#escenarios"
+                               class="inline-flex
+                                mt-5
+                                px-5 py-2.5
+                                rounded-xl
+                                bg-emerald-500
+                                hover:bg-emerald-400
+                                font-bold
+                                text-sm
+                                transition">
+
+                                Buscar una cancha
+
+                            </a>
 
                         </div>
-
-
-                        <h3 class="font-bold text-lg">
-
-                            No tienes reservas todavía
-
-                        </h3>
-
-
-                        <p class="text-slate-500
-                            text-sm
-                            max-w-sm
-                            mx-auto
-                            mt-2">
-
-                            Cuando realices una reserva,
-                            aparecerá aquí para que puedas
-                            consultarla fácilmente.
-
-                        </p>
-
-
-                        <a href="#escenarios"
-                           class="inline-flex
-                            mt-5
-                            px-5 py-2.5
-                            rounded-xl
-                            bg-emerald-500
-                            hover:bg-emerald-400
-                            font-bold
-                            text-sm
-                            transition">
-
-                            Buscar una cancha
-
-                        </a>
-
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-6 text-slate-400 text-sm">
+                            Tienes <span class="text-emerald-400 font-bold">@totalReservas</span> reserva(s) registradas,
+                            de las cuales <span class="text-emerald-400 font-bold">@reservasProximas</span> están próximas.
+                            <br />
+                            <a asp-controller="Reservas" asp-action="Mias" class="text-emerald-400 hover:text-emerald-300 font-semibold">
+                                Ver el detalle de mis reservas →
+                            </a>
+                        </div>
+                    }
 
                 </div>
 
@@ -1715,4 +1562,58 @@
 
     </main>
 
-</div>
+
+    <script>
+            // =====================================================
+            // PAGINACIÓN DE ESCENARIOS ("Ver más")
+            // =====================================================
+            const CARDS_POR_PAGINA = 6;
+            const btnVerMas = document.getElementById('btnVerMasEscenarios');
+
+            btnVerMas?.addEventListener('click', function() {
+                const mostrados = parseInt(this.dataset.mostrados, 10);
+                const total = parseInt(this.dataset.total, 10);
+                const siguienteCorte = mostrados + CARDS_POR_PAGINA;
+
+                const tarjetas = document.querySelectorAll('#gridEscenarios .escenario-card');
+                tarjetas.forEach((card, i) => {
+                    if (i < siguienteCorte) {
+                        card.style.display = '';
+                    }
+                });
+
+                this.dataset.mostrados = Math.min(siguienteCorte, total);
+
+                if (siguienteCorte >= total) {
+                    this.style.display = 'none';
+                }
+            });
+
+            // =====================================================
+            // FILTRO EN VIVO DEL BUSCADOR (ignora la paginación mientras se escribe)
+            // =====================================================
+            document.getElementById('buscadorEscenarios')?.addEventListener('input', function(e) {
+                const texto = e.target.value.trim().toLowerCase();
+                const filtrando = texto.length > 0;
+
+                document.querySelectorAll('#gridEscenarios .escenario-card').forEach((card, i) => {
+                    const nombre = card.getAttribute('data-nombre') || '';
+
+                    if (!filtrando) {
+                        // Sin texto: vuelve a respetar la paginación actual
+                        const mostrados = parseInt(btnVerMas?.dataset.mostrados || '6', 10);
+                        card.style.display = i < mostrados ? '' : 'none';
+                        return;
+                    }
+
+                    card.style.display = nombre.includes(texto) ? '' : 'none';
+                });
+
+                // Oculta el botón "Ver más" mientras hay un filtro activo
+                if (btnVerMas) {
+                    btnVerMas.style.display = filtrando ? 'none' : (
+                        parseInt(btnVerMas.dataset.mostrados, 10) >= parseInt(btnVerMas.dataset.total, 10) ? 'none' : ''
+                    );
+                }
+            });
+    </script>

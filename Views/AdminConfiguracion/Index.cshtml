@@ -1,0 +1,888 @@
+﻿@model Sportia.Models.Configuracion
+
+@{
+    ViewData["Title"] = "Configuración";
+    Layout = "_DashboardLayout";
+}
+
+<div class="min-h-screen bg-[#07101d] text-white">
+
+    <div class="max-w-[1150px] mx-auto p-7">
+
+        <!-- MENSAJE DE ÉXITO -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-6 flex items-center gap-3
+                rounded-xl
+                border border-emerald-500/30
+                bg-emerald-500/10
+                px-5 py-4
+                text-emerald-300">
+
+                <i data-lucide="circle-check"
+                   class="w-5 h-5">
+                </i>
+
+                <span>
+                    @TempData["Success"]
+                </span>
+
+            </div>
+        }
+
+
+        <form asp-controller="AdminConfiguracion"
+              asp-action="Guardar"
+              method="post"
+              class="space-y-5">
+
+            @Html.AntiForgeryToken()
+
+            <input asp-for="IdConfiguracion"
+                   type="hidden" />
+
+
+            <!-- ================================= -->
+            <!-- APARIENCIA -->
+            <!-- ================================= -->
+
+            <div class="rounded-2xl
+                border border-slate-800
+                bg-[#101a2b]
+                overflow-hidden">
+
+                <!-- HEADER -->
+
+                <div class="flex items-center gap-4
+                    px-5 py-4
+                    border-b border-slate-800">
+
+                    <div class="w-9 h-9
+                        rounded-xl
+                        bg-purple-500/10
+                        flex items-center
+                        justify-center">
+
+                        <i data-lucide="palette"
+                           class="w-5 h-5
+                            text-purple-400">
+                        </i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 class="font-semibold
+                            text-white">
+
+                            Apariencia
+
+                        </h2>
+
+                        <p class="text-xs
+                            text-slate-400">
+
+                            Personaliza la apariencia del sistema
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="p-5 space-y-5">
+
+
+                    <!-- TEMA OSCURO -->
+
+                    <div class="flex
+                        items-center
+                        justify-between
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#0b1322]
+                        px-4 py-4">
+
+                        <div>
+
+                            <h3 class="font-medium
+                                text-white">
+
+                                Tema oscuro
+
+                            </h3>
+
+                            <p class="text-sm
+                                text-slate-400">
+
+                                Utilizar la apariencia oscura en el dashboard
+
+                            </p>
+
+                        </div>
+
+
+                        <button type="button"
+                                id="temaOscuroBtn"
+                                class="relative
+                            w-10 h-6
+                            rounded-full
+                            bg-emerald-500
+                            transition">
+
+                            <span id="temaOscuroCircle"
+                                  class="absolute
+                                top-1
+                                right-1
+                                w-4 h-4
+                                bg-white
+                                rounded-full
+                                transition">
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- LOGO -->
+
+                    <div>
+
+                        <label class="block
+                            mb-2
+                            text-sm
+                            font-medium
+                            text-slate-200">
+
+                            Logo de la plataforma
+
+                        </label>
+
+
+                        <div class="flex
+                            items-center
+                            gap-4">
+
+
+                            <!-- PREVIEW -->
+
+                            <div class="w-20 h-20
+                                rounded-xl
+                                border border-slate-700
+                                bg-[#0b1322]
+                                flex
+                                items-center
+                                justify-center
+                                overflow-hidden">
+
+                                @if (!string.IsNullOrEmpty(Model.Logo))
+                                {
+                                    <img id="logoPreview"
+                                         src="@Model.Logo"
+                                         class="w-full
+                                    h-full
+                                    object-cover" />
+                                }
+                                else
+                                {
+                                    <i id="logoIcon"
+                                       data-lucide="image"
+                                       class="w-7 h-7
+                                        text-slate-500">
+                                    </i>
+
+                                    <img id="logoPreview"
+                                         class="hidden
+                                    w-full
+                                    h-full
+                                    object-cover" />
+                                }
+
+                            </div>
+
+
+                            <div class="flex-1">
+
+                                <input asp-for="Logo"
+                                       id="Logo"
+                                       placeholder="https://ejemplo.com/logo.png"
+                                       class="w-full
+                                rounded-xl
+                                border border-slate-700
+                                bg-[#07101d]
+                                px-4 py-3
+                                text-sm
+                                text-white
+                                outline-none
+                                focus:border-emerald-500" />
+
+                                <p class="mt-2
+                                    text-xs
+                                    text-slate-500">
+
+                                    Ingresa la URL de una imagen para el logo.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ================================= -->
+            <!-- INFORMACIÓN GENERAL -->
+            <!-- ================================= -->
+
+            <div class="rounded-2xl
+                border border-slate-800
+                bg-[#101a2b]
+                overflow-hidden">
+
+
+                <div class="flex items-center gap-4
+                    px-5 py-4
+                    border-b border-slate-800">
+
+                    <div class="w-9 h-9
+                        rounded-xl
+                        bg-blue-500/10
+                        flex
+                        items-center
+                        justify-center">
+
+                        <i data-lucide="settings"
+                           class="w-5 h-5
+                            text-blue-400">
+                        </i>
+
+                    </div>
+
+
+                    <div>
+
+                        <h2 class="font-semibold">
+
+                            Información general
+
+                        </h2>
+
+                        <p class="text-xs
+                            text-slate-400">
+
+                            Datos principales de Sportia
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="p-5
+                    grid
+                    md:grid-cols-2
+                    gap-5">
+
+
+                    <!-- NOMBRE -->
+
+                    <div>
+
+                        <label class="block
+                            mb-2
+                            text-sm
+                            text-slate-300">
+
+                            Nombre de la plataforma
+
+                        </label>
+
+                        <input asp-for="NombrePlataforma"
+                               class="w-full
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#07101d]
+                        px-4 py-3
+                        text-white
+                        outline-none
+                        focus:border-emerald-500" />
+
+                    </div>
+
+
+                    <!-- CORREO -->
+
+                    <div>
+
+                        <label class="block
+                            mb-2
+                            text-sm
+                            text-slate-300">
+
+                            Correo electrónico
+
+                        </label>
+
+                        <input asp-for="Correo"
+                               type="email"
+                               class="w-full
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#07101d]
+                        px-4 py-3
+                        text-white
+                        outline-none
+                        focus:border-emerald-500" />
+
+                    </div>
+
+
+                    <!-- TELEFONO -->
+
+                    <div>
+
+                        <label class="block
+                            mb-2
+                            text-sm
+                            text-slate-300">
+
+                            Teléfono
+
+                        </label>
+
+                        <input asp-for="Telefono"
+                               class="w-full
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#07101d]
+                        px-4 py-3
+                        text-white
+                        outline-none
+                        focus:border-emerald-500" />
+
+                    </div>
+
+
+                    <!-- PAIS -->
+
+                    <div>
+
+                        <label class="block
+                            mb-2
+                            text-sm
+                            text-slate-300">
+
+                            País
+
+                        </label>
+
+                        <input asp-for="Pais"
+                               class="w-full
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#07101d]
+                        px-4 py-3
+                        text-white
+                        outline-none
+                        focus:border-emerald-500" />
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ================================= -->
+            <!-- CONFIGURACIÓN DEL SISTEMA -->
+            <!-- ================================= -->
+
+            <div class="rounded-2xl
+                border border-slate-800
+                bg-[#101a2b]
+                overflow-hidden">
+
+
+                <!-- HEADER -->
+
+                <div class="flex items-center gap-4
+                    px-5 py-4
+                    border-b border-slate-800">
+
+                    <div class="w-9 h-9
+                        rounded-xl
+                        bg-orange-500/10
+                        flex
+                        items-center
+                        justify-center">
+
+                        <i data-lucide="server"
+                           class="w-5 h-5
+                            text-orange-400">
+                        </i>
+
+                    </div>
+
+
+                    <div>
+
+                        <h2 class="font-semibold">
+
+                            Configuración del sistema
+
+                        </h2>
+
+                        <p class="text-xs
+                            text-slate-400">
+
+                            Opciones generales de funcionamiento
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="p-5
+                    space-y-4">
+
+
+                    <!-- PERMITIR REGISTROS -->
+
+                    <div class="flex
+                        items-center
+                        justify-between
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#0b1322]
+                        px-4 py-4">
+
+
+                        <div>
+
+                            <h3 class="font-medium">
+
+                                Permitir nuevos registros
+
+                            </h3>
+
+                            <p class="text-sm
+                                text-slate-400">
+
+                                Permitir que nuevos clientes se registren en Sportia
+
+                            </p>
+
+                        </div>
+
+
+                        <label class="relative
+                            inline-flex
+                            items-center
+                            cursor-pointer">
+
+
+                            <input asp-for="PermitirRegistros"
+                                   type="checkbox"
+                                   class="sr-only
+                            peer" />
+
+
+                            <div class="w-10
+                                h-6
+                                rounded-full
+                                bg-slate-600
+                                peer
+                                peer-checked:bg-emerald-500
+                                transition">
+
+                                <div class="w-4
+                                    h-4
+                                    bg-white
+                                    rounded-full
+                                    absolute
+                                    top-1
+                                    left-1
+                                    peer-checked:translate-x-4
+                                    transition">
+                                </div>
+
+                            </div>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- NOTIFICACIONES -->
+
+                    <div class="flex
+                        items-center
+                        justify-between
+                        rounded-xl
+                        border border-slate-700
+                        bg-[#0b1322]
+                        px-4 py-4">
+
+
+                        <div>
+
+                            <h3 class="font-medium">
+
+                                Notificaciones
+
+                            </h3>
+
+                            <p class="text-sm
+                                text-slate-400">
+
+                                Activar las notificaciones del sistema
+
+                            </p>
+
+                        </div>
+
+
+                        <label class="relative
+                            inline-flex
+                            items-center
+                            cursor-pointer">
+
+
+                            <input asp-for="Notificaciones"
+                                   type="checkbox"
+                                   class="sr-only
+                            peer" />
+
+
+                            <div class="w-10
+                                h-6
+                                rounded-full
+                                bg-slate-600
+                                peer
+                                peer-checked:bg-emerald-500
+                                transition">
+
+                                <div class="w-4
+                                    h-4
+                                    bg-white
+                                    rounded-full
+                                    absolute
+                                    top-1
+                                    left-1
+                                    peer-checked:translate-x-4
+                                    transition">
+                                </div>
+
+                            </div>
+
+                        </label>
+
+                    </div>
+
+
+
+                    <!-- MANTENIMIENTO -->
+
+                    <div class="flex
+                        items-center
+                        justify-between
+                        rounded-xl
+                        border border-red-500/20
+                        bg-red-500/5
+                        px-4 py-4">
+
+
+                        <div>
+
+                            <h3 class="font-medium
+                                text-red-200">
+
+                                Modo mantenimiento
+
+                            </h3>
+
+                            <p class="text-sm
+                                text-slate-400">
+
+                                Restringir temporalmente el acceso al sistema
+
+                            </p>
+
+                        </div>
+
+
+                        <label class="relative
+                            inline-flex
+                            items-center
+                            cursor-pointer">
+
+
+                            <input asp-for="ModoMantenimiento"
+                                   type="checkbox"
+                                   class="sr-only
+                            peer" />
+
+
+                            <div class="w-10
+                                h-6
+                                rounded-full
+                                bg-slate-600
+                                peer
+                                peer-checked:bg-red-500
+                                transition">
+
+                                <div class="w-4
+                                    h-4
+                                    bg-white
+                                    rounded-full
+                                    absolute
+                                    top-1
+                                    left-1
+                                    peer-checked:translate-x-4
+                                    transition">
+                                </div>
+
+                            </div>
+
+                        </label>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+
+            <!-- BOTONES -->
+
+            <div class="flex
+                justify-end
+                gap-3
+                pb-10">
+
+
+                <a asp-action="Index"
+                   class="px-5 py-3
+                    rounded-xl
+                    border border-slate-700
+                    text-sm
+                    font-medium
+                    text-slate-300
+                    hover:bg-slate-800
+                    transition">
+
+                    Cancelar
+
+                </a>
+
+
+                <button type="submit"
+                        class="flex
+                    items-center
+                    gap-2
+                    px-5 py-3
+                    rounded-xl
+                    bg-emerald-500
+                    text-sm
+                    font-semibold
+                    text-[#07101d]
+                    hover:bg-emerald-400
+                    transition">
+
+                    <i data-lucide="save"
+                       class="w-4 h-4">
+                    </i>
+
+                    Guardar configuración
+
+                </button>
+
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+    // ==========================================
+    // PREVISUALIZACIÓN DEL LOGO
+    // ==========================================
+
+    const logoInput =
+        document.getElementById("Logo");
+
+    const logoPreview =
+        document.getElementById("logoPreview");
+
+    const logoIcon =
+        document.getElementById("logoIcon");
+
+
+    logoInput.addEventListener("input", function () {
+
+        const url = this.value;
+
+        if (url && url.trim() !== "") {
+
+            logoPreview.src = url;
+
+            logoPreview.classList.remove("hidden");
+
+            if (logoIcon) {
+                logoIcon.classList.add("hidden");
+            }
+
+        }
+
+    });
+
+
+
+    // ==========================================
+    // TEMA OSCURO
+    // ==========================================
+
+    const temaBtn =
+        document.getElementById("temaOscuroBtn");
+
+    const temaCircle =
+        document.getElementById("temaOscuroCircle");
+
+
+    let temaOscuro =
+        localStorage.getItem("temaSportia");
+
+
+
+    if (temaOscuro === null) {
+
+        localStorage.setItem(
+            "temaSportia",
+            "oscuro"
+        );
+
+    }
+
+
+    function aplicarTema() {
+
+        const tema =
+            localStorage.getItem("temaSportia");
+
+
+        if (tema === "claro") {
+
+            document.body.classList.remove(
+                "dark"
+            );
+
+            temaBtn.classList.remove(
+                "bg-emerald-500"
+            );
+
+            temaBtn.classList.add(
+                "bg-slate-500"
+            );
+
+            temaCircle.classList.remove(
+                "right-1"
+            );
+
+            temaCircle.classList.add(
+                "left-1"
+            );
+
+        }
+
+        else {
+
+            document.body.classList.add(
+                "dark"
+            );
+
+            temaBtn.classList.remove(
+                "bg-slate-500"
+            );
+
+            temaBtn.classList.add(
+                "bg-emerald-500"
+            );
+
+            temaCircle.classList.remove(
+                "left-1"
+            );
+
+            temaCircle.classList.add(
+                "right-1"
+            );
+
+        }
+
+    }
+
+
+    aplicarTema();
+
+
+
+    temaBtn.addEventListener(
+        "click",
+        function () {
+
+            const tema =
+                localStorage.getItem(
+                    "temaSportia"
+                );
+
+
+            if (tema === "oscuro") {
+
+                localStorage.setItem(
+                    "temaSportia",
+                    "claro"
+                );
+
+            }
+
+            else {
+
+                localStorage.setItem(
+                    "temaSportia",
+                    "oscuro"
+                );
+
+            }
+
+
+            aplicarTema();
+
+        }
+    );
+
+
+
+</script>

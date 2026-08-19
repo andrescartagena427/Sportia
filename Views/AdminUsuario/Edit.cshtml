@@ -1,0 +1,369 @@
+﻿@model Sportia.Models.Usuario
+
+@{
+    ViewData["Title"] = "Editar usuario";
+    Layout = "_DashboardLayout";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div class="flex items-center gap-4">
+
+        <a asp-action="Index"
+           class="w-10 h-10 rounded-xl
+            border border-slate-800
+            bg-slate-900
+            hover:bg-slate-800
+            flex items-center justify-center
+            text-slate-400 hover:text-white
+            transition">
+
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+
+        </a>
+
+        <div>
+
+            <h1 class="text-2xl font-bold text-white">
+                Editar usuario
+            </h1>
+
+            <p class="text-sm text-slate-400">
+                Actualiza la información del usuario
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- FORMULARIO -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <div class="flex items-center gap-3">
+
+                <div class="w-11 h-11 rounded-xl
+                    bg-emerald-500/10
+                    flex items-center justify-center
+                    text-emerald-400
+                    font-semibold">
+
+                    @Model.Nombres.Substring(0, 1).ToUpper()
+
+                </div>
+
+                <div>
+
+                    <h2 class="text-base font-semibold text-white">
+                        @Model.Nombres @Model.Apellidos
+                    </h2>
+
+                    <p class="text-xs text-slate-500">
+                        Usuario #@Model.IdUsuario
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <form asp-action="Edit"
+              method="post"
+              class="p-6 space-y-6">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   asp-for="IdUsuario" />
+
+            <!-- PASSWORD OCULTA PARA MANTENER LA ACTUAL -->
+            <input type="hidden"
+                   asp-for="Password" />
+
+
+            <div asp-validation-summary="ModelOnly"
+                 class="rounded-xl
+                border border-red-500/20
+                bg-red-500/10
+                px-4 py-3
+                text-sm text-red-300">
+            </div>
+
+
+            <!-- NOMBRES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Nombres"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Nombres
+                    </label>
+
+                    <input asp-for="Nombres"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none" />
+
+                    <span asp-validation-for="Nombres"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="Apellidos"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Apellidos
+                    </label>
+
+                    <input asp-for="Apellidos"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none" />
+
+                    <span asp-validation-for="Apellidos"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- DOCUMENTO / TELEFONO -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Documento"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Documento
+                    </label>
+
+                    <input asp-for="Documento"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none" />
+
+                    <span asp-validation-for="Documento"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="Telefono"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Teléfono
+                    </label>
+
+                    <input asp-for="Telefono"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none" />
+
+                    <span asp-validation-for="Telefono"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- CORREO / ROL -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+
+                    <label asp-for="Correo"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Correo electrónico
+                    </label>
+
+                    <input asp-for="Correo"
+                           type="email"
+                           class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none" />
+
+                    <span asp-validation-for="Correo"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+
+                <div>
+
+                    <label asp-for="IdRol"
+                           class="block mb-2 text-sm font-medium text-slate-300">
+                        Rol
+                    </label>
+
+                    <select asp-for="IdRol"
+                            class="w-full rounded-xl
+                        border border-slate-800
+                        bg-slate-950
+                        px-4 py-3
+                        text-sm text-white
+                        focus:border-emerald-500
+                        focus:outline-none">
+
+                        @foreach (var rol in ViewBag.Roles)
+                        {
+                            <option value="@rol.IdRol">
+                                @rol.Nombre
+                            </option>
+                        }
+
+                    </select>
+
+                    <span asp-validation-for="IdRol"
+                          class="mt-1 block text-xs text-red-400"></span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ESTADO -->
+            <div>
+
+                <label asp-for="Estado"
+                       class="block mb-2 text-sm font-medium text-slate-300">
+                    Estado
+                </label>
+
+                <select asp-for="Estado"
+                        class="w-full rounded-xl
+                    border border-slate-800
+                    bg-slate-950
+                    px-4 py-3
+                    text-sm text-white
+                    focus:border-emerald-500
+                    focus:outline-none">
+
+                    <option value="true">
+                        Activo
+                    </option>
+
+                    <option value="false">
+                        Inactivo
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- CONTRASEÑA -->
+            <div class="rounded-xl
+                border border-amber-500/20
+                bg-amber-500/5
+                p-4">
+
+                <div class="flex items-start gap-3">
+
+                    <i data-lucide="lock"
+                       class="w-5 h-5 text-amber-400 mt-0.5"></i>
+
+                    <div>
+
+                        <p class="text-sm font-medium text-amber-300">
+                            Contraseña
+                        </p>
+
+                        <p class="mt-1 text-xs text-slate-500">
+                            La contraseña no se modifica desde esta pantalla.
+                            Utiliza el módulo de cambio de contraseña.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- BOTONES -->
+            <div class="flex justify-end gap-3
+                border-t border-slate-800
+                pt-6">
+
+                <a asp-action="Index"
+                   class="rounded-xl
+                    border border-slate-700
+                    bg-slate-800
+                    hover:bg-slate-700
+                    px-5 py-2.5
+                    text-sm font-semibold
+                    text-slate-300
+                    hover:text-white
+                    transition">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="inline-flex items-center gap-2
+                    rounded-xl
+                    bg-emerald-500
+                    hover:bg-emerald-400
+                    px-5 py-2.5
+                    text-sm font-semibold
+                    text-slate-950
+                    transition">
+
+                    <i data-lucide="save" class="w-4 h-4"></i>
+
+                    Guardar cambios
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        lucide.createIcons();
+    </script>
+}

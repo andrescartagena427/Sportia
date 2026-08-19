@@ -17,7 +17,11 @@ public partial class Escenario
 
     public int? Capacidad { get; set; }
 
+    public decimal? Precio { get; set; }
+
     public bool? Estado { get; set; }
+
+    public string? Imagen { get; set; }
 
     public virtual ICollection<DisponibilidadCancha> DisponibilidadCanchas { get; set; } = new List<DisponibilidadCancha>();
 

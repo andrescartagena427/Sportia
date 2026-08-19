@@ -1,0 +1,458 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="~/css/output.css" />
+
+    <title>@ViewData["Title"] - Sportia</title>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-[#070c16] text-slate-100 antialiased">
+
+    <div class="min-h-screen flex">
+
+        <!-- ===================================================== -->
+        <!-- SIDEBAR -->
+        <!-- ===================================================== -->
+
+        <aside class="fixed inset-y-0 left-0 z-50 w-64
+            bg-[#0d1422]
+            border-r border-slate-800
+            flex flex-col">
+
+            <!-- LOGO -->
+            <div class="px-5 py-6">
+
+                <div class="flex items-center gap-3">
+
+                    <div class="w-11 h-11 rounded-xl
+                        bg-gradient-to-br from-emerald-400 to-emerald-600
+                        flex items-center justify-center
+                        text-[#03150d]
+                        font-black text-lg
+                        shadow-lg shadow-emerald-500/20">
+
+                        S
+
+                    </div>
+
+                    <div>
+                        <h1 class="text-lg font-extrabold tracking-wide">
+                            SPORTIA
+                        </h1>
+
+                        <p class="text-xs text-slate-500">
+                            Gestión Deportiva
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- NAVEGACIÓN -->
+            <!-- ================================================= -->
+
+            <nav class="flex-1 px-3 overflow-y-auto">
+
+                <!-- DASHBOARD -->
+
+                <a href="/Dashboard"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5 mb-2
+                    rounded-xl
+                    bg-emerald-500/10
+                    text-emerald-400
+                    border border-emerald-500/10
+                    transition-all duration-200
+                    hover:bg-emerald-500/15">
+
+                    <i data-lucide="layout-dashboard"
+                       class="w-5 h-5">
+                    </i>
+
+                    <span class="text-sm font-semibold">
+                        Dashboard
+                    </span>
+
+                </a>
+
+
+                <!-- GESTIÓN PRINCIPAL -->
+
+                <div class="px-3 pt-5 pb-2">
+
+                    <p class="text-[10px]
+                        font-bold
+                        uppercase
+                        tracking-[0.15em]
+                        text-slate-500">
+
+                        Gestión principal
+
+                    </p>
+
+                </div>
+
+
+                <!-- ESCENARIOS -->
+
+                <a asp-controller="Escenarios"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="landmark"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Escenarios
+                    </span>
+
+                </a>
+
+
+                <!-- RESERVAS -->
+
+                <a asp-controller="Reservas"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="calendar-days"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Reservas
+                    </span>
+
+                </a>
+
+
+                <!-- CLIENTES -->
+
+                <a asp-controller="AdminCliente"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="users"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Clientes
+                    </span>
+
+                </a>
+
+                <!-- USUARIOS -->
+
+                <a asp-controller="AdminUsuario"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="user-round"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Usuarios
+                    </span>
+
+                </a>
+
+
+                <!-- EMPRESAS -->
+
+                <a asp-controller="AdminEmpresa"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="building-2"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Empresas
+                    </span>
+
+                </a>
+
+
+                <!-- PAGOS -->
+
+                <a asp-controller="AdminPago"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    rounded-xl px-3 py-2.5
+                    text-slate-400
+                    transition-all duration-200
+                    hover:bg-slate-800/70
+                    hover:text-white">
+
+                    <i data-lucide="credit-card"
+                       class="h-5 w-5 text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Pagos
+                    </span>
+
+                </a>
+
+
+                <!-- REPORTES -->
+
+                <a asp-controller="AdminReporte"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="file-bar-chart"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Reportes
+                    </span>
+
+                </a>
+
+
+               
+
+                <a asp-controller="AdminEstadistica"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="pie-chart"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Estadísticas
+                    </span>
+
+                </a>
+
+
+                <!-- SISTEMA -->
+
+                <div class="px-3 pt-6 pb-2">
+
+                    <p class="text-[10px]
+                        font-bold
+                        uppercase
+                        tracking-[0.15em]
+                        text-slate-500">
+
+                        Sistema
+
+                    </p>
+
+                </div>
+
+
+                <a asp-controller="AdminConfiguracion"
+                   asp-action="Index"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-white
+                    hover:bg-slate-800/70
+                    transition-all duration-200">
+
+                    <i data-lucide="settings"
+                       class="w-5 h-5
+                        text-slate-500
+                        group-hover:text-emerald-400">
+                    </i>
+
+                    <span class="text-sm">
+                        Configuración
+                    </span>
+
+                </a>
+
+
+                <a href="/Login"
+                   class="group flex items-center gap-3
+                    px-3 py-2.5
+                    rounded-xl
+                    text-slate-400
+                    hover:text-red-400
+                    hover:bg-red-500/10
+                    transition-all duration-200">
+
+                    <i data-lucide="log-out"
+                       class="w-5 h-5">
+                    </i>
+
+                    <span class="text-sm">
+                        Cerrar sesión
+                    </span>
+
+                </a>
+
+            </nav>
+
+
+            <!-- ================================================= -->
+            <!-- USUARIO -->
+            <!-- ================================================= -->
+
+            <div class="p-4 border-t border-slate-800">
+
+                <div class="flex items-center gap-3
+                    p-3 rounded-xl
+                    bg-slate-900/60
+                    border border-slate-800">
+
+                    <div class="w-10 h-10
+                        rounded-xl
+                        bg-emerald-500
+                        flex items-center justify-center
+                        text-sm
+                        font-black
+                        text-[#03150d]">
+
+                        AD
+
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+
+                        <p class="text-sm
+                            font-semibold
+                            text-white
+                            truncate">
+
+                            Admin Sportia
+
+                        </p>
+
+                        <p class="text-xs text-slate-500">
+                            Administrador
+                        </p>
+
+                    </div>
+
+                    <button type="button"
+                            class="text-slate-500
+                        hover:text-white
+                        transition">
+
+                        <i data-lucide="more-vertical"
+                           class="w-5 h-5">
+                        </i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ===================================================== -->
+        <!-- CONTENIDO PRINCIPAL -->
+        <!-- ===================================================== -->
+
+        <div class="ml-64 min-h-screen flex-1">
+
+            <!-- TOP BAR -->
+
+            
+
+
+            <!-- ================================================= -->
+            <!-- AQUÍ SE CARGA EL INDEX -->
+            <!-- ================================================= -->
+
+            <main class="p-6 lg:p-8">
+
+                @RenderBody()
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    <script>
+            lucide.createIcons();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

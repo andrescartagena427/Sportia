@@ -1,0 +1,295 @@
+﻿@model Sportia.Models.Cliente
+
+@{
+    ViewData["Title"] = "Editar cliente";
+    Layout = "_DashboardLayout";
+}
+
+<div class="mx-auto max-w-4xl space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div class="flex items-center gap-4">
+
+        <a asp-controller="AdminCliente"
+           asp-action="Index"
+           class="flex h-10 w-10 items-center justify-center rounded-xl
+            border border-slate-800 bg-slate-900
+            text-slate-400 transition
+            hover:bg-slate-800 hover:text-white">
+
+            <svg class="h-5 w-5"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 viewBox="0 0 24 24">
+
+                <path d="m15 18-6-6 6-6" />
+
+            </svg>
+
+        </a>
+
+        <div>
+            <h1 class="text-2xl font-bold text-white">
+                Editar cliente
+            </h1>
+
+            <p class="text-sm text-slate-400">
+                Actualiza la información del cliente
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- FORMULARIO -->
+    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <div class="flex items-center gap-3">
+
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl
+                    bg-blue-500/10 text-blue-400">
+
+                    <svg class="h-6 w-6"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+
+                    </svg>
+
+                </div>
+
+                <div>
+                    <h2 class="font-bold text-white">
+                        Información del cliente
+                    </h2>
+
+                    <p class="text-xs text-slate-500">
+                        ID del cliente: #@Model.IdCliente
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <form asp-controller="AdminCliente"
+              asp-action="Edit"
+              method="post"
+              class="space-y-6 p-6">
+
+            @Html.AntiForgeryToken()
+
+            <!-- ID -->
+            <input type="hidden"
+                   asp-for="IdCliente" />
+
+
+            <!-- ERRORES -->
+            <div asp-validation-summary="ModelOnly"
+                 class="rounded-xl border border-red-500/20
+                bg-red-500/10 px-4 py-3
+                text-sm text-red-400">
+            </div>
+
+
+            <!-- CAMPOS -->
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                <!-- NOMBRES -->
+                <div>
+                    <label asp-for="Nombres"
+                           class="mb-2 block text-sm font-semibold text-slate-300">
+                        Nombres
+                    </label>
+
+                    <input asp-for="Nombres"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-slate-950 px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+
+                    <span asp-validation-for="Nombres"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+                </div>
+
+
+                <!-- APELLIDOS -->
+                <div>
+                    <label asp-for="Apellidos"
+                           class="mb-2 block text-sm font-semibold text-slate-300">
+                        Apellidos
+                    </label>
+
+                    <input asp-for="Apellidos"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-slate-950 px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+
+                    <span asp-validation-for="Apellidos"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+                </div>
+
+
+                <!-- DOCUMENTO -->
+                <div>
+                    <label asp-for="Documento"
+                           class="mb-2 block text-sm font-semibold text-slate-300">
+                        Documento
+                    </label>
+
+                    <input asp-for="Documento"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-slate-950 px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+
+                    <span asp-validation-for="Documento"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+                </div>
+
+
+                <!-- TELEFONO -->
+                <div>
+                    <label asp-for="Telefono"
+                           class="mb-2 block text-sm font-semibold text-slate-300">
+                        Teléfono
+                    </label>
+
+                    <input asp-for="Telefono"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-slate-950 px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+
+                    <span asp-validation-for="Telefono"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+                </div>
+
+
+                <!-- CORREO -->
+                <div class="md:col-span-2">
+
+                    <label asp-for="Correo"
+                           class="mb-2 block text-sm font-semibold text-slate-300">
+                        Correo electrónico
+                    </label>
+
+                    <input asp-for="Correo"
+                           type="email"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-slate-950 px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+
+                    <span asp-validation-for="Correo"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- INFORMACIÓN -->
+            <div class="rounded-xl border border-blue-500/10
+                bg-blue-500/5 px-4 py-3">
+
+                <div class="flex gap-3">
+
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-blue-400"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 8v4" />
+                        <path d="M12 16h.01" />
+
+                    </svg>
+
+                    <div>
+                        <p class="text-sm font-semibold text-blue-300">
+                            Información importante
+                        </p>
+
+                        <p class="mt-1 text-xs text-slate-500">
+                            La contraseña y la fecha de registro no se modifican
+                            desde esta pantalla.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- BOTONES -->
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-800 pt-6
+                sm:flex-row sm:justify-end">
+
+                <a asp-controller="AdminCliente"
+                   asp-action="Index"
+                   class="inline-flex items-center justify-center rounded-xl
+                    border border-slate-700 px-6 py-3
+                    text-sm font-semibold text-slate-400
+                    transition hover:bg-slate-800 hover:text-white">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2
+                    rounded-xl bg-emerald-500 px-6 py-3
+                    text-sm font-bold text-slate-950
+                    transition hover:bg-emerald-400">
+
+                    <svg class="h-5 w-5"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                        <path d="M17 21v-8H7v8" />
+                        <path d="M7 3v5h8" />
+
+                    </svg>
+
+                    Guardar cambios
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

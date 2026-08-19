@@ -1,0 +1,284 @@
+﻿@model Sportia.Models.Cliente
+
+@{
+    ViewData["Title"] = "Nuevo cliente";
+    Layout = "_DashboardLayout";
+}
+
+<div class="min-h-screen bg-[#070c16] px-6 py-6 text-white">
+
+    <!-- ENCABEZADO -->
+
+    <div class="mb-8 flex items-center justify-between">
+
+        <div>
+            <div class="mb-2 flex items-center gap-3">
+
+                <a asp-controller="AdminCliente"
+                   asp-action="Index"
+                   class="flex h-9 w-9 items-center justify-center rounded-lg
+                    border border-slate-700 bg-slate-900 text-slate-400
+                    transition hover:bg-slate-800 hover:text-white">
+
+                    <i data-lucide="arrow-left" class="h-5 w-5"></i>
+
+                </a>
+
+                <h1 class="text-2xl font-bold text-white">
+                    Nuevo cliente
+                </h1>
+
+            </div>
+
+            <p class="ml-12 text-sm text-slate-400">
+                Registra un nuevo cliente en Sportia
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- FORMULARIO -->
+
+    <div class="max-w-4xl rounded-2xl border border-slate-800
+        bg-[#101928] p-6 shadow-xl">
+
+        <form asp-action="Create" method="post">
+
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly"
+                 class="mb-6 rounded-lg border border-red-500/20
+                bg-red-500/10 p-4 text-sm text-red-400">
+            </div>
+
+
+            <!-- INFORMACIÓN PERSONAL -->
+
+            <div class="mb-6">
+
+                <h2 class="mb-1 text-lg font-semibold text-white">
+                    Información personal
+                </h2>
+
+                <p class="text-sm text-slate-500">
+                    Datos básicos del cliente
+                </p>
+
+            </div>
+
+
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                <!-- DOCUMENTO -->
+
+                <div>
+
+                    <label asp-for="Documento"
+                           class="mb-2 block text-sm font-medium text-slate-300">
+                        Documento
+                    </label>
+
+                    <input asp-for="Documento"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-[#0b1320] px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1
+                    focus:ring-emerald-500"
+                           placeholder="Ej: 1234567890" />
+
+                    <span asp-validation-for="Documento"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+
+                <!-- NOMBRES -->
+
+                <div>
+
+                    <label asp-for="Nombres"
+                           class="mb-2 block text-sm font-medium text-slate-300">
+                        Nombres
+                    </label>
+
+                    <input asp-for="Nombres"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-[#0b1320] px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1
+                    focus:ring-emerald-500"
+                           placeholder="Nombre del cliente" />
+
+                    <span asp-validation-for="Nombres"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+
+                <!-- APELLIDOS -->
+
+                <div>
+
+                    <label asp-for="Apellidos"
+                           class="mb-2 block text-sm font-medium text-slate-300">
+                        Apellidos
+                    </label>
+
+                    <input asp-for="Apellidos"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-[#0b1320] px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1
+                    focus:ring-emerald-500"
+                           placeholder="Apellidos del cliente" />
+
+                    <span asp-validation-for="Apellidos"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+
+                <!-- TELÉFONO -->
+
+                <div>
+
+                    <label asp-for="Telefono"
+                           class="mb-2 block text-sm font-medium text-slate-300">
+                        Teléfono
+                    </label>
+
+                    <input asp-for="Telefono"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-[#0b1320] px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1
+                    focus:ring-emerald-500"
+                           placeholder="Ej: 3001234567" />
+
+                    <span asp-validation-for="Telefono"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+
+                <!-- CORREO -->
+
+                <div class="md:col-span-2">
+
+                    <label asp-for="Correo"
+                           class="mb-2 block text-sm font-medium text-slate-300">
+                        Correo electrónico
+                    </label>
+
+                    <input asp-for="Correo"
+                           type="email"
+                           class="w-full rounded-xl border border-slate-700
+                    bg-[#0b1320] px-4 py-3 text-sm text-white
+                    outline-none transition
+                    placeholder:text-slate-600
+                    focus:border-emerald-500 focus:ring-1
+                    focus:ring-emerald-500"
+                           placeholder="cliente@correo.com" />
+
+                    <span asp-validation-for="Correo"
+                          class="mt-1 block text-xs text-red-400">
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACCESO -->
+
+            <div class="my-8 border-t border-slate-800 pt-6">
+
+                <h2 class="mb-1 text-lg font-semibold text-white">
+                    Acceso
+                </h2>
+
+                <p class="text-sm text-slate-500">
+                    Contraseña para el acceso del cliente
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <label asp-for="Password"
+                       class="mb-2 block text-sm font-medium text-slate-300">
+                    Contraseña
+                </label>
+
+                <input asp-for="Password"
+                       type="password"
+                       class="w-full rounded-xl border border-slate-700
+                bg-[#0b1320] px-4 py-3 text-sm text-white
+                outline-none transition
+                placeholder:text-slate-600
+                focus:border-emerald-500 focus:ring-1
+                focus:ring-emerald-500"
+                       placeholder="Contraseña del cliente" />
+
+                <span asp-validation-for="Password"
+                      class="mt-1 block text-xs text-red-400">
+                </span>
+
+            </div>
+
+
+            <!-- BOTONES -->
+
+            <div class="mt-8 flex justify-end gap-3 border-t
+                border-slate-800 pt-6">
+
+                <a asp-controller="AdminCliente"
+                   asp-action="Index"
+                   class="rounded-xl border border-slate-700
+                    bg-slate-900 px-5 py-3 text-sm font-medium
+                    text-slate-300 transition hover:bg-slate-800
+                    hover:text-white">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="flex items-center gap-2 rounded-xl
+                    bg-emerald-500 px-5 py-3 text-sm
+                    font-semibold text-slate-950
+                    transition hover:bg-emerald-400">
+
+                    <i data-lucide="user-plus" class="h-4 w-4"></i>
+
+                    Crear cliente
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        lucide.createIcons();
+    </script>
+}

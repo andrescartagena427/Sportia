@@ -40,13 +40,13 @@ namespace Sportia.Controllers
         // =========================================================
         [HttpPost]
         public async Task<IActionResult> Register(
-            string nombres,
-            string apellidos,
-            string documento,
-            string telefono,
-            string correo,
-            string contrasena,
-            string confirmarContrasena)
+    string nombres,
+    string apellidos,
+    string documento,
+    string telefono,
+    string correo,
+    string contrasena,
+    string confirmarContrasena)
         {
             // Verificar contraseñas
             if (contrasena != confirmarContrasena)
@@ -75,32 +75,42 @@ namespace Sportia.Controllers
                 return View();
             }
 
+            string passwordHasheado = HashPassword(contrasena);
+
             // =====================================================
             // CREAR USUARIO
             // =====================================================
 
             var usuario = new Usuario
             {
-                // 2 = Cliente
-                // Todos los usuarios que se registren desde aquí
-                // serán clientes.
-                IdRol = 2,
-
+                IdRol = 2, // Cliente
                 Nombres = nombres,
                 Apellidos = apellidos,
                 Documento = documento,
                 Telefono = telefono,
                 Correo = correo,
-
-                // Guardar contraseña encriptada
-                Password = HashPassword(contrasena),
-
+                Password = passwordHasheado,
                 Estado = true,
                 FechaRegistro = DateTime.Now
             };
 
             _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
 
+            // =====================================================
+            // CREAR EL CLIENTE ASOCIADO (necesario para reservar)
+            // =====================================================
+            var cliente = new Cliente
+            {
+                Nombres = nombres,
+                Apellidos = apellidos,
+                Documento = documento,
+                Telefono = telefono,
+                Correo = correo,
+                Password = passwordHasheado
+            };
+
+            _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
 
             // Mensaje para el login

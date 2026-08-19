@@ -14,12 +14,12 @@ namespace Sportia.Controllers
         }
 
         // =====================================================
-        // LISTADO DE RESERVAS
+        // LISTADO DE RESERVAS (ADMIN)
         // =====================================================
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Verificar sesión
             int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
             int? idRol = HttpContext.Session.GetInt32("IdRol");
 
@@ -28,7 +28,6 @@ namespace Sportia.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            // Solo administrador
             if (idRol != 1)
             {
                 return RedirectToAction("Index", "Home");
@@ -46,13 +45,12 @@ namespace Sportia.Controllers
 
 
         // =====================================================
-        // CREAR RESERVA - GET
+        // CREAR RESERVA - GET (ADMIN)
         // =====================================================
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            // Verificar sesión
             int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
             int? idRol = HttpContext.Session.GetInt32("IdRol");
 
@@ -66,32 +64,28 @@ namespace Sportia.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Cargar datos para comprobar IDs
-            ViewBag.Clientes = await _context.Clientes
-                .OrderBy(c => c.IdCliente)
-                .ToListAsync();
+            await CargarDatosFormulario();
 
-            ViewBag.Escenarios = await _context.Escenarios
-                .OrderBy(e => e.IdEscenario)
-                .ToListAsync();
+            var reserva = new Reserva
+            {
+                FechaUso = DateOnly.FromDateTime(DateTime.Today),
+                HoraInicio = new TimeOnly(8, 0),
+                HoraFin = new TimeOnly(9, 0),
+                ValorTotal = 0
+            };
 
-            ViewBag.Estados = await _context.EstadosReservas
-                .OrderBy(e => e.IdEstado)
-                .ToListAsync();
-
-            return View();
+            return View(reserva);
         }
 
 
         // =====================================================
-        // CREAR RESERVA - POST
+        // CREAR RESERVA - POST (ADMIN)
         // =====================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Reserva reserva)
         {
-            // Usuario de la sesión
             int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
             int? idRol = HttpContext.Session.GetInt32("IdRol");
 
@@ -105,141 +99,379 @@ namespace Sportia.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // =================================================
-            // VALIDACIONES
-            // =================================================
+            ModelState.Remove(nameof(Reserva.IdUsuario));
+            ModelState.Remove(nameof(Reserva.FechaReserva));
+            ModelState.Remove(nameof(Reserva.Codigo));
+            ModelState.Remove(nameof(Reserva.IdClienteNavigation));
+            ModelState.Remove(nameof(Reserva.IdEscenarioNavigation));
+            ModelState.Remove(nameof(Reserva.IdEstadoNavigation));
+            ModelState.Remove(nameof(Reserva.IdUsuarioNavigation));
+            ModelState.Remove(nameof(Reserva.Pagos));
 
             if (reserva.IdCliente <= 0)
             {
-                ModelState.AddModelError(
-                    "IdCliente",
-                    "Debes seleccionar un cliente."
-                );
+                ModelState.AddModelError(nameof(Reserva.IdCliente), "Debes seleccionar un cliente.");
+            }
+            else
+            {
+                bool clienteExiste = await _context.Clientes.AnyAsync(c => c.IdCliente == reserva.IdCliente);
+                if (!clienteExiste)
+                {
+                    ModelState.AddModelError(nameof(Reserva.IdCliente), "El cliente seleccionado no existe.");
+                }
             }
 
             if (reserva.IdEscenario <= 0)
             {
-                ModelState.AddModelError(
-                    "IdEscenario",
-                    "Debes seleccionar un escenario."
-                );
+                ModelState.AddModelError(nameof(Reserva.IdEscenario), "Debes seleccionar un escenario.");
+            }
+            else
+            {
+                var escenario = await _context.Escenarios.FirstOrDefaultAsync(e => e.IdEscenario == reserva.IdEscenario);
+
+                if (escenario == null)
+                {
+                    ModelState.AddModelError(nameof(Reserva.IdEscenario), "El escenario seleccionado no existe.");
+                }
+                else if (escenario.Estado != true)
+                {
+                    ModelState.AddModelError(nameof(Reserva.IdEscenario), "El escenario seleccionado no está disponible.");
+                }
             }
 
             if (reserva.IdEstado <= 0)
             {
-                ModelState.AddModelError(
-                    "IdEstado",
-                    "Debes seleccionar un estado."
-                );
+                ModelState.AddModelError(nameof(Reserva.IdEstado), "Debes seleccionar un estado.");
+            }
+            else
+            {
+                bool estadoExiste = await _context.EstadosReservas.AnyAsync(e => e.IdEstado == reserva.IdEstado);
+                if (!estadoExiste)
+                {
+                    ModelState.AddModelError(nameof(Reserva.IdEstado), "El estado seleccionado no existe.");
+                }
+            }
+
+            DateOnly hoy = DateOnly.FromDateTime(DateTime.Today);
+
+            if (reserva.FechaUso < hoy)
+            {
+                ModelState.AddModelError(nameof(Reserva.FechaUso), "La fecha de uso no puede ser anterior a hoy.");
             }
 
             if (reserva.HoraFin <= reserva.HoraInicio)
             {
-                ModelState.AddModelError(
-                    "HoraFin",
-                    "La hora de finalización debe ser mayor que la hora de inicio."
-                );
+                ModelState.AddModelError(nameof(Reserva.HoraFin), "La hora de finalización debe ser mayor que la hora de inicio.");
             }
 
-            if (reserva.FechaUso < DateOnly.FromDateTime(DateTime.Today))
+            if (reserva.ValorTotal < 0)
             {
-                ModelState.AddModelError(
-                    "FechaUso",
-                    "La fecha de uso no puede ser anterior a hoy."
-                );
+                ModelState.AddModelError(nameof(Reserva.ValorTotal), "El valor total no puede ser negativo.");
             }
 
-            // =================================================
-            // COMPROBAR CLIENTE
-            // =================================================
-
-            var clienteExiste = await _context.Clientes
-                .AnyAsync(c => c.IdCliente == reserva.IdCliente);
-
-            if (!clienteExiste)
+            if (reserva.IdEscenario > 0 && reserva.HoraFin > reserva.HoraInicio && reserva.FechaUso >= hoy)
             {
-                ModelState.AddModelError(
-                    "IdCliente",
-                    "El cliente seleccionado no existe."
-                );
+                bool horarioOcupado = await _context.Reservas.AnyAsync(r =>
+                    r.IdEscenario == reserva.IdEscenario &&
+                    r.FechaUso == reserva.FechaUso &&
+                    r.HoraInicio < reserva.HoraFin &&
+                    r.HoraFin > reserva.HoraInicio);
+
+                if (horarioOcupado)
+                {
+                    ModelState.AddModelError("", "El escenario ya tiene una reserva en ese horario.");
+                }
             }
-
-            // =================================================
-            // COMPROBAR ESCENARIO
-            // =================================================
-
-            var escenarioExiste = await _context.Escenarios
-                .AnyAsync(e => e.IdEscenario == reserva.IdEscenario);
-
-            if (!escenarioExiste)
-            {
-                ModelState.AddModelError(
-                    "IdEscenario",
-                    "El escenario seleccionado no existe."
-                );
-            }
-
-            // =================================================
-            // COMPROBAR ESTADO
-            // =================================================
-
-            var estadoExiste = await _context.EstadosReservas
-                .AnyAsync(e => e.IdEstado == reserva.IdEstado);
-
-            if (!estadoExiste)
-            {
-                ModelState.AddModelError(
-                    "IdEstado",
-                    "El estado seleccionado no existe."
-                );
-            }
-
-            // =================================================
-            // SI HAY ERRORES
-            // =================================================
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Clientes = await _context.Clientes
-                    .OrderBy(c => c.IdCliente)
-                    .ToListAsync();
-
-                ViewBag.Escenarios = await _context.Escenarios
-                    .OrderBy(e => e.IdEscenario)
-                    .ToListAsync();
-
-                ViewBag.Estados = await _context.EstadosReservas
-                    .OrderBy(e => e.IdEstado)
-                    .ToListAsync();
-
+                await CargarDatosFormulario();
                 return View(reserva);
             }
 
-            // =================================================
-            // DATOS AUTOMÁTICOS
-            // =================================================
-
             reserva.IdUsuario = idUsuario.Value;
-
             reserva.FechaReserva = DateTime.Now;
+            reserva.Codigo = "RES-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
-            // Generar código de reserva
-            reserva.Codigo = "RES-" +
-                             DateTime.Now.ToString("yyyyMMddHHmmss");
+            try
+            {
+                _context.Reservas.Add(reserva);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                await CargarDatosFormulario();
+                string mensaje = ex.InnerException?.Message ?? ex.Message;
+                ModelState.AddModelError("", "Error al guardar la reserva: " + mensaje);
+                return View(reserva);
+            }
+            catch (Exception ex)
+            {
+                await CargarDatosFormulario();
+                ModelState.AddModelError("", "Ocurrió un error al guardar la reserva: " + ex.Message);
+                return View(reserva);
+            }
 
-            // =================================================
-            // GUARDAR
-            // =================================================
+            TempData["MensajeReserva"] = $"La reserva {reserva.Codigo} fue creada correctamente.";
 
-            _context.Reservas.Add(reserva);
+            return RedirectToAction(nameof(Index));
+        }
 
-            await _context.SaveChangesAsync();
 
-            // =================================================
-            // VOLVER AL DASHBOARD
-            // =================================================
+        // =====================================================
+        // CLIENTE: CALCULAR PRECIO Y DISPONIBILIDAD (AJAX)
+        // =====================================================
+        // Se llama desde el modal de "Reservar" en Cliente/Index
+        // cada vez que el cliente elige fecha/hora, para mostrarle
+        // el precio real (según Tarifa) antes de confirmar.
 
-            return RedirectToAction("Index", "Dashboard");
+        [HttpGet]
+        public async Task<IActionResult> CalcularPrecio(int idEscenario, DateOnly fecha, TimeOnly horaInicio, TimeOnly horaFin)
+        {
+            if (horaFin <= horaInicio)
+            {
+                return Json(new { ok = false, mensaje = "La hora de fin debe ser mayor que la de inicio." });
+            }
+
+            DateOnly hoy = DateOnly.FromDateTime(DateTime.Today);
+            if (fecha < hoy)
+            {
+                return Json(new { ok = false, mensaje = "La fecha no puede ser anterior a hoy." });
+            }
+
+            string diaSemana = ObtenerNombreDiaSemana(fecha.DayOfWeek);
+
+            var tarifa = await _context.Tarifas
+                .Where(t => t.IdEscenario == idEscenario
+                    && t.DiaSemana == diaSemana
+                    && t.HoraInicio <= horaInicio
+                    && t.HoraFin >= horaFin)
+                .FirstOrDefaultAsync();
+
+            if (tarifa == null)
+            {
+                return Json(new { ok = false, mensaje = $"No hay una tarifa configurada para {diaSemana} en ese horario." });
+            }
+
+            bool ocupado = await _context.Reservas.AnyAsync(r =>
+                r.IdEscenario == idEscenario &&
+                r.FechaUso == fecha &&
+                r.HoraInicio < horaFin &&
+                r.HoraFin > horaInicio);
+
+            if (ocupado)
+            {
+                return Json(new { ok = false, mensaje = "Ese horario ya está reservado." });
+            }
+
+            double horas = (horaFin.ToTimeSpan() - horaInicio.ToTimeSpan()).TotalHours;
+            decimal total = tarifa.Precio * (decimal)horas;
+
+            return Json(new
+            {
+                ok = true,
+                mensaje = "",
+                precioHora = tarifa.Precio,
+                horas = horas,
+                total = total
+            });
+        }
+
+
+        // =====================================================
+        // CLIENTE: CREAR SU PROPIA RESERVA
+        // =====================================================
+        // A diferencia de Create() (admin), aquí el cliente NO elige
+        // a qué cliente pertenece la reserva: se toma de su sesión.
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearCliente(int IdEscenario, DateOnly FechaUso, TimeOnly HoraInicio, TimeOnly HoraFin, string? Observaciones)
+        {
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (idUsuario == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (idRol != 2)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            // ---------------------------------------------------
+            // Ubicar al cliente logueado (mismo esquema que ClienteController)
+            // ---------------------------------------------------
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c => c.IdCliente == idUsuario.Value);
+
+            if (cliente == null)
+            {
+                var correoUsuario = HttpContext.Session.GetString("CorreoUsuario");
+                if (!string.IsNullOrWhiteSpace(correoUsuario))
+                {
+                    cliente = await _context.Clientes
+                        .FirstOrDefaultAsync(c => c.Correo == correoUsuario);
+                }
+            }
+
+            if (cliente == null)
+            {
+                TempData["ErrorReserva"] = "No se pudo identificar tu cuenta de cliente.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            var escenario = await _context.Escenarios
+                .FirstOrDefaultAsync(e => e.IdEscenario == IdEscenario && e.Estado == true);
+
+            if (escenario == null)
+            {
+                TempData["ErrorReserva"] = "El escenario seleccionado no está disponible.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            DateOnly hoy = DateOnly.FromDateTime(DateTime.Today);
+
+            if (FechaUso < hoy)
+            {
+                TempData["ErrorReserva"] = "La fecha no puede ser anterior a hoy.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            if (HoraFin <= HoraInicio)
+            {
+                TempData["ErrorReserva"] = "La hora de fin debe ser mayor que la de inicio.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            string diaSemana = ObtenerNombreDiaSemana(FechaUso.DayOfWeek);
+
+            var tarifa = await _context.Tarifas
+                .Where(t => t.IdEscenario == IdEscenario
+                    && t.DiaSemana == diaSemana
+                    && t.HoraInicio <= HoraInicio
+                    && t.HoraFin >= HoraFin)
+                .FirstOrDefaultAsync();
+
+            if (tarifa == null)
+            {
+                TempData["ErrorReserva"] = $"No hay una tarifa configurada para {diaSemana} en ese horario.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            bool ocupado = await _context.Reservas.AnyAsync(r =>
+                r.IdEscenario == IdEscenario &&
+                r.FechaUso == FechaUso &&
+                r.HoraInicio < HoraFin &&
+                r.HoraFin > HoraInicio);
+
+            if (ocupado)
+            {
+                TempData["ErrorReserva"] = "Ese horario ya fue reservado por otra persona. Elige otro horario.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            double horas = (HoraFin.ToTimeSpan() - HoraInicio.ToTimeSpan()).TotalHours;
+            decimal valorTotal = tarifa.Precio * (decimal)horas;
+
+            // Estado inicial: "Pendiente" (por confirmar/pagar).
+            // Se busca por nombre para no depender de un Id fijo;
+            // si no existe ese nombre exacto en tu tabla, ajusta el texto.
+            var estadoPendiente = await _context.EstadosReservas
+                .FirstOrDefaultAsync(e => e.Nombre.ToLower().Contains("pendiente"));
+
+            if (estadoPendiente == null)
+            {
+                estadoPendiente = await _context.EstadosReservas
+                    .OrderBy(e => e.IdEstado)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (estadoPendiente == null)
+            {
+                TempData["ErrorReserva"] = "No hay estados de reserva configurados en el sistema.";
+                return RedirectToAction("Index", "Cliente");
+            }
+
+            var reserva = new Reserva
+            {
+                IdCliente = cliente.IdCliente,
+                IdEscenario = IdEscenario,
+                IdEstado = estadoPendiente.IdEstado,
+                IdUsuario = idUsuario.Value,
+                FechaUso = FechaUso,
+                HoraInicio = HoraInicio,
+                HoraFin = HoraFin,
+                ValorTotal = valorTotal,
+                Observaciones = Observaciones,
+                FechaReserva = DateTime.Now,
+                Codigo = "RES-" + DateTime.Now.ToString("yyyyMMddHHmmssfff")
+            };
+
+            try
+            {
+                _context.Reservas.Add(reserva);
+                await _context.SaveChangesAsync();
+
+                TempData["MensajeReserva"] =
+                    $"¡Reserva creada! Código {reserva.Codigo} · Total: ${valorTotal:N0}. Queda pendiente de confirmación.";
+            }
+            catch (DbUpdateException ex)
+            {
+                TempData["ErrorReserva"] = "No se pudo guardar la reserva: " + (ex.InnerException?.Message ?? ex.Message);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorReserva"] = "Ocurrió un error al guardar la reserva: " + ex.Message;
+            }
+
+            return RedirectToAction("Index", "Cliente");
+        }
+
+
+        // =====================================================
+        // CARGAR DATOS DEL FORMULARIO (ADMIN)
+        // =====================================================
+
+        private async Task CargarDatosFormulario()
+        {
+            ViewBag.Clientes = await _context.Clientes
+                .OrderBy(c => c.Nombres)
+                .ThenBy(c => c.Apellidos)
+                .ToListAsync();
+
+            ViewBag.Escenarios = await _context.Escenarios
+                .Where(e => e.Estado == true)
+                .OrderBy(e => e.Nombre)
+                .ToListAsync();
+
+            ViewBag.Estados = await _context.EstadosReservas
+                .OrderBy(e => e.IdEstado)
+                .ToListAsync();
+        }
+
+
+        // =====================================================
+        // NOMBRE DEL DÍA DE LA SEMANA EN ESPAÑOL
+        // =====================================================
+        // Ajusta los textos si en tu tabla Tarifa los días
+        // están guardados sin tildes o en otro formato.
+
+        private static string ObtenerNombreDiaSemana(DayOfWeek dia)
+        {
+            return dia switch
+            {
+                DayOfWeek.Monday => "Lunes",
+                DayOfWeek.Tuesday => "Martes",
+                DayOfWeek.Wednesday => "Miércoles",
+                DayOfWeek.Thursday => "Jueves",
+                DayOfWeek.Friday => "Viernes",
+                DayOfWeek.Saturday => "Sábado",
+                DayOfWeek.Sunday => "Domingo",
+                _ => ""
+            };
         }
     }
 }

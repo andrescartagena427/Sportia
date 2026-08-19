@@ -40,8 +40,13 @@ public partial class SportiaDbContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
+    public virtual DbSet<Configuracion> Configuraciones { get; set; }
+
+    public virtual DbSet<ContactoMensaje> ContactoMensajes { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseMySql("name=ConexionSportia", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.43-mysql"));
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -411,6 +416,73 @@ public partial class SportiaDbContext : DbContext
                 .HasForeignKey(d => d.IdRol)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("usuarios_ibfk_1");
+        });
+
+        modelBuilder.Entity<Configuracion>(entity =>
+        {
+            entity.HasKey(e => e.IdConfiguracion)
+                .HasName("PRIMARY");
+
+            entity.ToTable("configuracion");
+
+            entity.Property(e => e.IdConfiguracion)
+                .HasColumnName("id_configuracion");
+
+            entity.Property(e => e.NombrePlataforma)
+                .HasMaxLength(100)
+                .HasColumnName("nombre_plataforma");
+
+            entity.Property(e => e.Correo)
+                .HasMaxLength(120)
+                .HasColumnName("correo");
+
+            entity.Property(e => e.Telefono)
+                .HasMaxLength(20)
+                .HasColumnName("telefono");
+
+            entity.Property(e => e.Pais)
+                .HasMaxLength(80)
+                .HasColumnName("pais");
+
+            entity.Property(e => e.Logo)
+                .HasMaxLength(255)
+                .HasColumnName("logo");
+
+            entity.Property(e => e.PermitirRegistros)
+                .HasColumnName("permitir_registros");
+            entity.Property(e => e.Notificaciones)
+                .HasColumnName("notificaciones");
+
+            entity.Property(e => e.ModoMantenimiento)
+                .HasColumnName("modo_mantenimiento");
+        });
+
+        modelBuilder.Entity<ContactoMensaje>(entity =>
+        {
+            entity.HasKey(e => e.IdContacto).HasName("PRIMARY");
+
+            entity.ToTable("ContactoMensajes");
+
+            entity.Property(e => e.IdContacto).HasColumnName("IdContacto");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(150)
+                .HasColumnName("Nombre");
+            entity.Property(e => e.Correo)
+                .HasMaxLength(150)
+                .HasColumnName("Correo");
+            entity.Property(e => e.Asunto)
+                .HasMaxLength(200)
+                .HasColumnName("Asunto");
+            entity.Property(e => e.Mensaje)
+                .HasColumnType("text")
+                .HasColumnName("Mensaje");
+            entity.Property(e => e.FechaEnvio)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("FechaEnvio");
+            entity.Property(e => e.Respondido)
+                .HasDefaultValueSql("'0'")
+                .HasColumnName("Respondido");
         });
 
         OnModelCreatingPartial(modelBuilder);

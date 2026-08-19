@@ -1,0 +1,626 @@
+﻿@model Sportia.Models.Reserva
+
+@{
+    ViewData["Title"] = "Nueva reserva";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<style>
+    .reservation-page {
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .page-header-left h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #edf2f7;
+        margin-bottom: 5px;
+    }
+
+    .page-header-left p {
+        color: #8c99ae;
+        font-size: 13px;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border: 1px solid #202d43;
+        border-radius: 9px;
+        background: #101928;
+        color: #cbd5e1;
+        text-decoration: none;
+        transition: .15s ease;
+    }
+
+        .back-button:hover {
+            background: #141f32;
+            color: #fff;
+        }
+
+    .reservation-card {
+        background: #101928;
+        border: 1px solid #202d43;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #202d43;
+    }
+
+        .card-header h2 {
+            color: #edf2f7;
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-header p {
+            color: #8c99ae;
+            font-size: 12px;
+        }
+
+    .form-body {
+        padding: 24px;
+    }
+
+    .form-section {
+        margin-bottom: 28px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 18px;
+        color: #edf2f7;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .section-number {
+        width: 25px;
+        height: 25px;
+        border-radius: 7px;
+        background: rgba(34, 199, 122, .12);
+        color: #22c77a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+    .form-label {
+        color: #cbd5e1;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 7px;
+    }
+
+    .required {
+        color: #ef5365;
+    }
+
+    .form-control {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        background: #0d1422;
+        border: 1px solid #202d43;
+        border-radius: 8px;
+        color: #edf2f7;
+        outline: none;
+        transition: .15s ease;
+    }
+
+        .form-control:focus {
+            border-color: #22c77a;
+            box-shadow: 0 0 0 3px rgba(34, 199, 122, .10);
+        }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-help {
+        margin-top: 5px;
+        color: #5e6c83;
+        font-size: 11px;
+    }
+
+    .field-validation-error {
+        display: block;
+        margin-top: 5px;
+        color: #ef5365;
+        font-size: 11px;
+    }
+
+    .validation-summary-errors {
+        margin-bottom: 20px;
+        padding: 13px 15px;
+        background: rgba(239, 83, 101, .08);
+        border: 1px solid rgba(239, 83, 101, .25);
+        border-radius: 9px;
+        color: #ff7b8a;
+        font-size: 12px;
+    }
+
+        .validation-summary-errors ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+    .automatic-info {
+        padding: 14px 16px;
+        background: rgba(59, 130, 246, .07);
+        border: 1px solid rgba(59, 130, 246, .20);
+        border-radius: 9px;
+        color: #93c5fd;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+        .automatic-info strong {
+            color: #bfdbfe;
+        }
+
+    .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 18px 24px;
+        border-top: 1px solid #202d43;
+        background: #0d1422;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 9px 17px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: .15s ease;
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: 1px solid #202d43;
+        color: #8c99ae;
+    }
+
+        .btn-cancel:hover {
+            background: #141f32;
+            color: #edf2f7;
+        }
+
+    .btn-primary {
+        border: 1px solid #22c77a;
+        background: #22c77a;
+        color: #03150d;
+    }
+
+        .btn-primary:hover {
+            background: #19b86d;
+            border-color: #19b86d;
+        }
+
+    @@media (max-width: 700px) {
+        .reservation-page {
+            max-width: 100%;
+        }
+
+        .page-header {
+            align-items: flex-start;
+            gap: 15px;
+            flex-direction: column;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: auto;
+        }
+
+        .form-body {
+            padding: 18px;
+        }
+
+        .form-footer {
+            padding: 16px 18px;
+        }
+    }
+</style>
+
+<div class="reservation-page">
+
+    <!-- ENCABEZADO -->
+    <div class="page-header">
+
+        <div class="page-header-left">
+            <h1>Nueva reserva</h1>
+            <p>Registra una nueva reserva para un escenario deportivo</p>
+        </div>
+
+        <a asp-controller="Reservas"
+           asp-action="Index"
+           class="back-button">
+            ← Volver a reservas
+        </a>
+
+    </div>
+
+
+    <!-- TARJETA -->
+    <div class="reservation-card">
+
+        <div class="card-header">
+            <h2>Información de la reserva</h2>
+            <p>Completa los datos necesarios para registrar la reserva.</p>
+        </div>
+
+
+        <form asp-controller="Reservas"
+              asp-action="Create"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <div class="form-body">
+
+                <!-- ERRORES -->
+                <div asp-validation-summary="ModelOnly"
+                     class="validation-summary-errors">
+                </div>
+
+
+                <!-- INFORMACIÓN PRINCIPAL -->
+                <div class="form-section">
+
+                    <div class="section-title">
+                        <div class="section-number">1</div>
+                        Información principal
+                    </div>
+
+                    <div class="form-grid">
+
+                        <!-- CLIENTE -->
+                        <div class="form-group">
+
+                            <label asp-for="IdCliente"
+                                   class="form-label">
+                                Cliente <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="IdCliente"
+                                    class="form-control">
+
+                                <option value="0">
+                                    Selecciona un cliente
+                                </option>
+
+                                @if (ViewBag.Clientes != null)
+                                {
+                                    foreach (var cliente in ViewBag.Clientes)
+                                    {
+                                        <option value="@cliente.IdCliente">
+                                            @cliente.Nombres @cliente.Apellidos
+                                            @if (!string.IsNullOrWhiteSpace(cliente.Documento))
+                                            {
+                                                <text> - @cliente.Documento</text>
+                                            }
+                                        </option>
+                                    }
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="IdCliente"
+                                  class="field-validation-error">
+                            </span>
+
+                            <span class="form-help">
+                                Selecciona la persona que realizará la reserva.
+                            </span>
+
+                        </div>
+
+
+                        <!-- ESCENARIO -->
+                        <div class="form-group">
+
+                            <label asp-for="IdEscenario"
+                                   class="form-label">
+                                Escenario deportivo <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="IdEscenario"
+                                    class="form-control">
+
+                                <option value="0">
+                                    Selecciona un escenario
+                                </option>
+
+                                @if (ViewBag.Escenarios != null)
+                                {
+                                    foreach (var escenario in ViewBag.Escenarios)
+                                    {
+                                        <option value="@escenario.IdEscenario">
+                                            @escenario.Nombre
+                                        </option>
+                                    }
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="IdEscenario"
+                                  class="field-validation-error">
+                            </span>
+
+                            <span class="form-help">
+                                Solo se muestran escenarios disponibles.
+                            </span>
+
+                        </div>
+
+
+                        <!-- FECHA -->
+                        <div class="form-group">
+
+                            <label asp-for="FechaUso"
+                                   class="form-label">
+                                Fecha de uso <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="FechaUso"
+                                   type="date"
+                                   class="form-control"
+                                   id="FechaUso" />
+
+                            <span asp-validation-for="FechaUso"
+                                  class="field-validation-error">
+                            </span>
+
+                            <span class="form-help">
+                                La fecha no puede ser anterior a hoy.
+                            </span>
+
+                        </div>
+
+
+                        <!-- HORA INICIO -->
+                        <div class="form-group">
+
+                            <label asp-for="HoraInicio"
+                                   class="form-label">
+                                Hora de inicio <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="HoraInicio"
+                                   type="time"
+                                   class="form-control" />
+
+                            <span asp-validation-for="HoraInicio"
+                                  class="field-validation-error">
+                            </span>
+
+                        </div>
+
+
+                        <!-- HORA FIN -->
+                        <div class="form-group">
+
+                            <label asp-for="HoraFin"
+                                   class="form-label">
+                                Hora de finalización <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="HoraFin"
+                                   type="time"
+                                   class="form-control" />
+
+                            <span asp-validation-for="HoraFin"
+                                  class="field-validation-error">
+                            </span>
+
+                        </div>
+
+
+                        <!-- VALOR -->
+                        <div class="form-group">
+
+                            <label asp-for="ValorTotal"
+                                   class="form-label">
+                                Valor total <span class="required">*</span>
+                            </label>
+
+                            <input asp-for="ValorTotal"
+                                   type="number"
+                                   min="0"
+                                   step="0.01"
+                                   class="form-control"
+                                   placeholder="0.00" />
+
+                            <span asp-validation-for="ValorTotal"
+                                  class="field-validation-error">
+                            </span>
+
+                            <span class="form-help">
+                                Valor total de la reserva.
+                            </span>
+
+                        </div>
+
+
+                        <!-- OBSERVACIONES -->
+                        <div class="form-group full">
+
+                            <label asp-for="Observaciones"
+                                   class="form-label">
+                                Observaciones
+                            </label>
+
+                            <textarea asp-for="Observaciones"
+                                      class="form-control"
+                                      placeholder="Escribe alguna observación..."></textarea>
+
+                            <span asp-validation-for="Observaciones"
+                                  class="field-validation-error">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ESTADO -->
+                <div class="form-section">
+
+                    <div class="section-title">
+                        <div class="section-number">2</div>
+                        Estado de la reserva
+                    </div>
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label asp-for="IdEstado"
+                                   class="form-label">
+                                Estado <span class="required">*</span>
+                            </label>
+
+                            <select asp-for="IdEstado"
+                                    class="form-control">
+
+                                <option value="0">
+                                    Selecciona un estado
+                                </option>
+
+                                @if (ViewBag.Estados != null)
+                                {
+                                    foreach (var estado in ViewBag.Estados)
+                                    {
+                                        <option value="@estado.IdEstado">
+                                            @estado.Nombre
+                                        </option>
+                                    }
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="IdEstado"
+                                  class="field-validation-error">
+                            </span>
+
+                            <span class="form-help">
+                                Selecciona el estado inicial de la reserva.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DATOS AUTOMÁTICOS -->
+                <div class="automatic-info">
+                    <strong>Información automática:</strong>
+                    el código de reserva, el usuario que registra la reserva
+                    y la fecha de registro se generan automáticamente al guardar.
+                </div>
+
+            </div>
+
+
+            <!-- BOTONES -->
+            <div class="form-footer">
+
+                <a asp-controller="Reservas"
+                   asp-action="Index"
+                   class="btn btn-cancel">
+                    Cancelar
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    ✓ Crear reserva
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const fecha = document.getElementById("FechaUso");
+
+            if (fecha) {
+
+                const hoy = new Date();
+
+                const año = hoy.getFullYear();
+                const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+                const dia = String(hoy.getDate()).padStart(2, "0");
+
+                fecha.min = `${año}-${mes}-${dia}`;
+            }
+
+        });
+    </script>
+}

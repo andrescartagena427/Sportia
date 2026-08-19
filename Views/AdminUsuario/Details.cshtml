@@ -1,0 +1,476 @@
+﻿@model Sportia.Models.Usuario
+
+@{
+    ViewData["Title"] = "Detalle del usuario";
+    Layout = "_DashboardLayout";
+}
+
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+        <div class="flex items-center gap-4">
+
+            <a asp-action="Index"
+               class="w-10 h-10 rounded-xl
+                border border-slate-800
+                bg-slate-900
+                hover:bg-slate-800
+                flex items-center justify-center
+                text-slate-400 hover:text-white
+                transition">
+
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+
+            </a>
+
+            <div>
+
+                <h1 class="text-2xl font-bold text-white">
+                    Detalle del usuario
+                </h1>
+
+                <p class="text-sm text-slate-400">
+                    Información completa del usuario
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <a asp-action="Edit"
+           asp-route-id="@Model.IdUsuario"
+           class="inline-flex items-center justify-center gap-2
+            rounded-xl
+            bg-blue-500/10
+            border border-blue-500/20
+            hover:bg-blue-500/20
+            px-5 py-2.5
+            text-sm font-semibold
+            text-blue-300
+            transition">
+
+            <i data-lucide="pencil" class="w-4 h-4"></i>
+
+            Editar usuario
+
+        </a>
+
+    </div>
+
+
+    <!-- PERFIL -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="p-6">
+
+            <div class="flex flex-col md:flex-row
+                md:items-center
+                gap-5">
+
+                <!-- AVATAR -->
+                <div class="w-20 h-20
+                    rounded-2xl
+                    bg-emerald-500/10
+                    border border-emerald-500/20
+                    flex items-center justify-center
+                    text-emerald-400
+                    text-2xl font-bold">
+
+                    @Model.Nombres.Substring(0, 1).ToUpper()
+
+                </div>
+
+
+                <!-- NOMBRE -->
+                <div class="flex-1">
+
+                    <h2 class="text-2xl font-bold text-white">
+                        @Model.Nombres @Model.Apellidos
+                    </h2>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                        Usuario #@Model.IdUsuario
+                    </p>
+
+                    <div class="mt-3">
+
+                        @if (Model.Estado == true)
+                        {
+                            <span class="inline-flex items-center gap-2
+                                rounded-lg
+                                border border-emerald-500/20
+                                bg-emerald-500/10
+                                px-3 py-1
+                                text-xs font-medium
+                                text-emerald-300">
+
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+
+                                Usuario activo
+
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center gap-2
+                                rounded-lg
+                                border border-red-500/20
+                                bg-red-500/10
+                                px-3 py-1
+                                text-xs font-medium
+                                text-red-300">
+
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+
+                                Usuario inactivo
+
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <!-- ROL -->
+                <div class="md:text-right">
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Rol
+                    </p>
+
+                    <p class="mt-2 text-lg font-semibold text-blue-300">
+                        @(Model.IdRolNavigation?.Nombre ?? "Sin rol")
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- INFORMACION -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- DATOS PERSONALES -->
+        <div class="rounded-2xl
+            border border-slate-800
+            bg-slate-900/60">
+
+            <div class="border-b border-slate-800 px-6 py-4">
+
+                <h2 class="text-base font-semibold text-white">
+                    Información personal
+                </h2>
+
+            </div>
+
+
+            <div class="p-6 space-y-5">
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Nombre completo
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @Model.Nombres @Model.Apellidos
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Documento
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @Model.Documento
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Teléfono
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.Telefono ?? "No registrado")
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DATOS DE ACCESO -->
+        <div class="rounded-2xl
+            border border-slate-800
+            bg-slate-900/60">
+
+            <div class="border-b border-slate-800 px-6 py-4">
+
+                <h2 class="text-base font-semibold text-white">
+                    Información de acceso
+                </h2>
+
+            </div>
+
+
+            <div class="p-6 space-y-5">
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Correo
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @Model.Correo
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Rol
+                    </p>
+
+                    <p class="mt-1 text-sm text-blue-300">
+                        @(Model.IdRolNavigation?.Nombre ?? "Sin rol")
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs uppercase tracking-wider text-slate-500">
+                        Fecha de registro
+                    </p>
+
+                    <p class="mt-1 text-sm text-white">
+                        @(Model.FechaRegistro?.ToString("dd/MM/yyyy HH:mm")
+                            ?? "No registrada")
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RESERVAS -->
+    <div class="rounded-2xl
+        border border-slate-800
+        bg-slate-900/60
+        overflow-hidden">
+
+        <div class="border-b border-slate-800 px-6 py-5">
+
+            <div class="flex items-center justify-between">
+
+                <div>
+
+                    <h2 class="text-base font-semibold text-white">
+                        Reservas realizadas
+                    </h2>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Reservas asociadas a este usuario
+                    </p>
+
+                </div>
+
+                <div class="rounded-xl
+                    bg-blue-500/10
+                    px-4 py-2">
+
+                    <span class="text-sm font-semibold text-blue-300">
+                        @Model.Reservas.Count
+                    </span>
+
+                    <span class="text-xs text-slate-500">
+                        reservas
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        @if (Model.Reservas.Any())
+        {
+            <div class="overflow-x-auto">
+
+                <table class="w-full">
+
+                    <thead class="border-b border-slate-800 bg-slate-950/50">
+
+                        <tr>
+
+                            <th class="px-6 py-4 text-left
+                                text-[11px] uppercase
+                                tracking-wider
+                                text-slate-500">
+                                Código
+                            </th>
+
+                            <th class="px-6 py-4 text-left
+                                text-[11px] uppercase
+                                tracking-wider
+                                text-slate-500">
+                                Fecha de uso
+                            </th>
+
+                            <th class="px-6 py-4 text-left
+                                text-[11px] uppercase
+                                tracking-wider
+                                text-slate-500">
+                                Horario
+                            </th>
+
+                            <th class="px-6 py-4 text-right
+                                text-[11px] uppercase
+                                tracking-wider
+                                text-slate-500">
+                                Valor
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody class="divide-y divide-slate-800">
+
+                        @foreach (var reserva in Model.Reservas.OrderByDescending(r => r.FechaReserva))
+                        {
+                            <tr class="hover:bg-slate-800/30 transition">
+
+                                <td class="px-6 py-4">
+
+                                    <span class="text-sm font-semibold text-white">
+                                        @reserva.Codigo
+                                    </span>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <span class="text-sm text-slate-300">
+                                        @reserva.FechaUso.ToString("dd/MM/yyyy")
+                                    </span>
+
+                                </td>
+
+
+                                <td class="px-6 py-4">
+
+                                    <span class="text-sm text-slate-300">
+                                        @reserva.HoraInicio.ToString(@"hh\:mm")
+                                        -
+                                        @reserva.HoraFin.ToString(@"hh\:mm")
+                                    </span>
+
+                                </td>
+
+
+                                <td class="px-6 py-4 text-right">
+
+                                    <span class="text-sm font-semibold text-emerald-400">
+                                        $@reserva.ValorTotal.ToString("N0")
+                                    </span>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+        else
+        {
+            <div class="px-6 py-12 text-center">
+
+                <div class="mx-auto w-12 h-12
+                    rounded-xl
+                    bg-slate-800
+                    flex items-center justify-center">
+
+                    <i data-lucide="calendar-x"
+                       class="w-6 h-6 text-slate-500"></i>
+
+                </div>
+
+                <p class="mt-4 text-sm font-medium text-slate-300">
+                    Este usuario no tiene reservas
+                </p>
+
+                <p class="mt-1 text-xs text-slate-500">
+                    Las reservas realizadas aparecerán aquí.
+                </p>
+
+            </div>
+        }
+
+    </div>
+
+
+    <!-- VOLVER -->
+    <div class="flex justify-end">
+
+        <a asp-action="Index"
+           class="inline-flex items-center gap-2
+            rounded-xl
+            border border-slate-700
+            bg-slate-800
+            hover:bg-slate-700
+            px-5 py-2.5
+            text-sm font-semibold
+            text-slate-300
+            hover:text-white
+            transition">
+
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+
+            Volver a usuarios
+
+        </a>
+
+    </div>
+
+</div>
+
+<script>
+    lucide.createIcons();
+</script>

@@ -1,0 +1,334 @@
+﻿@model Sportia.Models.ReservaClienteViewModel
+
+@{
+    ViewData["Title"] = "Reservar - " + Model.NombreEscenario;
+    Layout = "_ClienteLayout";
+
+    const string imagenPorDefecto =
+        "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80";
+
+    string imagenUrl = !string.IsNullOrWhiteSpace(Model.Imagen) ? Model.Imagen : imagenPorDefecto;
+}
+
+@functions {
+    // Clasifica el método de pago según su nombre, para decidir
+    // qué campos extra mostrar en el formulario (tarjeta, transferencia, etc).
+    string ClasificarMetodo(string nombre)
+    {
+        string n = (nombre ?? "").ToLower();
+        if (n.Contains("tarjeta")) return "tarjeta";
+        if (n.Contains("transferencia")) return "transferencia";
+        if (n.Contains("efectivo")) return "efectivo";
+        return "otro";
+    }
+}
+
+<div class="min-h-screen bg-slate-950 text-white py-10">
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+
+        <a asp-controller="Cliente" asp-action="Index"
+           class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-6">
+            ← Volver a escenarios
+        </a>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-5 py-4 text-sm font-semibold">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <div class="rounded-2xl border border-white/10 bg-slate-900 shadow-2xl overflow-hidden grid md:grid-cols-2">
+
+            <!-- =================================================
+                 IZQUIERDA: INFORMACIÓN DEL ESCENARIO
+            ================================================== -->
+
+            <div class="relative bg-slate-950">
+
+                <img src="@imagenUrl" alt="@Model.NombreEscenario"
+                     class="w-full h-56 md:h-full object-cover" />
+
+                <div class="p-6 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-slate-950 md:via-slate-950/90 md:to-transparent">
+
+                    <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+                        @Model.Categoria
+                    </p>
+
+                    <h1 class="text-2xl font-black mt-1">
+                        @Model.NombreEscenario
+                    </h1>
+
+                    <p class="text-sm text-slate-400 mt-3 leading-relaxed">
+                        @(!string.IsNullOrWhiteSpace(Model.Descripcion) ? Model.Descripcion : "Escenario deportivo disponible para reservar.")
+                    </p>
+
+                    <div class="flex items-center gap-2 mt-4">
+                        <span class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
+                            Capacidad: <span class="font-semibold text-white">@(Model.Capacidad?.ToString() ?? "N/D")</span>
+                        </span>
+                        <span class="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 font-semibold">
+                            Disponible
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 DERECHA: FORMULARIO DE RESERVA
+            ================================================== -->
+
+            <div class="p-6">
+
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-5">
+                    Reservar escenario
+                </p>
+
+                <form asp-controller="Cliente" asp-action="Reservar" method="post" class="flex flex-col gap-4">
+
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="IdEscenario" />
+
+                    <div>
+                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Fecha</label>
+                        <input type="date" id="inputFecha" asp-for="FechaUso"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Hora inicio</label>
+                            <input type="time" id="inputHoraInicio" asp-for="HoraInicio"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Hora fin</label>
+                            <input type="time" id="inputHoraFin" asp-for="HoraFin"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                    </div>
+
+                    <!-- =============================================
+                         SELECCIÓN DE MÉTODO DE PAGO (estilo tarjetas)
+                    ============================================== -->
+
+                    <div>
+                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Método de pago</label>
+
+                        @if (Model.MetodosPagoDisponibles.Any())
+                        {
+                            <div class="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                @foreach (var metodo in Model.MetodosPagoDisponibles)
+                                {
+                                    string tipo = ClasificarMetodo(metodo.Nombre);
+                                    <label class="metodo-card flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer transition hover:border-emerald-500/40"
+                                           data-tipo="@tipo">
+                                        <input type="radio" name="IdMetodoPago" value="@metodo.IdMetodo"
+                                               class="metodo-radio accent-emerald-500"
+                                        @(Model.IdMetodoPago == metodo.IdMetodo ? "checked" : "") required />
+                                        <span class="text-sm text-slate-200">@metodo.Nombre</span>
+                                    </label>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="mt-1.5 text-sm text-red-400">
+                                No hay métodos de pago registrados en el sistema todavía.
+                            </p>
+                        }
+                    </div>
+
+                    <!-- =============================================
+                         CAMPOS EXTRA SEGÚN EL MÉTODO ELEGIDO
+                    ============================================== -->
+
+                    <div id="camposTarjeta" class="hidden grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                        <div class="col-span-2">
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Número de tarjeta</label>
+                            <input type="text" name="NumeroTarjeta" maxlength="19" placeholder="1234 5678 9012 3456" autocomplete="off"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Vencimiento (MM/AA)</label>
+                            <input type="text" name="VencimientoTarjeta" maxlength="5" placeholder="MM/AA" autocomplete="off"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">CVV</label>
+                            <input type="password" name="CvvTarjeta" maxlength="4" placeholder="123" autocomplete="off"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Nombre del titular</label>
+                            <input type="text" name="NombreTitular" placeholder="Como aparece en la tarjeta" autocomplete="off"
+                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <p class="col-span-2 text-[11px] text-slate-600">
+                            🔒 Solo guardamos los últimos 4 dígitos de tu tarjeta. Nunca almacenamos el número completo ni el CVV.
+                        </p>
+                    </div>
+
+                    <div id="camposTransferencia" class="hidden rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Número de referencia / comprobante</label>
+                        <input type="text" name="ReferenciaTransferencia" placeholder="Ej: 00123456789"
+                               class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                    </div>
+
+                    <div id="camposEfectivo" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm px-4 py-3">
+                        Tu reserva quedará pendiente. Debes acercarte a pagar en efectivo antes de la fecha reservada.
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Observaciones (opcional)</label>
+                        <textarea asp-for="Observaciones" rows="2"
+                                  class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50"></textarea>
+                    </div>
+
+                    <!-- =============================================
+                         RESUMEN DE PRECIO
+                    ============================================== -->
+
+                    <div id="cajaPrecio" class="rounded-xl border border-white/10 bg-white/[0.03] p-4 mt-2">
+
+                        @if (Model.MensajePrecio != null)
+                        {
+                            <p id="textoMensajePrecio" class="text-sm text-red-400 font-semibold">@Model.MensajePrecio</p>
+                        }
+                        else
+                        {
+                            <div id="resumenPrecio" class="space-y-1.5">
+                                <div class="flex justify-between text-sm text-slate-400">
+                                    <span>Precio por hora</span>
+                                    <span id="textoPrecioHora" class="text-slate-200 font-semibold">$@Model.PrecioHora.ToString("N0")</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-slate-400">
+                                    <span>Duración</span>
+                                    <span id="textoDuracion" class="text-slate-200 font-semibold">
+                                        @((Model.HoraFin.ToTimeSpan() - Model.HoraInicio.ToTimeSpan()).TotalHours) hora(s)
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-base pt-2 border-t border-white/10 mt-2">
+                                    <span class="font-bold">TOTAL</span>
+                                    <span id="textoTotal" class="font-black text-emerald-400 text-lg">$@Model.Total.ToString("N0")</span>
+                                </div>
+                            </div>
+                            <p id="textoMensajePrecio" class="hidden text-sm text-red-400 font-semibold"></p>
+                        }
+
+                    </div>
+
+                    <button type="submit" id="btnConfirmar"
+                            class="w-full mt-2 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold transition">
+                        Confirmar y pagar
+                    </button>
+
+                    <p class="text-[11px] text-slate-600 text-center">
+                        Tu reserva quedará pendiente de confirmación y pago.
+                    </p>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+    const idEscenario = @Model.IdEscenario;
+    const inputFecha = document.getElementById('inputFecha');
+    const inputHoraInicio = document.getElementById('inputHoraInicio');
+    const inputHoraFin = document.getElementById('inputHoraFin');
+    const resumenPrecio = document.getElementById('resumenPrecio');
+    const textoMensajePrecio = document.getElementById('textoMensajePrecio');
+    const textoPrecioHora = document.getElementById('textoPrecioHora');
+    const textoDuracion = document.getElementById('textoDuracion');
+    const textoTotal = document.getElementById('textoTotal');
+    const btnConfirmar = document.getElementById('btnConfirmar');
+
+    async function actualizarPrecio() {
+        const fecha = inputFecha.value;
+        const horaInicio = inputHoraInicio.value;
+        const horaFin = inputHoraFin.value;
+
+        if (!fecha || !horaInicio || !horaFin) return;
+
+        btnConfirmar.disabled = true;
+
+        try {
+            const url = `/Cliente/CalcularPrecio?idEscenario=${idEscenario}&fecha=${fecha}&horaInicio=${horaInicio}&horaFin=${horaFin}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.ok) {
+                resumenPrecio.classList.remove('hidden');
+                textoMensajePrecio.classList.add('hidden');
+
+                textoPrecioHora.textContent = '$' + Number(data.precioHora).toLocaleString('es-CO');
+                textoDuracion.textContent = data.horas + ' hora(s)';
+                textoTotal.textContent = '$' + Number(data.total).toLocaleString('es-CO');
+
+                btnConfirmar.disabled = false;
+            } else {
+                resumenPrecio.classList.add('hidden');
+                textoMensajePrecio.classList.remove('hidden');
+                textoMensajePrecio.textContent = data.mensaje || 'No se pudo calcular el precio para ese horario.';
+                btnConfirmar.disabled = true;
+            }
+        } catch (err) {
+            textoMensajePrecio.classList.remove('hidden');
+            resumenPrecio.classList.add('hidden');
+            textoMensajePrecio.textContent = 'Error al consultar el precio. Intenta de nuevo.';
+            btnConfirmar.disabled = true;
+        }
+    }
+
+    [inputFecha, inputHoraInicio, inputHoraFin].forEach(input => {
+        input.addEventListener('change', actualizarPrecio);
+    });
+
+    // =====================================================
+    // MOSTRAR/OCULTAR CAMPOS SEGÚN EL MÉTODO DE PAGO ELEGIDO
+    // =====================================================
+    const camposTarjeta = document.getElementById('camposTarjeta');
+    const camposTransferencia = document.getElementById('camposTransferencia');
+    const camposEfectivo = document.getElementById('camposEfectivo');
+
+    function actualizarCamposMetodo() {
+        const seleccionado = document.querySelector('.metodo-radio:checked');
+
+        document.querySelectorAll('.metodo-card').forEach(c => {
+            c.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        });
+
+        [camposTarjeta, camposTransferencia, camposEfectivo].forEach(c => c.classList.add('hidden'));
+
+        if (!seleccionado) return;
+
+        const card = seleccionado.closest('.metodo-card');
+        card.classList.add('border-emerald-500', 'bg-emerald-500/10');
+
+        const tipo = card.dataset.tipo;
+        if (tipo === 'tarjeta') camposTarjeta.classList.remove('hidden');
+        else if (tipo === 'transferencia') camposTransferencia.classList.remove('hidden');
+        else if (tipo === 'efectivo') camposEfectivo.classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.metodo-radio').forEach(r => {
+        r.addEventListener('change', actualizarCamposMetodo);
+    });
+
+    actualizarCamposMetodo();
+</script>

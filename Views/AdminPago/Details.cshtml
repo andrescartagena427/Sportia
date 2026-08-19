@@ -1,0 +1,172 @@
+﻿@model Sportia.Models.Pago
+
+@{
+    ViewData["Title"] = "Detalle del pago";
+    Layout = "_DashboardLayout";
+}
+
+<div class="mx-auto max-w-4xl space-y-6">
+
+    <div>
+
+        <a asp-action="Index"
+           class="text-sm text-slate-400 hover:text-white">
+
+            ← Volver a pagos
+
+        </a>
+
+        <h1 class="mt-3 text-2xl font-bold text-white">
+            Detalle del pago
+        </h1>
+
+    </div>
+
+
+    <div class="grid gap-6 md:grid-cols-2">
+
+        <!-- CLIENTE Y RESERVA -->
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+
+            <h2 class="text-lg font-bold text-white">
+                Información de la reserva
+            </h2>
+
+            <div class="mt-5 space-y-4">
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Cliente
+                    </p>
+
+                    <p class="font-semibold text-white">
+                        @Model.IdReservaNavigation.IdClienteNavigation.Nombres
+                        @Model.IdReservaNavigation.IdClienteNavigation.Apellidos
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Código de reserva
+                    </p>
+
+                    <p class="font-semibold text-emerald-400">
+                        @Model.IdReservaNavigation.Codigo
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Escenario
+                    </p>
+
+                    <p class="font-semibold text-white">
+                        @Model.IdReservaNavigation.IdEscenarioNavigation.Nombre
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- PAGO -->
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+
+            <h2 class="text-lg font-bold text-white">
+                Información del pago
+            </h2>
+
+            <div class="mt-5 space-y-4">
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Método
+                    </p>
+
+                    <p class="font-semibold text-white">
+                        @Model.IdMetodoNavigation.Nombre
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Monto pagado
+                    </p>
+
+                    <p class="text-2xl font-bold text-emerald-400">
+                        $@Model.MontoPagado.ToString("N0")
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Saldo pendiente
+                    </p>
+
+                    <p class="text-xl font-bold @(Model.SaldoPendiente <= 0
+                                               ? "text-emerald-400"
+                                               : "text-orange-400")">
+
+                        $@Model.SaldoPendiente.ToString("N0")
+
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <p class="text-xs text-slate-500">
+                        Fecha del pago
+                    </p>
+
+                    <p class="text-sm text-white">
+
+                        @(Model.FechaPago?.ToString("dd/MM/yyyy HH:mm")
+                            ?? "Sin fecha")
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    @if (!string.IsNullOrWhiteSpace(Model.Comprobante))
+    {
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+
+            <p class="text-xs text-slate-500">
+                Comprobante
+            </p>
+
+            <p class="mt-2 text-sm text-white">
+                @Model.Comprobante
+            </p>
+
+        </div>
+    }
+
+</div>
