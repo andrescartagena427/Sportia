@@ -6,6 +6,7 @@
 
     <title>@ViewData["Title"] - Sportia</title>
 
+<<<<<<< HEAD
     <!-- TAILWIND CSS -->
     <link rel="stylesheet" href="~/css/output.css" />
 
@@ -366,4 +367,66 @@
 
 </body>
 
+=======
+    <link rel="stylesheet" href="~/css/output.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="min-h-screen bg-slate-100 text-slate-900">
+
+    <!-- Navbar -->
+    <nav class="bg-slate-900 text-white shadow-lg">
+        <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="text-2xl font-bold tracking-tight">
+                Sportia
+            </a>
+
+            <div class="hidden gap-8 md:flex">
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="text-slate-300 transition hover:text-white">
+                    Inicio
+                </a>
+
+                <a href="#"
+                   class="text-slate-300 transition hover:text-white">
+                    Reservas
+                </a>
+
+                <a href="#"
+                   class="text-slate-300 transition hover:text-white">
+                    Canchas
+                </a>
+            </div>
+
+            <a asp-controller="Login"
+               asp-action="Index"
+               class="rounded-lg bg-lime-400 px-5 py-2 font-semibold text-slate-900 transition hover:bg-lime-300">
+                Ingresar
+            </a>
+
+        </div>
+    </nav>
+
+
+    <!-- AQUÍ SE INSERTA INDEX.CSHTML -->
+    <main>
+        @RenderBody()
+    </main>
+
+
+    <!-- Footer -->
+    <footer class="mt-20 bg-slate-900 py-8 text-center text-slate-400">
+        <p>
+            © 2026 Sportia. Todos los derechos reservados.
+        </p>
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+>>>>>>> 866f10fd5765958d266aaf1de23f0baab105caf4
 </html>
