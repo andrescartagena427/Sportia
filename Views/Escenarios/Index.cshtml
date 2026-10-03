@@ -1,223 +1,312 @@
-﻿@model IEnumerable<Sportia.Models.Escenario>
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Http
+@model IEnumerable<Sportia.Models.Escenario>
 
 @{
     ViewData["Title"] = "Escenarios";
     Layout = "_DashboardLayout";
+
+    var co = new CultureInfo("es-CO");
 
     var escenarios = Model?.ToList() ?? new List<Sportia.Models.Escenario>();
 
     var totalEscenarios = escenarios.Count;
     var escenariosActivos = escenarios.Count(x => x.Estado == true);
     var escenariosInactivos = escenarios.Count(x => x.Estado != true);
+
+    // Empresas aliadas (activas). Si el controlador no lo envía, se cuentan las de los escenarios.
+    int totalEmpresas = ViewBag.TotalEmpresas is int te
+        ? te
+        : escenarios.Select(e => e.IdEmpresa).Distinct().Count();
+
+    var reservasPorEscenario = ViewBag.ReservasPorEscenario as Dictionary<int, int> ?? new Dictionary<int, int>();
+
+    // Opciones de los filtros (solo lo que existe en los escenarios)
+    var tipos = escenarios
+        .Select(e => e.IdTipoNavigation?.Nombre)
+        .Where(n => !string.IsNullOrWhiteSpace(n))
+        .Distinct()
+        .OrderBy(n => n)
+        .ToList();
+
+    var empresas = escenarios
+        .Select(e => e.IdEmpresaNavigation?.Nombre)
+        .Where(n => !string.IsNullOrWhiteSpace(n))
+        .Distinct()
+        .OrderBy(n => n)
+        .ToList();
+
+    // Usuario de la barra superior
+    var nombreUsuario = Context.Session.GetString("NombreUsuario");
+    if (string.IsNullOrWhiteSpace(nombreUsuario)) nombreUsuario = "Administrador";
+    var iniciales = string.Concat(nombreUsuario
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(p => char.ToUpper(p[0])));
+
+    var mensaje = TempData["MensajeEscenario"] as string;
+
+    // Datos para la ventana "Ver detalles"
+    var detalles = escenarios.ToDictionary(
+        e => e.IdEscenario.ToString(),
+        e => new
+        {
+            id = e.IdEscenario,
+            nombre = e.Nombre,
+            descripcion = string.IsNullOrWhiteSpace(e.Descripcion) ? "Sin descripción disponible." : e.Descripcion,
+            tipo = e.IdTipoNavigation?.Nombre ?? "No especificado",
+            empresa = e.IdEmpresaNavigation?.Nombre ?? "No especificada",
+            capacidad = e.Capacidad ?? 0,
+            precio = Dinero(e.Precio),
+            activo = e.Estado == true,
+            imagen = ImagenDe(e),
+            propia = !string.IsNullOrWhiteSpace(e.Imagen),
+            reservas = reservasPorEscenario.TryGetValue(e.IdEscenario, out var r) ? r : 0,
+            urlEditar = Url.Action("Edit", "Escenarios", new { id = e.IdEscenario })
+        });
+
+    var jsonDetalles = System.Text.Json.JsonSerializer.Serialize(detalles);
 }
 
-<!-- ========================================================= -->
-<!-- ENCABEZADO -->
-<!-- ========================================================= -->
+@functions {
+    string Dinero(decimal? valor) => "$" + (valor ?? 0).ToString("N0", new CultureInfo("es-CO"));
+
+    string Normalizar(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return "";
+        var formD = texto.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in formD)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+        }
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+
+    // Foto de referencia según el tipo cuando el escenario no tiene imagen propia
+    string ImagenPorTipo(string? tipo)
+    {
+        var t = Normalizar(tipo);
+        if (t.Contains("balon") || t.Contains("basket")) return "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("tenis")) return "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("voley") || t.Contains("volei")) return "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("padel")) return "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("nata") || t.Contains("piscina")) return "https://images.unsplash.com/photo-1519315901367-f34ff9154487?auto=format&fit=crop&w=800&q=70";
+        return "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=70";
+    }
+
+    string ImagenDe(Sportia.Models.Escenario e) =>
+        !string.IsNullOrWhiteSpace(e.Imagen) ? e.Imagen : ImagenPorTipo(e.IdTipoNavigation?.Nombre);
+
+    // Color de la etiqueta del tipo
+    string ClaseTipo(string? tipo)
+    {
+        var t = Normalizar(tipo);
+        if (t.Contains("futbol") || t.Contains("micro")) return "bg-emerald-500/90 text-white";
+        if (t.Contains("balon") || t.Contains("basket")) return "bg-orange-500/90 text-white";
+        if (t.Contains("tenis")) return "bg-lime-400/90 text-slate-950";
+        if (t.Contains("voley") || t.Contains("volei")) return "bg-sky-500/90 text-white";
+        if (t.Contains("padel")) return "bg-violet-500/90 text-white";
+        return "bg-slate-600/90 text-white";
+    }
+
+    string IconoTipo(string? tipo)
+    {
+        var t = Normalizar(tipo);
+        if (t.Contains("balon") || t.Contains("basket")) return "dribbble";
+        if (t.Contains("tenis") || t.Contains("padel")) return "circle-dot";
+        if (t.Contains("nata") || t.Contains("piscina")) return "waves";
+        return "goal";
+    }
+}
+
+
+<!-- =====================================================
+     BARRA SUPERIOR
+====================================================== -->
+
+<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+
+    <label class="flex h-12 w-full max-w-xl items-center gap-3 rounded-xl border border-slate-800 bg-[#0d1422] px-4 text-slate-400 transition focus-within:border-emerald-500/50 sm:w-auto sm:flex-1">
+        <i data-lucide="search" class="h-5 w-5"></i>
+        <span class="sr-only">Buscar escenarios</span>
+        <input id="buscadorGeneral" type="search" autocomplete="off"
+               placeholder="Buscar escenarios, empresas, tipos..."
+               class="h-full min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+    </label>
+
+    <div class="flex items-center gap-3">
+        <a asp-controller="Reservas" asp-action="Index"
+           class="relative flex h-12 w-12 items-center justify-center rounded-xl border border-slate-800 bg-[#0d1422] text-slate-300 transition hover:border-slate-700 hover:text-white"
+           aria-label="Ver reservas">
+            <i data-lucide="bell" class="h-5 w-5"></i>
+            <span class="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400"></span>
+        </a>
+
+        <div class="flex h-12 items-center gap-3 rounded-xl border border-slate-800 bg-[#0d1422] pl-1.5 pr-4">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-sm font-bold text-emerald-400">@iniciales</span>
+            <div class="hidden leading-tight sm:block">
+                <p class="max-w-[160px] truncate text-sm font-semibold text-white">@nombreUsuario</p>
+                <p class="text-xs text-slate-500">Administrador</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 
 <div class="space-y-6">
+
+    @if (!string.IsNullOrWhiteSpace(mensaje))
+    {
+        <div id="avisoEscenario"
+             class="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            <i data-lucide="circle-check" class="h-5 w-5 shrink-0"></i>
+            <span class="flex-1">@mensaje</span>
+            <button type="button" onclick="this.parentElement.remove()"
+                    class="rounded-lg p-1 text-emerald-300/70 transition hover:bg-emerald-500/10 hover:text-emerald-200"
+                    aria-label="Cerrar aviso">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+    }
+
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div class="flex items-center gap-4">
-
-            <div class="w-12 h-12 rounded-2xl
-                bg-emerald-500/10
-                border border-emerald-500/20
-                flex items-center justify-center">
-
-                <i data-lucide="landmark"
-                   class="w-6 h-6 text-emerald-400">
-                </i>
-
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
+                <i data-lucide="landmark" class="h-7 w-7 text-emerald-400"></i>
             </div>
-
             <div>
-
-                <h1 class="text-2xl font-bold text-white">
-                    Escenarios
-                </h1>
-
-                <p class="text-sm text-slate-500 mt-1">
-                    Administra tus canchas, escenarios deportivos y espacios disponibles
-                </p>
-
+                <h1 class="text-3xl font-black tracking-tight text-white">Escenarios</h1>
+                <p class="mt-1 text-sm text-slate-400">Administra tus canchas, escenarios deportivos y espacios disponibles</p>
             </div>
-
         </div>
 
-
-        <!-- NUEVO ESCENARIO -->
-
-        <a asp-controller="Escenarios"
-           asp-action="Create"
-           class="inline-flex items-center justify-center gap-2
-            rounded-xl
-            bg-emerald-500
-            px-5 py-2.5
-            text-sm font-bold
-            text-slate-950
-            shadow-lg shadow-emerald-500/10
-            transition
-            hover:bg-emerald-400
-            hover:-translate-y-0.5">
-
-            <i data-lucide="plus"
-               class="w-4 h-4">
-            </i>
-
+        <a asp-controller="Escenarios" asp-action="Create"
+           class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-[#03150d] shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-400">
+            <i data-lucide="plus" class="h-5 w-5"></i>
             Nuevo escenario
-
         </a>
 
     </div>
 
 
-    <!-- ===================================================== -->
-    <!-- TARJETAS DE ESTADÍSTICAS -->
-    <!-- ===================================================== -->
+    <!-- =====================================================
+         TARJETAS DE ESTADÍSTICAS
+    ====================================================== -->
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
 
-        <!-- TOTAL -->
+        <button type="button" data-filtro-estado="todos"
+                class="tarjeta-estado group flex items-center gap-4 rounded-2xl border border-slate-800 bg-[#101928] p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-700">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
+                <i data-lucide="building-2" class="h-7 w-7"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block whitespace-nowrap text-sm text-slate-400">Total Escenarios</span>
+                <span class="mt-0.5 block text-3xl font-black text-white">@totalEscenarios</span>
+                <span class="block text-xs text-slate-500">Registrados en el sistema</span>
+            </span>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-300"></i>
+        </button>
 
-        <div class="relative overflow-hidden
-            rounded-2xl
-            border border-slate-800
-            bg-[#101928]
-            p-5">
+        <button type="button" data-filtro-estado="activos"
+                class="tarjeta-estado group flex items-center gap-4 rounded-2xl border border-slate-800 bg-[#101928] p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-700">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
+                <i data-lucide="circle-check" class="h-7 w-7"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block whitespace-nowrap text-sm text-slate-400">Activos</span>
+                <span class="mt-0.5 block text-3xl font-black text-emerald-400">@escenariosActivos</span>
+                <span class="block text-xs text-slate-500">Actualmente disponibles</span>
+            </span>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-300"></i>
+        </button>
 
-            <div class="flex items-start justify-between">
+        <button type="button" data-filtro-estado="inactivos"
+                class="tarjeta-estado group flex items-center gap-4 rounded-2xl border border-slate-800 bg-[#101928] p-5 text-left transition hover:-translate-y-0.5 hover:border-slate-700">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
+                <i data-lucide="circle-x" class="h-7 w-7"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block whitespace-nowrap text-sm text-slate-400">Inactivos</span>
+                <span class="mt-0.5 block text-3xl font-black text-red-400">@escenariosInactivos</span>
+                <span class="block text-xs text-slate-500">No disponibles actualmente</span>
+            </span>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-300"></i>
+        </button>
 
-                <div>
+        <a asp-controller="AdminEmpresa" asp-action="Index"
+           class="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-[#101928] p-5 transition hover:-translate-y-0.5 hover:border-slate-700">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
+                <i data-lucide="briefcase-business" class="h-7 w-7"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block whitespace-nowrap text-sm text-slate-400">Empresas</span>
+                <span class="mt-0.5 block text-3xl font-black text-violet-400">@totalEmpresas</span>
+                <span class="block text-xs text-slate-500">Empresas aliadas</span>
+            </span>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-300"></i>
+        </a>
 
-                    <p class="text-[11px]
-                        uppercase
-                        tracking-wider
-                        text-slate-500">
-
-                        Total escenarios
-
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-white">
-                        @totalEscenarios
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Registrados en el sistema
-                    </p>
-
-                </div>
-
-                <div class="w-10 h-10
-                    rounded-xl
-                    bg-blue-500/10
-                    border border-blue-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="building-2"
-                       class="w-5 h-5 text-blue-400">
-                    </i>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- ACTIVOS -->
-
-        <div class="relative overflow-hidden
-            rounded-2xl
-            border border-slate-800
-            bg-[#101928]
-            p-5">
-
-            <div class="flex items-start justify-between">
-
-                <div>
-
-                    <p class="text-[11px]
-                        uppercase
-                        tracking-wider
-                        text-slate-500">
-
-                        Escenarios activos
-
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-emerald-400">
-                        @escenariosActivos
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Actualmente disponibles
-                    </p>
-
-                </div>
-
-                <div class="w-10 h-10
-                    rounded-xl
-                    bg-emerald-500/10
-                    border border-emerald-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="check"
-                       class="w-5 h-5 text-emerald-400">
-                    </i>
-
-                </div>
-
-            </div>
-
-        </div>
+    </div>
 
 
-        <!-- INACTIVOS -->
+    <!-- =====================================================
+         FILTROS
+    ====================================================== -->
 
-        <div class="relative overflow-hidden
-            rounded-2xl
-            border border-slate-800
-            bg-[#101928]
-            p-5">
+    <div class="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-[#101928] p-4 lg:flex-row lg:items-center">
 
-            <div class="flex items-start justify-between">
+        <label class="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-800 bg-[#0d1422] px-4 text-slate-400 transition focus-within:border-emerald-500/50">
+            <i data-lucide="search" class="h-4 w-4"></i>
+            <span class="sr-only">Buscar por nombre</span>
+            <input id="filtroNombre" type="search" autocomplete="off" placeholder="Buscar escenario por nombre..."
+                   class="h-full min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+        </label>
 
-                <div>
+        <div class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] lg:flex lg:items-center">
 
-                    <p class="text-[11px]
-                        uppercase
-                        tracking-wider
-                        text-slate-500">
+            <label class="relative block">
+                <span class="sr-only">Filtrar por tipo</span>
+                <select id="filtroTipo"
+                        class="h-11 w-full appearance-none rounded-xl border border-slate-800 bg-[#0d1422] pl-4 pr-10 text-sm text-slate-200 transition focus:border-emerald-500/50 focus:outline-none lg:w-52">
+                    <option value="" class="bg-[#0d1422]">Todos los tipos</option>
+                    @foreach (var tipo in tipos)
+                    {
+                        <option value="@Normalizar(tipo)" class="bg-[#0d1422]">@tipo</option>
+                    }
+                </select>
+                <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"></i>
+            </label>
 
-                        Escenarios inactivos
+            <label class="relative block">
+                <span class="sr-only">Filtrar por empresa</span>
+                <select id="filtroEmpresa"
+                        class="h-11 w-full appearance-none rounded-xl border border-slate-800 bg-[#0d1422] pl-4 pr-10 text-sm text-slate-200 transition focus:border-emerald-500/50 focus:outline-none lg:w-56">
+                    <option value="" class="bg-[#0d1422]">Todas las empresas</option>
+                    @foreach (var empresa in empresas)
+                    {
+                        <option value="@Normalizar(empresa)" class="bg-[#0d1422]">@empresa</option>
+                    }
+                </select>
+                <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"></i>
+            </label>
 
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-red-400">
-                        @escenariosInactivos
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        No disponibles actualmente
-                    </p>
-
-                </div>
-
-                <div class="w-10 h-10
-                    rounded-xl
-                    bg-red-500/10
-                    border border-red-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="x"
-                       class="w-5 h-5 text-red-400">
-                    </i>
-
-                </div>
-
+            <div class="flex h-11 items-center gap-1 rounded-xl border border-slate-800 bg-[#0d1422] p-1" role="group" aria-label="Tipo de vista">
+                <button type="button" data-vista="cuadricula" title="Vista en cuadrícula"
+                        class="boton-vista flex h-full w-10 items-center justify-center rounded-lg text-slate-400 transition hover:text-white">
+                    <i data-lucide="layout-grid" class="h-4 w-4"></i>
+                </button>
+                <button type="button" data-vista="lista" title="Vista en lista"
+                        class="boton-vista flex h-full w-10 items-center justify-center rounded-lg text-slate-400 transition hover:text-white">
+                    <i data-lucide="list" class="h-4 w-4"></i>
+                </button>
             </div>
 
         </div>
@@ -225,429 +314,447 @@
     </div>
 
 
-    <!-- ===================================================== -->
-    <!-- TÍTULO DE LISTADO -->
-    <!-- ===================================================== -->
+    <!-- =====================================================
+         LISTADO
+    ====================================================== -->
 
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-
-        <div>
-
-            <h2 class="text-xl font-bold text-white">
-                Todos los escenarios
-            </h2>
-
-            <p class="text-sm text-slate-500 mt-1">
-                @totalEscenarios escenarios registrados en el sistema
-            </p>
-
-        </div>
-
-        <div class="flex items-center gap-2 text-xs text-slate-500">
-
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-
-            Base de datos
-
-        </div>
-
+    <div class="flex flex-wrap items-center gap-3">
+        <h2 class="text-xl font-bold text-white">Escenarios registrados</h2>
+        <span id="contadorResultados"
+              class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+            @totalEscenarios @(totalEscenarios == 1 ? "resultado" : "resultados")
+        </span>
+        <button type="button" id="chipEstado"
+                class="hidden items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white">
+            <span id="chipEstadoTexto"></span>
+            <i data-lucide="x" class="h-3.5 w-3.5"></i>
+        </button>
     </div>
 
-
-    <!-- ===================================================== -->
-    <!-- GRID DE ESCENARIOS -->
-    <!-- ===================================================== -->
     @if (escenarios.Any())
     {
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div id="contenedorEscenarios" data-vista="cuadricula"
+             class="group/vista grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 
             @foreach (var escenario in escenarios)
             {
-                <div class="group
-                    overflow-hidden
-                    rounded-2xl
-                    border border-slate-800
-                    bg-[#101928]
-                    shadow-xl shadow-black/10
-                    transition-all duration-300
-                    hover:-translate-y-1
-                    hover:border-slate-700
-                    hover:shadow-2xl">
+                var tipo = escenario.IdTipoNavigation?.Nombre ?? "Sin tipo";
+                var empresa = escenario.IdEmpresaNavigation?.Nombre ?? "Sin empresa";
+                bool activo = escenario.Estado == true;
+                bool tieneImagen = !string.IsNullOrWhiteSpace(escenario.Imagen);
+                int canchas = escenario.Capacidad ?? 0;
 
-                    <!-- ===================================== -->
-                    <!-- IMAGEN -->
-                    <!-- ===================================== -->
+                <article class="tarjeta-escenario group relative flex flex-col rounded-2xl border border-slate-800 bg-[#101928] shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-1 hover:border-slate-700 group-data-[vista=lista]/vista:hover:translate-y-0 sm:group-data-[vista=lista]/vista:flex-row"
+                         data-id="@escenario.IdEscenario"
+                         data-nombre="@Normalizar(escenario.Nombre)"
+                         data-tipo="@Normalizar(tipo)"
+                         data-empresa="@Normalizar(empresa)"
+                         data-activo="@(activo ? "1" : "0")"
+                         data-busqueda="@Normalizar(escenario.Nombre + " " + empresa + " " + tipo + " " + escenario.Descripcion)">
 
-                    <div class="relative h-52
-                        overflow-hidden
-                        bg-gradient-to-br
-                        from-slate-900
-                        to-slate-950">
+                    <!-- Imagen -->
+                    <div class="relative h-44 shrink-0 overflow-hidden rounded-t-2xl bg-slate-900 sm:group-data-[vista=lista]/vista:h-auto sm:group-data-[vista=lista]/vista:min-h-40 sm:group-data-[vista=lista]/vista:w-64 sm:group-data-[vista=lista]/vista:rounded-l-2xl sm:group-data-[vista=lista]/vista:rounded-tr-none">
+                        <img src="@ImagenDe(escenario)" alt="@escenario.Nombre" loading="lazy"
+                             onerror="this.onerror=null;this.src='@ImagenPorTipo(tipo)';"
+                             class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 @(activo ? "" : "grayscale")" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#101928]/80 via-transparent to-black/20"></div>
 
-                        @if (!string.IsNullOrWhiteSpace(escenario.Imagen))
+                        <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur @(activo ? "bg-emerald-500/90 text-white" : "bg-red-500/90 text-white")">
+                            <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
+                            @(activo ? "Activo" : "Inactivo")
+                        </span>
+
+                        <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur @ClaseTipo(tipo)">
+                            <i data-lucide="@IconoTipo(tipo)" class="h-3.5 w-3.5"></i>
+                            @tipo
+                        </span>
+
+                        @if (!tieneImagen)
                         {
-                            <img src="@escenario.Imagen"
-                                 alt="@escenario.Nombre"
-                                 class="h-full w-full
-                            object-cover
-                            transition duration-500
-                            group-hover:scale-105" />
+                            <span class="absolute bottom-3 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[10px] font-medium text-slate-300 backdrop-blur">Foto de referencia</span>
                         }
-                        else
-                        {
-                            <div class="h-full w-full
-                                flex flex-col
-                                items-center
-                                justify-center
-                                bg-gradient-to-br
-                                from-slate-900
-                                to-[#070c16]">
-
-                                <div class="w-14 h-14
-                                    rounded-2xl
-                                    border border-slate-700
-                                    bg-slate-800/50
-                                    flex items-center justify-center">
-
-                                    <i data-lucide="image"
-                                       class="w-7 h-7 text-slate-600">
-                                    </i>
-
-                                </div>
-
-                                <span class="mt-3 text-xs text-slate-600">
-                                    Sin imagen
-                                </span>
-
-                            </div>
-                        }
-
-
-                        <!-- ESTADO -->
-
-                        <div class="absolute top-4 left-4">
-
-                            @if (escenario.Estado == true)
-                            {
-                                <span class="inline-flex items-center gap-1.5
-                                    rounded-full
-                                    border border-emerald-500/20
-                                    bg-emerald-500/10
-                                    px-2.5 py-1
-                                    text-xs font-semibold
-                                    text-emerald-400
-                                    backdrop-blur">
-
-                                    <span class="w-1.5 h-1.5
-                                        rounded-full
-                                        bg-emerald-400">
-                                    </span>
-
-                                    Activo
-
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="inline-flex items-center gap-1.5
-                                    rounded-full
-                                    border border-red-500/20
-                                    bg-red-500/10
-                                    px-2.5 py-1
-                                    text-xs font-semibold
-                                    text-red-400
-                                    backdrop-blur">
-
-                                    <span class="w-1.5 h-1.5
-                                        rounded-full
-                                        bg-red-400">
-                                    </span>
-
-                                    Inactivo
-
-                                </span>
-                            }
-
-                        </div>
-
                     </div>
 
+                    <!-- Información -->
+                    <div class="flex flex-1 flex-col p-5">
 
-                    <!-- ===================================== -->
-                    <!-- INFORMACIÓN -->
-                    <!-- ===================================== -->
+                        <h3 class="truncate text-lg font-bold text-white" title="@escenario.Nombre">@escenario.Nombre</h3>
 
-                    <div class="p-5">
-
-                        <!-- NOMBRE -->
-
-                        <div class="mb-1">
-
-                            <h3 class="text-lg
-                                font-bold
-                                text-white
-                                truncate">
-
-                                @escenario.Nombre
-
-                            </h3>
-
-                        </div>
-
-
-                        <!-- DESCRIPCIÓN -->
-
-                        <p class="min-h-[40px]
-                            text-sm
-                            leading-5
-                            text-slate-500">
-
-                            @(string.IsNullOrWhiteSpace(escenario.Descripcion)
-                                ? "Sin descripción disponible"
-                                : escenario.Descripcion)
-
+                        <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-400">
+                            <i data-lucide="building-2" class="h-4 w-4 shrink-0 text-slate-500"></i>
+                            <span class="truncate">@empresa</span>
                         </p>
 
-
-                        <!-- DATOS -->
-
-                        <div class="mt-5 space-y-3">
-
-                            <!-- TIPO -->
-
-                            <div class="flex items-center gap-3">
-
-                                <div class="w-9 h-9
-                                    rounded-xl
-                                    bg-blue-500/10
-                                    border border-blue-500/10
-                                    flex items-center justify-center">
-
-                                    <i data-lucide="layout-grid"
-                                       class="w-4 h-4 text-blue-400">
-                                    </i>
-
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-[10px]
-                                        uppercase
-                                        tracking-wider
-                                        text-slate-600">
-
-                                        Tipo de escenario
-
-                                    </p>
-
-                                    <p class="text-sm
-                                        font-semibold
-                                        text-slate-200
-                                        truncate">
-
-                                        @(escenario.IdTipoNavigation?.Nombre ?? "No especificado")
-
-                                    </p>
-
-                                </div>
-
+                        <div class="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4">
+                            <div>
+                                <p class="text-xs text-slate-500">Capacidad</p>
+                                <p class="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-200">
+                                    <i data-lucide="users" class="h-4 w-4 text-slate-500"></i>
+                                    @canchas @(canchas == 1 ? "cancha" : "canchas")
+                                </p>
                             </div>
-
-
-                            <!-- EMPRESA -->
-
-                            <div class="flex items-center gap-3">
-
-                                <div class="w-9 h-9
-                                    rounded-xl
-                                    bg-purple-500/10
-                                    border border-purple-500/10
-                                    flex items-center justify-center">
-
-                                    <i data-lucide="building-2"
-                                       class="w-4 h-4 text-purple-400">
-                                    </i>
-
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-[10px]
-                                        uppercase
-                                        tracking-wider
-                                        text-slate-600">
-
-                                        Empresa
-
-                                    </p>
-
-                                    <p class="text-sm
-                                        font-semibold
-                                        text-slate-200
-                                        truncate">
-
-                                        @(escenario.IdEmpresaNavigation?.Nombre ?? "No especificada")
-
-                                    </p>
-
-                                </div>
-
+                            <div>
+                                <p class="text-xs text-slate-500">Precio por hora</p>
+                                <p class="mt-1 text-sm font-bold text-emerald-400">@Dinero(escenario.Precio)</p>
                             </div>
-
-
-                            <!-- CAPACIDAD -->
-
-                            <div class="flex items-center gap-3">
-
-                                <div class="w-9 h-9
-                                    rounded-xl
-                                    bg-orange-500/10
-                                    border border-orange-500/10
-                                    flex items-center justify-center">
-
-                                    <i data-lucide="users"
-                                       class="w-4 h-4 text-orange-400">
-                                    </i>
-
-                                </div>
-
-                                <div>
-
-                                    <p class="text-[10px]
-                                        uppercase
-                                        tracking-wider
-                                        text-slate-600">
-
-                                        Capacidad
-
-                                    </p>
-
-                                    <p class="text-sm
-                                        font-semibold
-                                        text-slate-200">
-
-                                        @(escenario.Capacidad?.ToString() ?? "0") personas
-
-                                    </p>
-
-                                </div>
-
-                            </div>
-
                         </div>
 
-
-                        <!-- ================================= -->
-                        <!-- PIE DE TARJETA -->
-                        <!-- ================================= -->
-
-                        <div class="mt-5
-                            pt-4
-                            border-t border-slate-800
-                            flex items-center justify-between">
-
-                            <span class="text-xs text-slate-600">
-                                ID #@escenario.IdEscenario
+                        <button type="button" data-elegir-tipo="@Normalizar(tipo)"
+                                class="mt-4 flex w-full items-center justify-between rounded-xl border border-slate-800 bg-[#0d1422] px-3 py-2.5 text-left text-sm transition hover:border-slate-700"
+                                title="Ver solo escenarios de @tipo">
+                            <span class="flex items-center gap-2 text-slate-400">
+                                <i data-lucide="tag" class="h-4 w-4 text-slate-500"></i>
+                                Tipo: <span class="font-semibold text-slate-200">@tipo</span>
                             </span>
+                            <i data-lucide="chevron-right" class="h-4 w-4 text-slate-500"></i>
+                        </button>
 
-                            <div class="flex items-center gap-2">
+                        <div class="mt-auto flex items-center gap-2 pt-4 sm:group-data-[vista=lista]/vista:justify-end">
+                            <a asp-controller="Escenarios" asp-action="Edit" asp-route-id="@escenario.IdEscenario"
+                               class="inline-flex h-10 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-slate-700 bg-slate-900/60 px-2 text-[13px] font-semibold sm:group-data-[vista=lista]/vista:flex-none sm:group-data-[vista=lista]/vista:px-5 text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-400">
+                                <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
+                                Editar
+                            </a>
 
-                                <!-- EDITAR -->
+                            <button type="button" data-detalle="@escenario.IdEscenario"
+                                    class="inline-flex h-10 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2 text-[13px] font-semibold sm:group-data-[vista=lista]/vista:flex-none sm:group-data-[vista=lista]/vista:px-5 text-emerald-400 transition hover:bg-emerald-500/20">
+                                <i data-lucide="eye" class="h-3.5 w-3.5"></i>
+                                Ver detalles
+                            </button>
 
-                                <a asp-controller="Escenarios"
-                                   asp-action="Edit"
-                                   asp-route-id="@escenario.IdEscenario"
-                                   class="inline-flex items-center gap-1.5
-                                    rounded-lg
-                                    border border-slate-700
-                                    bg-slate-900/60
-                                    px-3 py-1.5
-                                    text-xs
-                                    font-semibold
-                                    text-slate-300
-                                    transition
-                                    hover:border-emerald-500/40
-                                    hover:text-emerald-400">
+                            <div class="relative">
+                                <button type="button" data-menu="@escenario.IdEscenario" aria-haspopup="true" aria-expanded="false"
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 text-slate-300 transition hover:border-slate-600 hover:text-white"
+                                        aria-label="Más opciones">
+                                    <i data-lucide="ellipsis" class="h-4 w-4"></i>
+                                </button>
 
-                                    <i data-lucide="pencil"
-                                       class="w-3.5 h-3.5">
-                                    </i>
-
-                                    Editar
-
-                                </a>
-
+                                <div data-menu-panel="@escenario.IdEscenario"
+                                     class="menu-escenario absolute bottom-full right-0 z-30 mb-2 hidden w-52 overflow-hidden rounded-xl border border-slate-700 bg-[#0d1422] py-1 shadow-2xl shadow-black/40">
+                                    <button type="button" data-detalle="@escenario.IdEscenario"
+                                            class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 transition hover:bg-slate-800/70 hover:text-white">
+                                        <i data-lucide="eye" class="h-4 w-4"></i> Ver detalles
+                                    </button>
+                                    <a asp-controller="Escenarios" asp-action="Edit" asp-route-id="@escenario.IdEscenario"
+                                       class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800/70 hover:text-white">
+                                        <i data-lucide="pencil" class="h-4 w-4"></i> Editar
+                                    </a>
+                                    <form asp-controller="Escenarios" asp-action="CambiarEstado" asp-route-id="@escenario.IdEscenario" method="post"
+                                          class="border-t border-slate-800">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition hover:bg-slate-800/70 @(activo ? "text-red-400" : "text-emerald-400")">
+                                            <i data-lucide="@(activo ? "power-off" : "power")" class="h-4 w-4"></i>
+                                            @(activo ? "Desactivar escenario" : "Activar escenario")
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-
                         </div>
 
                     </div>
 
-                </div>
+                </article>
             }
 
+        </div>
+
+        <!-- Sin resultados con los filtros -->
+        <div id="sinResultados" class="hidden rounded-2xl border border-dashed border-slate-700 bg-[#101928] p-12 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800/70">
+                <i data-lucide="search-x" class="h-7 w-7 text-slate-500"></i>
+            </div>
+            <h3 class="mt-4 text-lg font-bold text-white">No hay escenarios que coincidan</h3>
+            <p class="mt-1 text-sm text-slate-500">Prueba con otro nombre o cambia los filtros.</p>
+            <button type="button" id="btnLimpiarFiltros"
+                    class="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-400">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                Limpiar filtros
+            </button>
         </div>
     }
     else
     {
-        <!-- ================================================= -->
-        <!-- SIN ESCENARIOS -->
-        <!-- ================================================= -->
-
-        <div class="rounded-2xl
-            border border-dashed border-slate-700
-            bg-[#101928]
-            p-12
-            text-center">
-
-            <div class="mx-auto w-16 h-16
-                rounded-2xl
-                bg-slate-800/70
-                flex items-center justify-center">
-
-                <i data-lucide="landmark"
-                   class="w-8 h-8 text-slate-600">
-                </i>
-
+        <!-- =====================================================
+             SIN ESCENARIOS
+        ====================================================== -->
+        <div class="rounded-2xl border border-dashed border-slate-700 bg-[#101928] p-12 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800/70">
+                <i data-lucide="landmark" class="h-8 w-8 text-slate-600"></i>
             </div>
-
-            <h3 class="mt-5 text-lg font-bold text-white">
-                No hay escenarios registrados
-            </h3>
-
-            <p class="mt-2 text-sm text-slate-500">
-                Comienza creando tu primer escenario deportivo.
-            </p>
-
-            <a asp-controller="Escenarios"
-               asp-action="Create"
-               class="mt-6 inline-flex items-center gap-2
-                rounded-xl
-                bg-emerald-500
-                px-5 py-2.5
-                text-sm font-bold
-                text-slate-950
-                transition
-                hover:bg-emerald-400">
-
-                <i data-lucide="plus"
-                   class="w-4 h-4">
-                </i>
-
+            <h3 class="mt-5 text-lg font-bold text-white">No hay escenarios registrados</h3>
+            <p class="mt-2 text-sm text-slate-500">Comienza creando tu primer escenario deportivo.</p>
+            <a asp-controller="Escenarios" asp-action="Create"
+               class="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                <i data-lucide="plus" class="h-4 w-4"></i>
                 Crear primer escenario
-
             </a>
-
         </div>
     }
 
 </div>
 
 
+<!-- =====================================================
+     VENTANA: VER DETALLES
+====================================================== -->
+
+<div id="modalDetalle" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="detalleNombre">
+    <div data-cerrar-modal class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-800 bg-[#101928] shadow-2xl">
+
+        <div class="relative h-56 overflow-hidden rounded-t-2xl bg-slate-900">
+            <img id="detalleImagen" src="" alt="" class="h-full w-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#101928] via-[#101928]/20 to-transparent"></div>
+            <button type="button" data-cerrar-modal
+                    class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+                    aria-label="Cerrar">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+            <div class="absolute bottom-4 left-6 right-6">
+                <span id="detalleEstado" class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white"></span>
+                <h3 id="detalleNombre" class="mt-2 text-2xl font-black text-white"></h3>
+            </div>
+        </div>
+
+        <div class="space-y-5 p-6">
+            <p id="detalleDescripcion" class="text-sm leading-6 text-slate-400"></p>
+
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Tipo</p>
+                    <p id="detalleTipo" class="mt-1 text-sm font-semibold text-white"></p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Empresa</p>
+                    <p id="detalleEmpresa" class="mt-1 truncate text-sm font-semibold text-white"></p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Capacidad</p>
+                    <p id="detalleCapacidad" class="mt-1 text-sm font-semibold text-white"></p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Precio por hora</p>
+                    <p id="detallePrecio" class="mt-1 text-sm font-bold text-emerald-400"></p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Reservas registradas</p>
+                    <p id="detalleReservas" class="mt-1 text-sm font-semibold text-white"></p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                    <p class="text-xs text-slate-500">Código</p>
+                    <p id="detalleId" class="mt-1 text-sm font-semibold text-white"></p>
+                </div>
+            </div>
+
+            <p id="detalleAvisoFoto" class="hidden items-center gap-2 text-xs text-slate-500">
+                <i data-lucide="info" class="h-4 w-4"></i>
+                Este escenario aún no tiene foto propia. Puedes subirla desde Editar.
+            </p>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:justify-end">
+                <button type="button" data-cerrar-modal
+                        class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-300 transition hover:text-white">
+                    Cerrar
+                </button>
+                <a id="detalleEditar" href="#"
+                   class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                    Editar escenario
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
 @section Scripts {
 
     <script>
-        lucide.createIcons();
+        (() => {
+            const datos = @Html.Raw(jsonDetalles);
+
+            const contenedor = document.getElementById('contenedorEscenarios');
+            const tarjetas = Array.from(document.querySelectorAll('.tarjeta-escenario'));
+            const buscadorGeneral = document.getElementById('buscadorGeneral');
+            const filtroNombre = document.getElementById('filtroNombre');
+            const filtroTipo = document.getElementById('filtroTipo');
+            const filtroEmpresa = document.getElementById('filtroEmpresa');
+            const contador = document.getElementById('contadorResultados');
+            const sinResultados = document.getElementById('sinResultados');
+            const chipEstado = document.getElementById('chipEstado');
+            const chipEstadoTexto = document.getElementById('chipEstadoTexto');
+
+            let filtroEstado = 'todos';
+
+            const normalizar = t => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+            // ---------------- Filtrar ----------------
+            function aplicarFiltros() {
+                const general = normalizar(buscadorGeneral?.value);
+                const nombre = normalizar(filtroNombre?.value);
+                const tipo = filtroTipo?.value || '';
+                const empresa = filtroEmpresa?.value || '';
+                let visibles = 0;
+
+                tarjetas.forEach(t => {
+                    const ok =
+                        (!general || t.dataset.busqueda.includes(general)) &&
+                        (!nombre || t.dataset.nombre.includes(nombre)) &&
+                        (!tipo || t.dataset.tipo === tipo) &&
+                        (!empresa || t.dataset.empresa === empresa) &&
+                        (filtroEstado === 'todos' ||
+                            (filtroEstado === 'activos' && t.dataset.activo === '1') ||
+                            (filtroEstado === 'inactivos' && t.dataset.activo === '0'));
+                    t.classList.toggle('hidden', !ok);
+                    if (ok) visibles++;
+                });
+
+                if (contador) contador.textContent = visibles + (visibles === 1 ? ' resultado' : ' resultados');
+                if (sinResultados) sinResultados.classList.toggle('hidden', visibles > 0 || tarjetas.length === 0);
+                if (contenedor) contenedor.classList.toggle('hidden', visibles === 0);
+
+                // Tarjeta de estado seleccionada
+                document.querySelectorAll('.tarjeta-estado').forEach(b => {
+                    const sel = b.dataset.filtroEstado === filtroEstado && filtroEstado !== 'todos';
+                    b.classList.toggle('border-emerald-500/50', sel);
+                    b.classList.toggle('ring-1', sel);
+                    b.classList.toggle('ring-emerald-500/30', sel);
+                });
+
+                if (chipEstado) {
+                    const mostrar = filtroEstado !== 'todos';
+                    chipEstado.classList.toggle('hidden', !mostrar);
+                    chipEstado.classList.toggle('inline-flex', mostrar);
+                    chipEstadoTexto.textContent = filtroEstado === 'activos' ? 'Solo activos' : 'Solo inactivos';
+                }
+            }
+
+            [buscadorGeneral, filtroNombre].forEach(i => i?.addEventListener('input', aplicarFiltros));
+            [filtroTipo, filtroEmpresa].forEach(s => s?.addEventListener('change', aplicarFiltros));
+
+            document.querySelectorAll('.tarjeta-estado').forEach(b => b.addEventListener('click', () => {
+                filtroEstado = (filtroEstado === b.dataset.filtroEstado) ? 'todos' : b.dataset.filtroEstado;
+                aplicarFiltros();
+                contenedor?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }));
+
+            chipEstado?.addEventListener('click', () => { filtroEstado = 'todos'; aplicarFiltros(); });
+
+            document.querySelectorAll('[data-elegir-tipo]').forEach(b => b.addEventListener('click', () => {
+                if (filtroTipo) filtroTipo.value = b.dataset.elegirTipo;
+                aplicarFiltros();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }));
+
+            document.getElementById('btnLimpiarFiltros')?.addEventListener('click', () => {
+                if (buscadorGeneral) buscadorGeneral.value = '';
+                if (filtroNombre) filtroNombre.value = '';
+                if (filtroTipo) filtroTipo.value = '';
+                if (filtroEmpresa) filtroEmpresa.value = '';
+                filtroEstado = 'todos';
+                aplicarFiltros();
+            });
+
+            // ---------------- Cuadrícula / lista ----------------
+            const clasesCuadricula = 'group/vista grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
+            const clasesLista = 'group/vista grid gap-4 grid-cols-1';
+
+            function ponerVista(vista) {
+                if (!contenedor) return;
+                const oculto = contenedor.classList.contains('hidden');
+                contenedor.dataset.vista = vista;
+                contenedor.className = (vista === 'lista' ? clasesLista : clasesCuadricula) + (oculto ? ' hidden' : '');
+                document.querySelectorAll('.boton-vista').forEach(b => {
+                    const activo = b.dataset.vista === vista;
+                    b.classList.toggle('bg-emerald-500', activo);
+                    b.classList.toggle('text-[#03150d]', activo);
+                    b.classList.toggle('hover:text-white', !activo);
+                    b.classList.toggle('text-slate-400', !activo);
+                });
+                try { localStorage.setItem('sportia_vista_escenarios', vista); } catch (e) { }
+            }
+
+            document.querySelectorAll('.boton-vista').forEach(b => b.addEventListener('click', () => ponerVista(b.dataset.vista)));
+
+            let vistaGuardada = 'cuadricula';
+            try { vistaGuardada = localStorage.getItem('sportia_vista_escenarios') || 'cuadricula'; } catch (e) { }
+            ponerVista(vistaGuardada === 'lista' ? 'lista' : 'cuadricula');
+
+            // ---------------- Menú "..." ----------------
+            function cerrarMenus(excepto) {
+                document.querySelectorAll('.menu-escenario').forEach(m => { if (m !== excepto) m.classList.add('hidden'); });
+                document.querySelectorAll('[data-menu]').forEach(b => {
+                    if (!excepto || b.dataset.menu !== excepto.dataset.menuPanel) b.setAttribute('aria-expanded', 'false');
+                });
+            }
+
+            document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', e => {
+                e.stopPropagation();
+                const panel = document.querySelector(`[data-menu-panel="${b.dataset.menu}"]`);
+                const abrir = panel.classList.contains('hidden');
+                cerrarMenus(panel);
+                panel.classList.toggle('hidden', !abrir);
+                b.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+            }));
+
+            document.addEventListener('click', e => { if (!e.target.closest('.menu-escenario')) cerrarMenus(); });
+
+            // ---------------- Ver detalles ----------------
+            const modal = document.getElementById('modalDetalle');
+            const $ = id => document.getElementById(id);
+
+            function abrirDetalle(id) {
+                const d = datos[id];
+                if (!d) return;
+                $('detalleImagen').src = d.imagen;
+                $('detalleImagen').alt = d.nombre;
+                $('detalleNombre').textContent = d.nombre;
+                $('detalleDescripcion').textContent = d.descripcion;
+                $('detalleTipo').textContent = d.tipo;
+                $('detalleEmpresa').textContent = d.empresa;
+                $('detalleEmpresa').title = d.empresa;
+                $('detalleCapacidad').textContent = d.capacidad + (d.capacidad === 1 ? ' cancha' : ' canchas');
+                $('detallePrecio').textContent = d.precio;
+                $('detalleReservas').textContent = d.reservas;
+                $('detalleId').textContent = '#' + d.id;
+                $('detalleEditar').href = d.urlEditar;
+
+                const estado = $('detalleEstado');
+                estado.textContent = d.activo ? 'Activo' : 'Inactivo';
+                estado.classList.toggle('bg-emerald-500/90', d.activo);
+                estado.classList.toggle('bg-red-500/90', !d.activo);
+
+                const aviso = $('detalleAvisoFoto');
+                aviso.classList.toggle('hidden', d.propia);
+                aviso.classList.toggle('flex', !d.propia);
+
+                cerrarMenus();
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+
+            function cerrarDetalle() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.classList.remove('overflow-hidden');
+            }
+
+            document.querySelectorAll('[data-detalle]').forEach(b => b.addEventListener('click', e => {
+                e.stopPropagation();
+                abrirDetalle(b.dataset.detalle);
+            }));
+            modal.querySelectorAll('[data-cerrar-modal]').forEach(b => b.addEventListener('click', cerrarDetalle));
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') { cerrarDetalle(); cerrarMenus(); }
+            });
+
+            aplicarFiltros();
+            if (window.lucide) lucide.createIcons();
+        })();
     </script>
 
 }

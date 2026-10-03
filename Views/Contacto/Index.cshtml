@@ -2,120 +2,295 @@
     ViewData["Title"] = "Contacto";
     Layout = "_ClienteLayout";
 
-    var nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "Cliente";
+    var nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "";
     var correoUsuario = Context.Session.GetString("CorreoUsuario") ?? "";
 }
 
-<div class="min-h-screen bg-slate-950 text-white">
+<div class="relative min-h-screen overflow-hidden bg-[#04101c] text-white">
 
-    <main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-
-        <div class="text-center mb-10">
-            <p class="text-emerald-400 text-xs font-bold uppercase tracking-[0.2em]">
-                Soporte
-            </p>
-            <h1 class="text-3xl sm:text-4xl font-black mt-2">
-                ¿Tuviste algún inconveniente?
-            </h1>
-            <p class="text-slate-500 mt-3">
-                Cuéntanos qué pasó y te responderemos directo a tu correo.
-            </p>
+    <!-- =====================================================
+         FONDO DECORATIVO (balón + franjas verdes)
+    ====================================================== -->
+    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+        <!-- Balón en la esquina superior derecha -->
+        <div class="absolute -right-24 top-16 hidden h-[620px] w-[620px] lg:block">
+            <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=70"
+                 alt=""
+                 class="contacto-flotar h-full w-full rounded-full object-cover opacity-25 mix-blend-luminosity">
+            <div class="absolute inset-0 bg-gradient-to-l from-transparent via-[#04101c]/40 to-[#04101c]"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#04101c] via-transparent to-[#04101c]/60"></div>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+        <!-- Franjas verdes -->
+        <div class="absolute -bottom-40 -left-24 h-[420px] w-24 rotate-[40deg] bg-gradient-to-t from-emerald-500/70 to-emerald-400/0"></div>
+        <div class="absolute -bottom-48 left-4 h-[420px] w-10 rotate-[40deg] bg-gradient-to-t from-emerald-500/40 to-emerald-400/0"></div>
+        <div class="absolute -bottom-40 -right-20 h-[460px] w-24 -rotate-[40deg] bg-gradient-to-t from-emerald-500/60 to-emerald-400/0"></div>
+        <div class="absolute -bottom-48 right-8 h-[420px] w-10 -rotate-[40deg] bg-gradient-to-t from-emerald-500/30 to-emerald-400/0"></div>
 
-            <div id="contactoMensajeEstado" class="hidden mb-5 text-sm font-semibold rounded-xl px-4 py-3"></div>
+        <!-- Luz suave -->
+        <div class="absolute left-1/4 top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl"></div>
+    </div>
 
-            <form id="formContacto" class="space-y-5">
+
+    <!-- =====================================================
+         CONTENIDO
+    ====================================================== -->
+    <main class="relative z-10 mx-auto grid max-w-7xl items-start gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:px-8 lg:py-20">
+
+        <!-- ========== Columna izquierda ========== -->
+        <section class="min-w-0">
+
+            <span class="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-sm font-semibold text-emerald-400">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v.4l-10 6.2L2 6.4z" /><path d="M2 8.7V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.7l-10 6.2z" /></svg>
+                Contáctanos
+            </span>
+
+            <h1 class="mt-6 font-['Montserrat'] text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+                ¿Tuviste algún<br>
+                <span class="text-emerald-400">inconveniente?</span>
+            </h1>
+
+            <p class="mt-6 max-w-md text-lg leading-relaxed text-slate-300">
+                Estamos aquí para ayudarte. Cuéntanos qué pasó y te responderemos directo a tu correo.
+                ¡Tu opinión es muy importante para nosotros!
+            </p>
+
+            <!-- Datos de contacto (cámbialos por los reales) -->
+            <ul class="mt-10 space-y-6">
+                <li class="flex items-center gap-5">
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-emerald-400">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v.4l-10 6.2L2 6.4z" /><path d="M2 8.7V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.7l-10 6.2z" /></svg>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="font-semibold">Correo electrónico</p>
+                        <p class="break-all text-slate-300">soporte@sportia.com</p>
+                    </div>
+                </li>
+                <li class="flex items-center gap-5">
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-emerald-400">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.2 15.2 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" /></svg>
+                    </span>
+                    <div>
+                        <p class="font-semibold">Teléfono</p>
+                        <p class="text-slate-300">+57 300 123 4567</p>
+                        <p class="text-xs text-slate-500">Lun - Vie 7:00 a.m. - 6:00 p.m.</p>
+                    </div>
+                </li>
+                <li class="flex items-center gap-5">
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-emerald-400">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
+                    </span>
+                    <div>
+                        <p class="font-semibold">Ubicación</p>
+                        <p class="text-slate-300">Medellín, Antioquia</p>
+                        <p class="text-xs text-slate-500">Colombia</p>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="mt-10 flex max-w-lg items-center gap-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+                <svg class="h-10 w-10 shrink-0 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
+                <div>
+                    <p class="font-semibold text-emerald-400">Tu tranquilidad es lo más importante</p>
+                    <p class="mt-1 text-sm text-slate-300">Nos esforzamos por brindarte un servicio seguro, confiable y siempre disponible.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========== Formulario ========== -->
+        <section class="min-w-0 rounded-3xl border border-white/10 bg-gradient-to-b from-[#0b1d33]/90 to-[#081627]/90 p-6 shadow-2xl shadow-black/40 backdrop-blur sm:p-10">
+
+            <div class="flex items-start gap-5">
+                <svg class="h-11 w-11 shrink-0 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2 2 9.5l7.3 2.7L19 5l-7.7 9.7v6.3l3.7-4.4 4.5 3.4z" /></svg>
+                <div>
+                    <h2 class="font-['Montserrat'] text-2xl font-bold">Envíanos un mensaje</h2>
+                    <p class="mt-1 text-slate-300">Completa el formulario y te responderemos lo antes posible.</p>
+                </div>
+            </div>
+
+            <!-- Mensaje de estado -->
+            <div id="contactoMensajeEstado" class="mt-6 hidden rounded-xl px-4 py-3 text-sm font-semibold" role="status"></div>
+
+            <form id="formContacto" class="mt-8 space-y-6" novalidate>
 
                 @Html.AntiForgeryToken()
 
                 <div>
-                    <label class="text-xs text-slate-500">Nombre</label>
-                    <input type="text" name="Nombre" required
-                           value="@nombreUsuario"
-                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                    <label for="Nombre" class="mb-2 block font-medium">Nombre</label>
+                    <div class="flex items-center gap-4 rounded-xl border border-white/10 bg-[#0a1a2e] px-5 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                        <svg class="h-5 w-5 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+                        <input id="Nombre" type="text" name="Nombre" required maxlength="150"
+                               value="@nombreUsuario" placeholder="Tu nombre completo"
+                               class="h-14 min-w-0 flex-1 bg-transparent text-white placeholder-slate-400 outline-none">
+                    </div>
                 </div>
 
                 <div>
-                    <label class="text-xs text-slate-500">Correo</label>
-                    <input type="email" name="Correo" required
-                           value="@correoUsuario"
-                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                    <label for="Correo" class="mb-2 block font-medium">Correo electrónico</label>
+                    <div class="flex items-center gap-4 rounded-xl border border-white/10 bg-[#0a1a2e] px-5 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                        <svg class="h-5 w-5 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+                        <input id="Correo" type="email" name="Correo" required maxlength="150"
+                               value="@correoUsuario" placeholder="Tu correo electrónico"
+                               class="h-14 min-w-0 flex-1 bg-transparent text-white placeholder-slate-400 outline-none">
+                    </div>
                 </div>
 
                 <div>
-                    <label class="text-xs text-slate-500">Asunto</label>
-                    <input type="text" name="Asunto" required
-                           placeholder="Problema con una reserva"
-                           class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10">
+                    <label for="Asunto" class="mb-2 block font-medium">Asunto</label>
+                    <div class="relative flex items-center gap-4 rounded-xl border border-white/10 bg-[#0a1a2e] px-5 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                        <svg class="h-5 w-5 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" /><circle cx="7.5" cy="7.5" r="1.5" /></svg>
+                        <select id="Asunto" name="Asunto" required
+                                class="h-14 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pr-8 text-white outline-none">
+                            <option value="" class="bg-[#0a1a2e]" selected disabled>Selecciona un asunto</option>
+                            <option class="bg-[#0a1a2e]">Problema con una reserva</option>
+                            <option class="bg-[#0a1a2e]">Problema con un pago</option>
+                            <option class="bg-[#0a1a2e]">Problema con mi cuenta</option>
+                            <option class="bg-[#0a1a2e]">Escenario en mal estado</option>
+                            <option class="bg-[#0a1a2e]">Sugerencia</option>
+                            <option class="bg-[#0a1a2e]">Otro</option>
+                        </select>
+                        <svg class="pointer-events-none absolute right-5 h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </div>
                 </div>
 
                 <div>
-                    <label class="text-xs text-slate-500">Mensaje</label>
-                    <textarea name="Mensaje" required rows="6"
-                              placeholder="Cuéntanos con detalle qué inconveniente tuviste..."
-                              class="w-full mt-1 bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white resize-none focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10"></textarea>
+                    <div class="mb-2 flex items-baseline justify-between">
+                        <label for="Mensaje" class="block font-medium">Mensaje</label>
+                        <span id="contadorMensaje" class="text-xs tabular-nums text-slate-500">0 / 1000</span>
+                    </div>
+                    <div class="flex gap-4 rounded-xl border border-white/10 bg-[#0a1a2e] px-5 pt-4 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M8 21h0M7 9h10M7 13h6" /></svg>
+                        <textarea id="Mensaje" name="Mensaje" required rows="5" maxlength="1000"
+                                  placeholder="Cuéntanos con detalle qué inconveniente tuviste..."
+                                  class="min-h-[120px] min-w-0 flex-1 resize-y bg-transparent pb-4 text-white placeholder-slate-400 outline-none"></textarea>
+                    </div>
                 </div>
 
                 <button type="submit" id="btnEnviarContacto"
-                        class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold transition">
-                    Enviar mensaje
+                        class="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-lg font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:shadow-emerald-500/40 disabled:translate-y-0 disabled:opacity-70">
+                    <svg id="iconoEnviar" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2 2 9.5l7.3 2.7L19 5l-7.7 9.7v6.3l3.7-4.4 4.5 3.4z" /></svg>
+                    <svg id="iconoCargando" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9" /></svg>
+                    <span id="textoEnviar">Enviar mensaje</span>
                 </button>
-
             </form>
-        </div>
 
-        <div class="text-center mt-8">
+            <!-- Pantalla de éxito -->
+            <div id="contactoExito" class="hidden flex-col items-center py-12 text-center">
+                <span class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15 ring-8 ring-emerald-500/5">
+                    <svg class="h-10 w-10 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                </span>
+                <h3 class="mt-6 font-['Montserrat'] text-2xl font-bold">¡Mensaje enviado!</h3>
+                <p id="contactoExitoTexto" class="mt-2 max-w-sm text-slate-300">Te responderemos a tu correo lo antes posible.</p>
+                <button type="button" id="btnOtroMensaje"
+                        class="mt-8 h-12 rounded-xl border border-white/15 px-6 font-semibold transition hover:border-emerald-500/60">
+                    Enviar otro mensaje
+                </button>
+            </div>
+        </section>
+
+        <div class="text-center lg:col-span-2">
             <a asp-controller="Cliente" asp-action="Index"
-               class="text-sm text-slate-500 hover:text-white transition">
+               class="text-sm text-slate-400 transition hover:text-white">
                 ← Volver al panel
             </a>
         </div>
-
     </main>
-
 </div>
 
-<script>
-    document.getElementById('formContacto')?.addEventListener('submit', async function (e) {
-        e.preventDefault();
 
+<style>
+    @@keyframes contactoFlotar {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-14px) rotate(6deg); }
+    }
+
+    .contacto-flotar {
+        animation: contactoFlotar 9s ease-in-out infinite;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .contacto-flotar { animation: none; }
+    }
+</style>
+
+
+<script>
+    (function () {
+        const form = document.getElementById('formContacto');
         const btn = document.getElementById('btnEnviarContacto');
         const estado = document.getElementById('contactoMensajeEstado');
-        const formData = new FormData(this);
+        const exito = document.getElementById('contactoExito');
+        const mensaje = document.getElementById('Mensaje');
+        const contador = document.getElementById('contadorMensaje');
 
-        btn.disabled = true;
-        btn.textContent = 'Enviando...';
+        if (!form) return;
 
-        try {
-            const token = formData.get('__RequestVerificationToken');
+        mensaje.addEventListener('input', function () {
+            contador.textContent = mensaje.value.length + ' / 1000';
+        });
 
-            const resp = await fetch('/Contacto/Enviar', {
-                method: 'POST',
-                headers: { 'RequestVerificationToken': token },
-                body: formData
-            });
-
-            const data = await resp.json();
-
+        function mostrarEstado(texto, esError) {
+            estado.textContent = texto;
             estado.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-300', 'bg-red-500/10', 'text-red-300');
-
-            if (data.ok) {
-                estado.classList.add('bg-emerald-500/10', 'text-emerald-300');
-                estado.textContent = data.aviso || 'Mensaje enviado. Te responderemos pronto.';
-                this.reset();
-            } else {
-                estado.classList.add('bg-red-500/10', 'text-red-300');
-                estado.textContent = data.error || 'No se pudo enviar el mensaje. Intenta de nuevo.';
-            }
-        } catch (err) {
-            estado.classList.remove('hidden');
-            estado.classList.add('bg-red-500/10', 'text-red-300');
-            estado.textContent = 'Error de conexión. Intenta de nuevo.';
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Enviar mensaje';
+            estado.classList.add(esError ? 'bg-red-500/10' : 'bg-emerald-500/10', esError ? 'text-red-300' : 'text-emerald-300');
         }
-    });
+
+        function cargando(activo) {
+            btn.disabled = activo;
+            document.getElementById('textoEnviar').textContent = activo ? 'Enviando...' : 'Enviar mensaje';
+            document.getElementById('iconoEnviar').classList.toggle('hidden', activo);
+            document.getElementById('iconoCargando').classList.toggle('hidden', !activo);
+        }
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const nombre = document.getElementById('Nombre').value.trim();
+            const correo = document.getElementById('Correo').value.trim();
+            const asunto = document.getElementById('Asunto').value;
+
+            if (!nombre) return mostrarEstado('Escribe tu nombre.', true);
+            if (!/^\S+@@\S+\.\S+$/.test(correo)) return mostrarEstado('Revisa tu correo electrónico, parece incompleto.', true);
+            if (!asunto) return mostrarEstado('Selecciona un asunto.', true);
+            if (mensaje.value.trim().length < 10) return mostrarEstado('Cuéntanos un poco más en el mensaje (mínimo 10 caracteres).', true);
+
+            estado.classList.add('hidden');
+            cargando(true);
+
+            try {
+                const formData = new FormData(form);
+                const resp = await fetch('@Url.Action("Enviar", "Contacto")', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': formData.get('__RequestVerificationToken') },
+                    body: formData
+                });
+                const data = await resp.json();
+
+                if (data.ok) {
+                    document.getElementById('contactoExitoTexto').textContent =
+                        data.aviso || ('Gracias, ' + nombre.split(' ')[0] + '. Te responderemos a ' + correo + ' lo antes posible.');
+                    form.classList.add('hidden');
+                    exito.classList.remove('hidden');
+                    exito.classList.add('flex');
+                } else {
+                    mostrarEstado(data.error || 'No se pudo enviar el mensaje. Intenta de nuevo.', true);
+                }
+            } catch (err) {
+                mostrarEstado('Error de conexión. Revisa tu internet e intenta de nuevo.', true);
+            } finally {
+                cargando(false);
+            }
+        });
+
+        document.getElementById('btnOtroMensaje').addEventListener('click', function () {
+            mensaje.value = '';
+            contador.textContent = '0 / 1000';
+            document.getElementById('Asunto').value = '';
+            exito.classList.add('hidden');
+            exito.classList.remove('flex');
+            form.classList.remove('hidden');
+            mensaje.focus();
+        });
+    })();
 </script>

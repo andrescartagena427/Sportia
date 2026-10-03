@@ -35,7 +35,45 @@ namespace Sportia.Controllers
                 .OrderBy(e => e.Nombre)
                 .ToListAsync();
 
+            // Datos extra para las tarjetas y el detalle
+            ViewBag.TotalEmpresas = await _context.Empresas.CountAsync(e => e.Estado == true);
+
+            ViewBag.ReservasPorEscenario = await _context.Reservas
+                .GroupBy(r => r.IdEscenario)
+                .Select(g => new { IdEscenario = g.Key, Total = g.Count() })
+                .ToDictionaryAsync(x => x.IdEscenario, x => x.Total);
+
             return View(escenarios);
+        }
+
+        // =====================================================
+        // ACTIVAR / DESACTIVAR (menú "..." de la tarjeta)
+        // =====================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int id)
+        {
+            if (!ValidarSesion())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var escenario = await _context.Escenarios.FirstOrDefaultAsync(e => e.IdEscenario == id);
+
+            if (escenario == null)
+            {
+                return NotFound();
+            }
+
+            escenario.Estado = escenario.Estado != true;
+            await _context.SaveChangesAsync();
+
+            TempData["MensajeEscenario"] = escenario.Estado == true
+                ? $"El escenario {escenario.Nombre} fue activado."
+                : $"El escenario {escenario.Nombre} fue desactivado.";
+
+            return RedirectToAction(nameof(Index));
         }
 
         // =====================================================

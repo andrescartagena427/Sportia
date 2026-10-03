@@ -1,1085 +1,623 @@
-﻿@using Sportia.Models
+﻿@using System.Globalization
+@model Sportia.Models.ViewModels.DashboardAdminViewModel
 
 @{
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
     ViewData["Title"] = "Dashboard";
 
-    var totalReservas = (int)(ViewBag.TotalReservas ?? 0);
-    var totalClientes = (int)(ViewBag.TotalClientes ?? 0);
-    var totalEscenarios = (int)(ViewBag.TotalEscenarios ?? 0);
-    var escenariosActivos = (int)(ViewBag.EscenariosActivos ?? 0);
-    var reservasHoy = (int)(ViewBag.ReservasHoy ?? 0);
-    var totalUsuarios = (int)(ViewBag.TotalUsuarios ?? 0);
-    var totalEmpresas = (int)(ViewBag.TotalEmpresas ?? 0);
-    var totalPagos = (int)(ViewBag.TotalPagos ?? 0);
+    var co = new CultureInfo("es-CO");
+    var primerNombre = (Model.NombreAdmin ?? "Admin").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Admin";
 
-    decimal ingresosMes = ViewBag.IngresosMes != null
-        ? (decimal)ViewBag.IngresosMes
-        : 0;
+    const string imagenPorDefecto =
+        "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=400&q=70";
 
-    var reservasRecientes =
-        ViewBag.ReservasRecientes as List<Reserva>
-        ?? new List<Reserva>();
+    int columnasCalendario = (Model.HoraFinCalendario - Model.HoraInicioCalendario) * 2;
+    string plantillaColumnas = $"grid-template-columns: 210px repeat({columnasCalendario}, minmax(44px, 1fr));";
 
-    var escenariosMasReservados =
-        ViewBag.EscenariosMasReservados as List<Escenario>
-        ?? new List<Escenario>();
+    bool calendarioEsHoy = Model.FechaCalendario == Model.Hoy;
 
-    var fechasGrafica =
-        ViewBag.FechasGrafica as List<DateOnly>
-        ?? new List<DateOnly>();
+    // Canchas que se ven sin desplegar el calendario
+    const int CanchasVisibles = 4;
+    int indiceFila = 0;
+    string fechaAnterior = Model.FechaCalendario.AddDays(-1).ToString("yyyy-MM-dd");
+    string fechaSiguiente = Model.FechaCalendario.AddDays(1).ToString("yyyy-MM-dd");
 
-    var reservasPorDia =
-        ViewBag.ReservasPorDia as List<int>
-        ?? new List<int>();
-
-    var maxReservasGrafica =
-        reservasPorDia.Any()
-            ? Math.Max(reservasPorDia.Max(), 1)
-            : 1;
-
-    // Meta mensual de reservas (ajusta este valor o tráelo desde tu backend)
-    var metaMensualReservas = 60;
-    var porcentajeMeta = metaMensualReservas > 0
-        ? Math.Min(totalReservas * 100.0 / metaMensualReservas, 100)
-        : 0;
-    var faltantesMeta = Math.Max(metaMensualReservas - totalReservas, 0);
-
-    // % de crecimiento simple comparando reservas de hoy vs promedio de la semana
-    var promedioSemana = reservasPorDia.Any() ? reservasPorDia.Average() : 0;
-    var crecimientoTexto = promedioSemana > 0
-        ? Math.Round(((reservasHoy - promedioSemana) / promedioSemana) * 100, 1)
-        : 0;
+    decimal maxIngresoDia = Model.IngresosSemana.Any() ? Model.IngresosSemana.Max(d => d.Total) : 0;
+    if (maxIngresoDia <= 0) maxIngresoDia = 1;
 }
 
-<style>
+@functions {
+    // Texto de dinero: $840.000
+    string Dinero(decimal valor) => "$" + valor.ToString("N0", new CultureInfo("es-CO"));
 
-    /* =====================================================
-               BANNER DE INSIGHT (HERO SUPERIOR)
-               ===================================================== */
-
-    .insight-banner {
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        padding: 28px 30px;
-        margin-bottom: 18px;
-        border-radius: 18px;
-        background: radial-gradient(circle at 15% 20%, rgba(139,92,246,.25), transparent 45%), radial-gradient(circle at 85% 80%, rgba(34,199,122,.25), transparent 50%), linear-gradient(135deg, #0c1420 0%, #101928 60%, #0c1420 100%);
-        border: 1px solid #202d43;
+    // Dinero corto para ejes: 1,5M · 500K
+    string Compacto(decimal valor)
+    {
+        if (valor >= 1_000_000) return (valor / 1_000_000m).ToString("0.#", new CultureInfo("es-CO")) + "M";
+        if (valor >= 1_000) return (valor / 1_000m).ToString("0.#", new CultureInfo("es-CO")) + "K";
+        return valor.ToString("0", new CultureInfo("es-CO"));
     }
 
-        .insight-banner::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-            background-size: 34px 34px;
-            mask-image: radial-gradient(circle at 30% 40%, black, transparent 75%);
-            pointer-events: none;
-        }
-
-    .insight-left {
-        position: relative;
-        z-index: 1;
-        max-width: 560px;
+    // Línea y área de una mini gráfica (sparkline) de 120 x 44
+    (string linea, string area) Sparkline(List<double> valores)
+    {
+        if (valores == null || valores.Count == 0) return ("", "");
+        double max = valores.Max(), min = valores.Min();
+        double rango = max - min == 0 ? 1 : max - min;
+        double paso = valores.Count > 1 ? 120.0 / (valores.Count - 1) : 120.0;
+        var puntos = valores.Select((v, i) =>
+            $"{(i * paso).ToString("0.#", CultureInfo.InvariantCulture)},{(40 - (v - min) / rango * 34).ToString("0.#", CultureInfo.InvariantCulture)}").ToList();
+        string linea = "M" + string.Join(" L", puntos);
+        string area = linea + " L120,44 L0,44 Z";
+        return (linea, area);
     }
 
-    .insight-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        border-radius: 999px;
-        background: rgba(139, 92, 246, 0.15);
-        border: 1px solid rgba(139, 92, 246, 0.4);
-        color: #c4b5fd;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: .3px;
-        text-transform: uppercase;
-        margin-bottom: 14px;
+    // Clases del estado de una reserva
+    string ClaseEstado(string estado)
+    {
+        var e = (estado ?? "").ToLowerInvariant();
+        if (e.Contains("confirm")) return "border-emerald-500/40 bg-emerald-500/10 text-emerald-300";
+        if (e.Contains("pend")) return "border-amber-500/40 bg-amber-500/10 text-amber-300";
+        if (e.Contains("cancel")) return "border-red-500/40 bg-red-500/10 text-red-300";
+        return "border-sky-500/40 bg-sky-500/10 text-sky-300";
     }
 
-        .insight-badge .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #a78bfa;
-            box-shadow: 0 0 8px 2px rgba(167,139,250,.7);
-        }
-
-    .insight-title {
-        font-size: 21px;
-        font-weight: 800;
-        line-height: 1.35;
-        color: #f4f7fb;
+    // Color del bloque en el calendario según el estado
+    string ClaseBloque(string estado)
+    {
+        var e = (estado ?? "").ToLowerInvariant();
+        if (e.Contains("confirm")) return "bg-emerald-600 hover:bg-emerald-500";
+        if (e.Contains("pend")) return "bg-amber-500 hover:bg-amber-400 text-slate-950";
+        return "bg-sky-600 hover:bg-sky-500";
     }
 
-        .insight-title .highlight-green {
-            color: #4ee69b;
-        }
+    // Color del anillo de ocupación
+    string ColorAnillo(int porcentaje) =>
+        porcentaje >= 75 ? "#10b981" : porcentaje >= 50 ? "#38bdf8" : porcentaje > 0 ? "#f59e0b" : "#334155";
+}
 
-        .insight-title .highlight-red {
-            color: #f87171;
-        }
-
-    .insight-desc {
-        margin-top: 12px;
-        color: #93a2b8;
-        font-size: 13px;
-        line-height: 1.6;
+@* Indicador de variación ↑ 12% vs ayer *@
+@functions {
+    Microsoft.AspNetCore.Html.IHtmlContent Variacion(double? valor, string periodo)
+    {
+        string html;
+        if (valor == null)
+            html = $"<span class=\"text-xs font-semibold text-sky-300\">Nuevo</span><span class=\"block text-xs text-slate-500\">{periodo}</span>";
+        else if (valor >= 0)
+            html = $"<span class=\"text-xs font-semibold text-emerald-400\">↑ {valor.Value.ToString("0.#", new CultureInfo("es-CO"))}%</span><span class=\"block text-xs text-slate-500\">{periodo}</span>";
+        else
+            html = $"<span class=\"text-xs font-semibold text-red-400\">↓ {Math.Abs(valor.Value).ToString("0.#", new CultureInfo("es-CO"))}%</span><span class=\"block text-xs text-slate-500\">{periodo}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
     }
-
-        .insight-desc b {
-            color: #d5dce6;
-        }
-
-    .insight-right {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 16px;
-        flex-shrink: 0;
-    }
-
-    .range-tabs {
-        display: flex;
-        gap: 4px;
-        padding: 4px;
-        border-radius: 10px;
-        background: rgba(16, 25, 40, 0.7);
-        border: 1px solid #202d43;
-    }
-
-    .range-tab {
-        padding: 6px 12px;
-        border-radius: 7px;
-        font-size: 11px;
-        font-weight: 700;
-        color: #8c99ae;
-        cursor: pointer;
-        transition: all .2s ease;
-    }
-
-        .range-tab.active {
-            background: #22c77a;
-            color: #04150c;
-        }
-
-    .insight-mini-stats {
-        display: flex;
-        gap: 22px;
-    }
-
-    .insight-mini-stat {
-        text-align: right;
-    }
-
-    .insight-mini-label {
-        font-size: 10px;
-        color: #718097;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-    }
-
-    .insight-mini-value {
-        margin-top: 4px;
-        font-size: 17px;
-        font-weight: 800;
-        color: #f4f7fb;
-    }
-
-        .insight-mini-value.accent {
-            color: #4ee69b;
-        }
-
-    /* =====================================================
-               GRID DE TARJETAS PEQUEÑAS (ESTILO DASHLY)
-               ===================================================== */
-
-    .quick-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1.35fr;
-        gap: 16px;
-        margin-bottom: 18px;
-    }
-
-    .qcard {
-        padding: 20px;
-        background: linear-gradient(160deg, #131f32 0%, #0c1420 100%);
-        border: 1px solid #202d43;
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        transition: border-color .2s ease, transform .2s ease;
-    }
-
-        .qcard:hover {
-            transform: translateY(-2px);
-            border-color: #2c4a3c;
-        }
-
-    .qcard-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    .qcard-value {
-        font-size: 22px;
-        font-weight: 800;
-        color: #f4f7fb;
-    }
-
-    .qcard-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        padding: 2px 7px;
-        border-radius: 6px;
-        font-size: 10px;
-        font-weight: 800;
-    }
-
-        .qcard-badge.up {
-            background: rgba(34,199,122,.15);
-            color: #4ee69b;
-        }
-
-        .qcard-badge.down {
-            background: rgba(239,83,101,.15);
-            color: #f87171;
-        }
-
-    .qcard-label {
-        margin-top: 3px;
-        color: #718097;
-        font-size: 11px;
-    }
-
-    /* --- Tarjeta 1: Dona de distribución --- */
-
-    .qcard-donut-row {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin-top: 12px;
-    }
-
-    .mini-donut {
-        width: 72px;
-        height: 72px;
-        flex-shrink: 0;
-    }
-
-        .mini-donut svg {
-            width: 72px;
-            height: 72px;
-            transform: rotate(-90deg);
-        }
-
-    .mini-legend {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        flex: 1;
-    }
-
-    .mini-legend-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        color: #b7c1d1;
-    }
-
-        .mini-legend-row .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            box-shadow: 0 0 6px currentColor;
-        }
-
-    .mini-legend-value {
-        margin-left: auto;
-        color: #718097;
-    }
-
-    /* --- Tarjeta 2: Barras --- */
-
-    .mini-bars {
-        display: flex;
-        align-items: flex-end;
-        gap: 6px;
-        height: 56px;
-        margin-top: 14px;
-        flex: 1;
-    }
-
-    .mini-bar {
-        flex: 1;
-        border-radius: 5px 5px 2px 2px;
-        background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-        min-height: 4px;
-        transition: transform .2s ease;
-    }
-
-        .mini-bar:hover {
-            transform: scaleY(1.05);
-            filter: brightness(1.2);
-        }
-
-    /* --- Tarjeta 3: Progreso de meta --- */
-
-    .goal-track {
-        margin-top: 16px;
-        height: 8px;
-        border-radius: 10px;
-        background: #182337;
-        overflow: hidden;
-    }
-
-    .goal-fill {
-        height: 100%;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #22c77a, #4ee69b);
-        box-shadow: 0 0 10px rgba(34,199,122,.6);
-    }
-
-    .goal-footer {
-        margin-top: 10px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        color: #718097;
-    }
-
-    /* --- Tarjeta 4: Área con etiquetas de fecha --- */
-
-    .qcard-wide {
-        position: relative;
-    }
-
-    .trend-chart-wrap {
-        margin-top: 10px;
-        flex: 1;
-    }
-
-    .trend-tooltip {
-        position: absolute;
-        padding: 6px 10px;
-        border-radius: 8px;
-        background: #1a2942;
-        border: 1px solid #2c4a6e;
-        font-size: 10px;
-        color: #dfe5ed;
-        white-space: nowrap;
-        box-shadow: 0 6px 16px rgba(0,0,0,.4);
-        transform: translate(-50%, -130%);
-        pointer-events: none;
-    }
-
-        .trend-tooltip b {
-            color: #4ee69b;
-        }
-
-    /* =====================================================
-               SECCIÓN INFERIOR
-               ===================================================== */
-
-    .bottom-section {
-        display: grid;
-        grid-template-columns: 1.7fr 1fr;
-        gap: 15px;
-    }
-
-    .panel {
-        min-width: 0;
-        padding: 20px;
-        background: linear-gradient(160deg, #121d2f 0%, #0c1420 100%);
-        border: 1px solid #202d43;
-        border-radius: 16px;
-    }
-
-    .panel-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 15px;
-    }
-
-    .panel-title {
-        font-size: 15px;
-        font-weight: 750;
-        color: #f4f7fb;
-    }
-
-    .panel-subtitle {
-        margin-top: 3px;
-        color: #8c99ae;
-        font-size: 11px;
-    }
-
-    .panel-button {
-        padding: 6px 12px;
-        border-radius: 8px;
-        background: rgba(34,199,122,.1);
-        border: 1px solid rgba(34,199,122,.35);
-        color: #4ee69b;
-        font-size: 11px;
-        font-weight: 700;
-        text-decoration: none;
-    }
-
-    /* --- TABS ESTILO DASHLY --- */
-
-    .filter-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        overflow-x: auto;
-    }
-
-    .filter-tab {
-        padding: 9px 16px;
-        border-radius: 10px;
-        border: 1px solid #202d43;
-        background: #101928;
-        color: #8c99ae;
-        font-size: 12px;
-        font-weight: 700;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: all .2s ease;
-    }
-
-        .filter-tab.active {
-            background: rgba(34,199,122,.12);
-            border-color: #22c77a;
-            color: #4ee69b;
-        }
-
-    /* --- TABLA --- */
-
-    .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .reservations-table {
-        width: 100%;
-        min-width: 640px;
-        border-collapse: collapse;
-    }
-
-        .reservations-table th {
-            padding: 0 9px 11px;
-            color: #627087;
-            text-align: left;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-        }
-
-        .reservations-table td {
-            padding: 12px 9px;
-            border-top: 1px solid #202d43;
-            color: #dfe5ed;
-            font-size: 12px;
-        }
-
-    .client {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .client-avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #22c77a, #0e8c53);
-        color: #04150c;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 800;
-    }
-
-    .client-sub {
-        font-size: 10px;
-        color: #718097;
-        margin-top: 1px;
-    }
-
-    .status {
-        display: inline-flex;
-        padding: 4px 9px;
-        border-radius: 6px;
-        font-size: 10px;
-        font-weight: 700;
-    }
-
-    .status-green {
-        background: rgba(34, 199, 122, .13);
-        color: #22c77a;
-    }
-
-    .status-orange {
-        background: rgba(245, 166, 35, .13);
-        color: #f5a623;
-    }
-
-    .status-red {
-        background: rgba(239, 83, 101, .13);
-        color: #ef5365;
-    }
-
-    .total-cell {
-        font-weight: 800;
-        color: #f4f7fb;
-    }
-
-    /* --- PANEL DERECHO: INGRESOS --- */
-
-    .revenue-value {
-        font-size: 26px;
-        font-weight: 800;
-        color: #f4f7fb;
-        margin-top: 4px;
-    }
-
-    .revenue-sub {
-        color: #718097;
-        font-size: 11px;
-        margin-top: 4px;
-    }
-
-    .revenue-chart-wrap {
-        margin-top: 18px;
-    }
-
-    /* =====================================================
-               RESPONSIVE
-               ===================================================== */
-
-    @@media (max-width: 1300px) {
-        .quick-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .bottom-section {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @@media (max-width: 900px) {
-        .insight-banner {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .insight-right {
-            align-items: flex-start;
-            width: 100%;
-        }
-    }
-
-    @@media (max-width: 560px) {
-        .quick-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-</style>
+}
 
 
 <!-- =====================================================
-     BANNER DE INSIGHT
-     ===================================================== -->
+     BARRA SUPERIOR
+====================================================== -->
 
-<div class="insight-banner">
+<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <label class="flex h-12 w-full max-w-md items-center gap-3 rounded-xl border border-slate-800 bg-[#0d1422] px-4 text-slate-400 transition focus-within:border-emerald-500/50 sm:w-auto sm:flex-1">
+        <i data-lucide="search" class="h-5 w-5"></i>
+        <span class="sr-only">Buscar en el panel</span>
+        <input id="buscadorPanel" type="search" placeholder="Buscar canchas, reservas, clientes..."
+               class="h-full min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+    </label>
 
-    <div class="insight-left">
-
-        <div class="insight-badge">
-            <span class="dot"></span>
-            Resumen inteligente
-        </div>
-
-        <div class="insight-title">
-            @if (crecimientoTexto >= 0)
+    <div class="flex items-center gap-3">
+        <a asp-controller="Reservas" asp-action="Index"
+           class="relative flex h-12 w-12 items-center justify-center rounded-xl border border-slate-800 bg-[#0d1422] text-slate-300 transition hover:text-white"
+           aria-label="Ver reservas próximas">
+            <i data-lucide="bell" class="h-5 w-5"></i>
+            @if (Model.ProximasReservas.Any())
             {
-                <text>
-                    Hoy vas <span class="highlight-green">@crecimientoTexto% por encima</span> del promedio semanal
-                </text>
+                <span class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">@Model.ProximasReservas.Count</span>
             }
-            else
-            {
-                <text>
-                    Hoy vas <span class="highlight-red">@Math.Abs(crecimientoTexto)% por debajo</span> del promedio semanal
-                </text>
-            }
+        </a>
+        <div class="flex h-12 items-center gap-2 rounded-xl border border-slate-800 bg-[#0d1422] px-4 text-sm text-slate-300">
+            <i data-lucide="calendar" class="h-4 w-4"></i>
+            @co.TextInfo.ToTitleCase(Model.Hoy.ToString("ddd, dd MMM yyyy", co))
         </div>
-
-        <div class="insight-desc">
-            <b>@totalReservas</b> reservas totales, <b>@totalClientes</b> clientes activos y
-            <b>$@ingresosMes.ToString("N0")</b> facturados este mes.
-            @if (escenariosMasReservados.Any())
-            {
-                <text>
-                    La <b>@escenariosMasReservados.First().Nombre</b> lidera las reservas del mes.
-                </text>
-            }
-        </div>
-
     </div>
-
-
-    <div class="insight-right">
-
-        <div class="range-tabs">
-            <div class="range-tab active">Hoy</div>
-            <div class="range-tab">7 días</div>
-            <div class="range-tab">30 días</div>
-            <div class="range-tab">Año</div>
-        </div>
-
-        <div class="insight-mini-stats">
-
-            <div class="insight-mini-stat">
-                <div class="insight-mini-label">Reservas hoy</div>
-                <div class="insight-mini-value accent">@reservasHoy</div>
-            </div>
-
-            <div class="insight-mini-stat">
-                <div class="insight-mini-label">Escenarios activos</div>
-                <div class="insight-mini-value">@escenariosActivos / @totalEscenarios</div>
-            </div>
-
-        </div>
-
-    </div>
-
 </div>
 
 
-<!-- =====================================================
-     GRID DE TARJETAS PEQUEÑAS
-     ===================================================== -->
+<div class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
 
-<div class="quick-grid">
+    <!-- =====================================================
+         COLUMNA PRINCIPAL
+    ====================================================== -->
 
+    <div class="min-w-0 space-y-6">
 
-    <!-- TARJETA 1: DISTRIBUCIÓN (DONA) -->
-
-    <div class="qcard">
-
-        <div class="qcard-top">
+        <!-- ===== Saludo ===== -->
+        <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
-                <div class="qcard-value">@totalReservas.ToString("N0")</div>
-                <div class="qcard-label">Reservas totales</div>
+                <h1 class="text-3xl font-black tracking-tight sm:text-4xl">¡Hola, <span class="text-emerald-400">@primerNombre</span>!</h1>
+                <p class="mt-1 text-slate-400">Aquí tienes un resumen de lo que está pasando en Sportia hoy.</p>
             </div>
-            <span class="qcard-badge up">▲ @totalPagos pagos</span>
+            <a asp-controller="Reservas" asp-action="Create"
+               class="inline-flex h-12 items-center gap-2 rounded-xl bg-emerald-500 px-5 font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400">
+                <i data-lucide="plus" class="h-5 w-5"></i>
+                Nueva reserva
+            </a>
         </div>
 
-        @{
-            var topEscenarios = escenariosMasReservados.Take(5).ToList();
-            var totalDist = topEscenarios.Sum(e => e.Reservas.Count);
-            if (totalDist == 0) { totalDist = 1; }
-            string[] paletaColores = { "#22c77a", "#3b82f6", "#8b5cf6", "#f5a623", "#ef5365" };
-        }
+        <!-- ===== Tarjetas ===== -->
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-        <div class="qcard-donut-row">
-
-            <div class="mini-donut">
-                <svg viewBox="0 0 42 42">
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="#182337" stroke-width="6" />
-
-                    @{
-                        double offAcumulado = 0;
-                    }
-
-                    @for (int i = 0; i < topEscenarios.Count; i++)
-                    {
-                        var cant = topEscenarios[i].Reservas.Count;
-                        var pct = Math.Round(cant * 100.0 / totalDist, 2);
-                        var resto = Math.Round(100 - pct, 2);
-
-                        var dasharray = pct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
-                            + " " + resto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
-                        var dashoffset = (-offAcumulado).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
-
-                        <circle cx="21" cy="21" r="15.9" fill="none"
-                                stroke="@paletaColores[i % paletaColores.Length]"
-                                stroke-width="6"
-                                stroke-linecap="round"
-                                stroke-dasharray="@dasharray"
-                                stroke-dashoffset="@dashoffset" />
-
-                        offAcumulado += pct;
-                    }
-                </svg>
-            </div>
-
-            <div class="mini-legend">
-
-                @if (topEscenarios.Any())
-                {
-                    for (int i = 0; i < topEscenarios.Count && i < 3; i++)
-                    {
-                        var esc = topEscenarios[i];
-
-                        <div class="mini-legend-row">
-                            <span class="dot" style="background:@paletaColores[i % paletaColores.Length]; color:@paletaColores[i % paletaColores.Length];"></span>
-                            <span>@esc.Nombre</span>
-                            <span class="mini-legend-value">@esc.Reservas.Count</span>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="mini-legend-row">Sin datos aún</div>
-                }
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- TARJETA 2: RESERVAS POR DÍA (BARRAS) -->
-
-    <div class="qcard">
-
-        <div class="qcard-top">
-            <div>
-                <div class="qcard-value">@reservasPorDia.Sum().ToString("N0")</div>
-                <div class="qcard-label">Reservas (últimos 7 días)</div>
-            </div>
-            <span class="qcard-badge up">▲ activo</span>
-        </div>
-
-        <div class="mini-bars">
-
-            @if (reservasPorDia.Any())
-            {
-                foreach (var val in reservasPorDia)
-                {
-                    var alturaPct = (val / (double)maxReservasGrafica) * 100;
-                    if (alturaPct < 6) { alturaPct = 6; }
-
-                    <div class="mini-bar" style="height:@alturaPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;" title="@val reservas"></div>
-                }
-            }
-            else
-            {
-                <div style="color:#718097; font-size:11px;">Sin datos aún</div>
+            @{
+                var spReservas = Sparkline(Model.SerieReservas);
+                var spIngresos = Sparkline(Model.SerieIngresos);
+                var spClientes = Sparkline(Model.SerieClientes);
+                double circunferencia = 2 * Math.PI * 26;
+                double llenoOcupacion = circunferencia * Math.Clamp(Model.OcupacionHoy, 0, 100) / 100.0;
             }
 
-        </div>
-
-    </div>
-
-
-    <!-- TARJETA 3: META DEL MES (PROGRESO) -->
-
-    <div class="qcard">
-
-        <div class="qcard-top">
-            <div>
-                <div class="qcard-value">@totalReservas.ToString("N0")</div>
-                <div class="qcard-label">Reservas este mes</div>
+            <!-- Reservas hoy -->
+            <div class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400"><i data-lucide="calendar-check" class="h-5 w-5"></i></span>
+                    <p class="text-sm font-medium text-slate-300">Reservas hoy</p>
+                </div>
+                <div class="mt-4">
+                    <p class="whitespace-nowrap text-[clamp(1.5rem,1.9vw,1.9rem)] font-black leading-tight">@Model.ReservasHoy</p>
+                    <div class="mt-2 flex items-end justify-between gap-2">
+                        <p class="min-w-0 leading-tight">@Variacion(Model.VariacionReservas, "vs. ayer")</p>
+                        <svg viewBox="0 0 120 44" class="h-10 w-20 shrink-0" preserveAspectRatio="none" aria-hidden="true">
+                        <defs><linearGradient id="gReservas" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".35" /><stop offset="1" stop-color="#10b981" stop-opacity="0" /></linearGradient></defs>
+                        <path d="@spReservas.area" fill="url(#gReservas)" />
+                        <path d="@spReservas.linea" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" />
+                    </svg>
+                    </div>
+                </div>
             </div>
-            <span class="qcard-badge @(porcentajeMeta >= 100 ? "up" : "down")">
-                @porcentajeMeta.ToString("0")%
-            </span>
-        </div>
 
-        <div class="goal-track">
-            <div class="goal-fill" style="width:@porcentajeMeta.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;"></div>
-        </div>
-
-        <div class="goal-footer">
-            <span>Meta: @metaMensualReservas</span>
-            <span>Faltan @faltantesMeta</span>
-        </div>
-
-    </div>
-
-
-    <!-- TARJETA 4: TENDENCIA (ÁREA ANCHA CON FECHAS) -->
-
-    <div class="qcard qcard-wide">
-
-        <div class="qcard-top">
-            <div>
-                <div class="qcard-value">$@ingresosMes.ToString("N0")</div>
-                <div class="qcard-label">Ingresos del mes · @totalPagos pagos</div>
+            <!-- Ingresos hoy -->
+            <div class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400"><i data-lucide="circle-dollar-sign" class="h-5 w-5"></i></span>
+                    <p class="text-sm font-medium text-slate-300">Ingresos hoy</p>
+                </div>
+                <div class="mt-4">
+                    <p class="whitespace-nowrap text-[clamp(1.5rem,1.9vw,1.9rem)] font-black leading-tight">@Dinero(Model.IngresosHoy)</p>
+                    <div class="mt-2 flex items-end justify-between gap-2">
+                        <p class="min-w-0 leading-tight">@Variacion(Model.VariacionIngresos, "vs. ayer")</p>
+                        <svg viewBox="0 0 120 44" class="h-10 w-20 shrink-0" preserveAspectRatio="none" aria-hidden="true">
+                        <defs><linearGradient id="gIngresos" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35" /><stop offset="1" stop-color="#3b82f6" stop-opacity="0" /></linearGradient></defs>
+                        <path d="@spIngresos.area" fill="url(#gIngresos)" />
+                        <path d="@spIngresos.linea" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" />
+                    </svg>
+                    </div>
+                </div>
             </div>
-            <span class="qcard-badge up">▲ meta 12%</span>
+
+            <!-- Ocupación -->
+            <div class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400"><i data-lucide="pie-chart" class="h-5 w-5"></i></span>
+                    <p class="text-sm font-medium text-slate-300">Ocupación de canchas</p>
+                </div>
+                <div class="mt-4">
+                    <p class="whitespace-nowrap text-[clamp(1.5rem,1.9vw,1.9rem)] font-black leading-tight">@Model.OcupacionHoy%</p>
+                    <div class="mt-2 flex items-end justify-between gap-2">
+                        <p class="min-w-0 leading-tight">@Variacion(Model.VariacionOcupacion, "vs. ayer")</p>
+                        <svg viewBox="0 0 64 64" class="h-12 w-12 shrink-0 -rotate-90" aria-label="Ocupación @Model.OcupacionHoy%">
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="#1e293b" stroke-width="8" />
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="@llenoOcupacion.ToString("0.##", CultureInfo.InvariantCulture) @circunferencia.ToString("0.##", CultureInfo.InvariantCulture)" />
+                    </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clientes activos -->
+            <div class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400"><i data-lucide="users" class="h-5 w-5"></i></span>
+                    <p class="text-sm font-medium text-slate-300">Clientes activos</p>
+                </div>
+                <div class="mt-4">
+                    <p class="whitespace-nowrap text-[clamp(1.5rem,1.9vw,1.9rem)] font-black leading-tight">@Model.ClientesActivos</p>
+                    <div class="mt-2 flex items-end justify-between gap-2">
+                        <p class="min-w-0 leading-tight">@Variacion(Model.VariacionClientes, "vs. 30 días antes")</p>
+                        <svg viewBox="0 0 120 44" class="h-10 w-20 shrink-0" preserveAspectRatio="none" aria-hidden="true">
+                        <defs><linearGradient id="gClientes" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".35" /><stop offset="1" stop-color="#8b5cf6" stop-opacity="0" /></linearGradient></defs>
+                        <path d="@spClientes.area" fill="url(#gClientes)" />
+                        <path d="@spClientes.linea" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round" />
+                    </svg>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="trend-chart-wrap">
 
-            <svg viewBox="0 0 260 78" preserveAspectRatio="none" style="width:100%; height:78px;">
+        <!-- ===== Calendario de canchas ===== -->
+        <section id="calendario" class="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d1422]">
 
-                <defs>
-                    <linearGradient id="qtrendArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#22c77a" stop-opacity="0.4" />
-                        <stop offset="100%" stop-color="#22c77a" stop-opacity="0" />
-                    </linearGradient>
-                </defs>
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 p-5">
+                <h2 class="flex items-center gap-3 text-lg font-bold">
+                    <i data-lucide="calendar-days" class="h-6 w-6 text-emerald-400"></i>
+                    Calendario de canchas
+                </h2>
 
-                @{
-                    var puntosQ = new List<string>();
-                    var dataQ = reservasPorDia.Any() ? reservasPorDia : new List<int> { 0, 0, 0, 0, 0, 0, 0 };
-                    var maxQ = Math.Max(dataQ.Max(), 1);
-
-                    for (int i = 0; i < dataQ.Count; i++)
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="?fecha=@fechaAnterior#calendario" aria-label="Día anterior"
+                       class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-emerald-500/60 hover:text-white">
+                        <i data-lucide="chevron-left" class="h-5 w-5"></i>
+                    </a>
+                    <form method="get" class="contents">
+                        <label for="fechaCalendario" class="sr-only">Elegir fecha</label>
+                        <input id="fechaCalendario" type="date" name="fecha" value="@Model.FechaCalendario.ToString("yyyy-MM-dd")"
+                               onchange="this.form.submit()"
+                               class="h-10 rounded-lg border border-slate-700 bg-transparent px-3 text-sm font-semibold text-white [color-scheme:dark] focus:border-emerald-500/60 focus:outline-none" />
+                    </form>
+                    <a href="?fecha=@fechaSiguiente#calendario" aria-label="Día siguiente"
+                       class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-emerald-500/60 hover:text-white">
+                        <i data-lucide="chevron-right" class="h-5 w-5"></i>
+                    </a>
+                    @if (!calendarioEsHoy)
                     {
-                        double x = dataQ.Count == 1 ? 0 : (260.0 / (dataQ.Count - 1)) * i;
-                        double y = 56 - ((dataQ[i] / (double)maxQ) * 46);
-                        puntosQ.Add($"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{y.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}");
-                    }
-
-                    var lineaQ = string.Join(" ", puntosQ);
-                    var areaQ = $"0,56 {lineaQ} 260,56";
-                }
-
-                <polygon points="@areaQ" fill="url(#qtrendArea)" />
-                <polyline points="@lineaQ" fill="none" stroke="#22c77a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-
-                @for (int i = 0; i < fechasGrafica.Count; i++)
-                {
-                    double x = fechasGrafica.Count == 1 ? 0 : (260.0 / (fechasGrafica.Count - 1)) * i;
-                    string fechaTxt = fechasGrafica[i].ToString("dd/MM", new System.Globalization.CultureInfo("es-CO"));
-
-                    @Html.Raw($"<text x=\"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}\" y=\"70\" fill=\"#718097\" font-size=\"7\" text-anchor=\"middle\">{fechaTxt}</text>")
-                }
-
-            </svg>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     SECCIÓN INFERIOR: TABLA + INGRESOS
-     ===================================================== -->
-
-<div class="bottom-section">
-
-
-    <!-- =================================================
-         RESERVAS RECIENTES CON PESTAÑAS
-         ================================================= -->
-
-    <div class="panel">
-
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">Reservas recientes</div>
-                <div class="panel-subtitle">Últimas reservas registradas en Sportia</div>
-            </div>
-
-            <a asp-controller="Reservas" asp-action="Index" class="panel-button">Ver todas</a>
-        </div>
-
-        <div class="filter-tabs">
-            <div class="filter-tab active">Todas</div>
-
-            @foreach (var esc in escenariosMasReservados.Take(4))
-            {
-                <div class="filter-tab">@esc.Nombre</div>
-            }
-        </div>
-
-        <div class="table-wrapper">
-
-            <table class="reservations-table">
-
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Escenario</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th style="text-align:right;">Total</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    @if (reservasRecientes.Any())
-                    {
-                        foreach (var reserva in reservasRecientes)
-                        {
-                            var cliente = reserva.IdClienteNavigation;
-                            var escenario = reserva.IdEscenarioNavigation;
-                            var estado = reserva.IdEstadoNavigation;
-
-                            string nombreCliente = cliente != null
-                                ? $"{cliente.Nombres} {cliente.Apellidos}"
-                                : "Sin cliente";
-
-                            string iniciales = "CL";
-                            if (cliente != null)
-                            {
-                                string primera = string.IsNullOrWhiteSpace(cliente.Nombres) ? "" : cliente.Nombres.Substring(0, 1);
-                                string segunda = string.IsNullOrWhiteSpace(cliente.Apellidos) ? "" : cliente.Apellidos.Substring(0, 1);
-                                iniciales = $"{primera}{segunda}".ToUpper();
-                            }
-
-                            string nombreEstado = estado?.Nombre ?? "Sin estado";
-
-                            string claseEstado = nombreEstado.ToLower().Contains("cancel")
-                                ? "status-red"
-                                : nombreEstado.ToLower().Contains("pend")
-                                    ? "status-orange"
-                                    : "status-green";
-
-                            <tr>
-                                <td>
-                                    <div class="client">
-                                        <div class="client-avatar">@iniciales</div>
-                                        <div>
-                                            @nombreCliente
-                                            <div class="client-sub">@reserva.HoraInicio.ToString("hh\\:mm")</div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td>@(escenario?.Nombre ?? "Sin escenario")</td>
-
-                                <td>@reserva.FechaUso.ToString("dd/MM/yyyy")</td>
-
-                                <td><span class="status @claseEstado">@nombreEstado</span></td>
-
-                                <td style="text-align:right;" class="total-cell">
-                                    $@reserva.ValorTotal.ToString("N0")
-                                </td>
-                            </tr>
-                        }
+                        <a href="?#calendario" class="flex h-10 items-center rounded-lg bg-emerald-500 px-4 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">Hoy</a>
                     }
                     else
                     {
-                        <tr>
-                            <td colspan="5" style="text-align:center; color:#718097;">
-                                No hay reservas registradas.
-                            </td>
-                        </tr>
+                        <span class="flex h-10 items-center rounded-lg bg-emerald-500/15 px-4 text-sm font-bold text-emerald-400">Hoy</span>
                     }
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-
-    <!-- =================================================
-         PANEL DE INGRESOS (ÁREA)
-         ================================================= -->
-
-    <div class="panel">
-
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">Ingresos del mes</div>
-                <div class="panel-subtitle">@totalPagos pagos registrados</div>
+                </div>
             </div>
-        </div>
 
-        <div class="revenue-value">$@ingresosMes.ToString("N0")</div>
-        <div class="revenue-sub">Facturación acumulada del mes actual</div>
+            @if (!Model.Calendario.Any())
+            {
+                <p class="p-10 text-center text-slate-400">No hay canchas activas. Activa un escenario para verlo en el calendario.</p>
+            }
+            else
+            {
+                <div id="scrollCalendario" class="overflow-x-auto" data-hora-inicio="@Model.HoraInicioCalendario" data-es-hoy="@(calendarioEsHoy ? "1" : "0")">
+                    <div class="grid min-w-max" style="@plantillaColumnas">
 
-        <div class="revenue-chart-wrap">
+                        <!-- Encabezado de horas -->
+                        <div class="sticky left-0 z-10 border-b border-r border-slate-800 bg-[#0d1422] px-4 py-2 text-sm font-semibold">Canchas</div>
+                        @for (int h = Model.HoraInicioCalendario; h < Model.HoraFinCalendario; h++)
+                        {
+                            <div class="col-span-2 border-b border-slate-800 px-2 py-2 text-center text-xs font-semibold text-slate-300">@($"{h:00}:00")</div>
+                        }
 
-            <svg viewBox="0 0 320 140" preserveAspectRatio="none" style="width:100%; height:160px;">
+                        <!-- Filas por cancha -->
+                        @foreach (var fila in Model.Calendario)
+                        {
+                            bool filaExtra = indiceFila++ >= CanchasVisibles;
+                            <div class="fila-calendario @(filaExtra ? "fila-extra hidden" : "contents")" data-buscar="@($"{fila.Nombre} {fila.Tipo} {string.Join(" ", fila.Bloques.Select(b => b.Cliente))}".ToLower())">
+                                <div class="sticky left-0 z-10 flex items-center gap-3 border-b border-r border-slate-800 bg-[#0d1422] px-4 py-1.5">
+                                    <img src="@(string.IsNullOrWhiteSpace(fila.Imagen) ? imagenPorDefecto : fila.Imagen)" alt="" class="h-8 w-10 shrink-0 rounded-md object-cover" loading="lazy" />
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold">@fila.Nombre</p>
+                                        <p class="truncate text-xs text-slate-500">@fila.Tipo</p>
+                                    </div>
+                                </div>
 
-                <defs>
-                    <linearGradient id="revenueArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45" />
-                        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
-                    </linearGradient>
-                </defs>
+                                @foreach (var b in fila.Bloques)
+                                {
+                                    string posicion = $"grid-column: {b.Columna + 1} / span {b.Span};";
 
-                @{
-                    var lineaGridY = new[] { 20, 55, 90, 125 };
-                }
+                                    if (b.Tipo == "reserva")
+                                    {
+                                        <div class="border-b border-slate-800 p-1" style="@posicion">
+                                            <div class="flex h-full min-h-9 flex-col justify-center rounded-md px-2 py-1 text-white shadow-sm transition @ClaseBloque(b.Estado ?? "")"
+                                                 title="@b.Cliente · @b.Horario · @b.Estado">
+                                                <p class="truncate text-xs font-bold leading-tight">@b.Cliente</p>
+                                                <p class="truncate text-[10px] leading-tight opacity-80">@b.Horario</p>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (b.Tipo == "libre")
+                                    {
+                                        <div class="border-b border-slate-800 p-1" style="@posicion">
+                                            <a asp-controller="Reservas" asp-action="Create"
+                                               class="flex h-full min-h-9 items-center justify-center rounded-lg border border-slate-700/70 bg-slate-800/40 text-xs text-slate-400 transition hover:border-emerald-500/60 hover:text-emerald-300"
+                                               title="Libre · crear una reserva">
+                                                Libre
+                                            </a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="border-b border-slate-800 p-1" style="@posicion">
+                                            <div class="flex h-full min-h-9 items-center justify-center rounded-lg bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(148,163,184,0.07)_6px,rgba(148,163,184,0.07)_12px)] text-[11px] text-slate-600">Cerrado</div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
 
-                @foreach (var gy in lineaGridY)
+                @if (Model.Calendario.Count > CanchasVisibles)
                 {
-                    <line x1="0" y1="@gy" x2="320" y2="@gy" stroke="#1b2942" stroke-width="1" stroke-dasharray="4 4" />
+                    <button type="button" id="btnVerCanchas" aria-expanded="false"
+                            data-texto-mas="Ver todas las canchas (@Model.Calendario.Count)" data-texto-menos="Ver menos canchas"
+                            class="flex w-full items-center justify-center gap-2 border-t border-slate-800 py-3 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/5">
+                        <span id="textoVerCanchas">Ver todas las canchas (@Model.Calendario.Count)</span>
+                        <i data-lucide="chevron-down" id="iconoVerCanchas" class="h-4 w-4 transition"></i>
+                    </button>
                 }
 
-                @{
-                    var dataRev = reservasPorDia.Any() ? reservasPorDia : new List<int> { 0, 0, 0, 0, 0, 0, 0 };
-                    var maxRev = Math.Max(dataRev.Max(), 1);
-                    var puntosRev = new List<string>();
+                <div class="flex flex-wrap items-center gap-4 border-t border-slate-800 px-5 py-3 text-xs text-slate-400">
+                    <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-emerald-600"></span>Confirmada</span>
+                    <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-amber-500"></span>Pendiente</span>
+                    <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-sky-600"></span>Otro estado</span>
+                    <span class="flex items-center gap-2"><span class="h-3 w-3 rounded border border-slate-700 bg-slate-800/40"></span>Libre (clic para reservar)</span>
+                </div>
+            }
+        </section>
 
-                    for (int i = 0; i < dataRev.Count; i++)
+
+        <!-- ===== Ingresos de la semana + Próximas reservas ===== -->
+        <div class="grid gap-6 xl:grid-cols-2">
+
+            <section class="flex flex-col rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <h2 class="flex items-center gap-3 font-bold">
+                        <svg class="h-6 w-6 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1" /><rect x="10" y="7" width="4" height="14" rx="1" /><rect x="17" y="3" width="4" height="18" rx="1" /></svg>
+                        Ingresos de la semana
+                    </h2>
+                    <div class="text-right">
+                        <p class="text-2xl font-black text-emerald-400">@Dinero(Model.TotalIngresosSemana)</p>
+                        <p>@Variacion(Model.VariacionIngresosSemana, "vs. semana pasada")</p>
+                    </div>
+                </div>
+
+                <div class="mt-auto flex gap-3 pt-6">
+                    <div class="flex h-44 flex-col justify-between pb-6 text-right text-[11px] text-slate-500">
+                        <span>@Compacto(maxIngresoDia)</span>
+                        <span>@Compacto(maxIngresoDia / 2)</span>
+                        <span>0</span>
+                    </div>
+                    <div class="grid h-44 flex-1 grid-cols-7 items-end gap-2 border-b border-l border-slate-800 pl-2">
+                        @foreach (var dia in Model.IngresosSemana)
+                        {
+                            double alto = (double)(dia.Total / maxIngresoDia) * 100;
+                            <div class="flex h-full flex-col items-center justify-end" title="@dia.Etiqueta @dia.Fecha.ToString("dd/MM"): @Dinero(dia.Total)">
+                                <div class="w-full max-w-9 rounded-t-md transition-all @(dia.EsHoy ? "bg-gradient-to-t from-emerald-600 to-emerald-300" : "bg-gradient-to-t from-emerald-700 to-emerald-500")"
+                                     style="height: @(Math.Max(alto, dia.Total > 0 ? 3 : 0).ToString("0.#", CultureInfo.InvariantCulture))%"></div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="ml-10 mt-2 grid grid-cols-7 gap-2 text-center text-xs text-slate-400">
+                    @foreach (var dia in Model.IngresosSemana)
                     {
-                        double x = dataRev.Count == 1 ? 0 : (320.0 / (dataRev.Count - 1)) * i;
-                        double y = 125 - ((dataRev[i] / (double)maxRev) * 95);
-                        puntosRev.Add($"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{y.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}");
+                        <span class="@(dia.EsHoy ? "font-bold text-emerald-400" : "")">@dia.Etiqueta</span>
                     }
+                </div>
+            </section>
 
-                    var lineaRev = string.Join(" ", puntosRev);
-                    var areaRev = $"0,125 {lineaRev} 320,125";
-                }
+            <!-- ===== Próximas reservas ===== -->
+            <section class="flex flex-col rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+                <div class="flex items-center justify-between">
+                    <h2 class="flex items-center gap-3 font-bold">
+                        <i data-lucide="calendar-clock" class="h-6 w-6 text-emerald-400"></i>
+                        Próximas reservas
+                    </h2>
+                    <a asp-controller="Reservas" asp-action="Index" class="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-emerald-400">Ver todas <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+                </div>
 
-                <polygon points="@areaRev" fill="url(#revenueArea)" />
-                <polyline points="@lineaRev" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-
-                @for (int i = 0; i < fechasGrafica.Count; i++)
+                @if (!Model.ProximasReservas.Any())
                 {
-                    double x = fechasGrafica.Count == 1 ? 0 : (320.0 / (fechasGrafica.Count - 1)) * i;
-                    string fechaTxt = fechasGrafica[i].ToString("ddd", new System.Globalization.CultureInfo("es-CO"));
-
-                    @Html.Raw($"<text x=\"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}\" y=\"138\" fill=\"#718097\" font-size=\"9\" text-anchor=\"middle\">{fechaTxt}</text>")
+                    <p class="flex flex-1 items-center justify-center py-10 text-center text-sm text-slate-500">No hay reservas próximas.</p>
                 }
-
-            </svg>
-
+                else
+                {
+                    <ul class="mt-3 divide-y divide-slate-800">
+                        @foreach (var r in Model.ProximasReservas)
+                        {
+                            <li class="item-buscable flex items-center gap-3 py-2.5" data-buscar="@($"{r.Cliente} {r.Escenario} {r.Tipo} {r.Estado}".ToLower())">
+                                <img src="@(string.IsNullOrWhiteSpace(r.Imagen) ? imagenPorDefecto : r.Imagen)" alt="" class="h-11 w-11 shrink-0 rounded-lg object-cover" loading="lazy" />
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold">
+                                        @r.HoraInicio.ToString("HH:mm") - @r.HoraFin.ToString("HH:mm")
+                                        <span class="ml-1 text-xs font-normal text-slate-500">· @(r.Fecha == Model.Hoy ? "Hoy" : r.Fecha.ToString("dd MMM", co))</span>
+                                    </p>
+                                    <p class="truncate text-xs text-slate-400">@r.Escenario · @r.Cliente</p>
+                                </div>
+                                <div class="shrink-0 text-right">
+                                    <span class="whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold @ClaseEstado(r.Estado)">@r.Estado</span>
+                                    <p class="mt-1.5 text-sm font-bold">@Dinero(r.Valor)</p>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
         </div>
-
     </div>
 
+
+    <!-- =====================================================
+         COLUMNA DERECHA
+    ====================================================== -->
+
+    <aside class="grid min-w-0 content-start gap-6 lg:grid-cols-2 2xl:flex 2xl:flex-col">
+
+        <!-- ===== Reservas recientes ===== -->
+        <section class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5 lg:col-span-2 2xl:col-span-1">
+            <div class="flex items-center justify-between">
+                <h2 class="flex items-center gap-3 font-bold">
+                    <i data-lucide="clipboard-list" class="h-6 w-6 text-emerald-400"></i>
+                    Reservas recientes
+                </h2>
+                <a asp-controller="Reservas" asp-action="Index" class="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-emerald-400">Ver todas <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+            </div>
+
+            @if (!Model.ReservasRecientes.Any())
+            {
+                <p class="py-8 text-center text-sm text-slate-500">Todavía no hay reservas registradas.</p>
+            }
+            else
+            {
+                <ul class="mt-3 divide-y divide-slate-800">
+                    @foreach (var r in Model.ReservasRecientes)
+                    {
+                        <li class="item-buscable flex items-center gap-3 py-3" data-buscar="@($"{r.Cliente} {r.Escenario} {r.Tipo} {r.Estado}".ToLower())">
+                            <img src="@(string.IsNullOrWhiteSpace(r.Imagen) ? imagenPorDefecto : r.Imagen)" alt="" class="h-12 w-12 shrink-0 rounded-xl object-cover" loading="lazy" />
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-semibold">@r.Cliente</p>
+                                <p class="truncate text-xs text-slate-400">@r.Escenario</p>
+                                <p class="text-xs text-slate-500">@r.Fecha.ToString("dd MMM", co) · @r.HoraInicio.ToString("HH:mm")</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <span class="whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold @ClaseEstado(r.Estado)">@r.Estado</span>
+                                <p class="mt-2 text-sm font-bold">@Dinero(r.Valor)</p>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <!-- ===== Estado de las canchas ===== -->
+        <section class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5">
+            <div class="flex items-center justify-between">
+                <h2 class="flex items-center gap-3 font-bold">
+                    <i data-lucide="activity" class="h-6 w-6 text-emerald-400"></i>
+                    Estado de las canchas
+                </h2>
+                <a asp-controller="Escenarios" asp-action="Index" class="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-emerald-400">Ver todas <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">Ocupación de hoy (horas reservadas / horas abiertas)</p>
+
+            @if (!Model.EstadoCanchas.Any())
+            {
+                <p class="py-8 text-center text-sm text-slate-500">No hay canchas activas.</p>
+            }
+            else
+            {
+                <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    @foreach (var c in Model.EstadoCanchas)
+                    {
+                        double circ = 2 * Math.PI * 26;
+                        double lleno = circ * Math.Clamp(c.Porcentaje, 0, 100) / 100.0;
+                        <div class="text-center" title="@c.Nombre: @c.HorasReservadas de @c.HorasDisponibles horas reservadas">
+                            <div class="relative mx-auto h-16 w-16">
+                                <svg viewBox="0 0 64 64" class="h-16 w-16 -rotate-90">
+                                    <circle cx="32" cy="32" r="26" fill="none" stroke="#1e293b" stroke-width="6" />
+                                    <circle cx="32" cy="32" r="26" fill="none" stroke="@ColorAnillo(c.Porcentaje)" stroke-width="6" stroke-linecap="round"
+                                            stroke-dasharray="@lleno.ToString("0.##", CultureInfo.InvariantCulture) @circ.ToString("0.##", CultureInfo.InvariantCulture)" />
+                                </svg>
+                                <span class="absolute inset-0 flex items-center justify-center text-sm font-bold">@c.Porcentaje%</span>
+                            </div>
+                            <p class="mt-2 line-clamp-2 text-xs font-semibold leading-tight text-slate-200">@c.Nombre</p>
+                            <p class="text-[11px] text-slate-500">@c.HorasReservadas.ToString("0.#", co)/@c.HorasDisponibles.ToString("0.#", co) h</p>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <!-- ===== Tarjeta de acceso rápido ===== -->
+        <section class="relative flex flex-col justify-center overflow-hidden rounded-2xl border border-slate-800 2xl:flex-1">
+            <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=70" alt=""
+                 class="dash-kenburns absolute inset-0 h-full w-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-r from-[#0d1422] via-[#0d1422]/85 to-[#0d1422]/30"></div>
+            <div class="relative p-6">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 font-black text-[#03150d]">S</span>
+                <h3 class="mt-4 text-xl font-black leading-tight">Gestiona tus canchas<br>de forma fácil y rápida</h3>
+                <p class="mt-2 text-xs text-slate-300">Más reservas · Más clientes · Más ingresos</p>
+                <a asp-controller="Escenarios" asp-action="Index"
+                   class="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                    Ver escenarios
+                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                </a>
+            </div>
+        </section>
+    </aside>
 </div>
+
+<p id="sinResultadosPanel" class="mt-6 hidden rounded-2xl border border-dashed border-slate-700 p-5 text-center text-sm text-slate-400">
+    No encontramos canchas, reservas ni clientes con ese texto.
+</p>
+
+
+<style>
+    @@keyframes dashKenBurns {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.12) translate(-2%, -1%); }
+    }
+
+    .dash-kenburns {
+        animation: dashKenBurns 18s ease-in-out infinite alternate;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .dash-kenburns { animation: none; }
+    }
+</style>
 
 
 <script>
-    // Tabs de rango (Hoy / 7 días / 30 días / Año) - visuales por ahora
-    document.querySelectorAll('.range-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.range-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
+    // =====================================================
+    // BUSCADOR DEL PANEL: filtra canchas del calendario,
+    // próximas reservas y reservas recientes
+    // =====================================================
+    (function () {
+        const input = document.getElementById('buscadorPanel');
+        const aviso = document.getElementById('sinResultadosPanel');
+        if (!input) return;
 
-    // Tabs de filtro de reservas por escenario - visuales por ahora
-    document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
+        input.addEventListener('input', function () {
+            const texto = this.value.trim().toLowerCase();
+            let visibles = 0;
+
+            const expandido = document.getElementById('btnVerCanchas')?.getAttribute('aria-expanded') === 'true';
+            document.querySelectorAll('.fila-calendario').forEach(fila => {
+                const esExtra = fila.classList.contains('fila-extra');
+                const ok = texto ? (fila.dataset.buscar || '').includes(texto) : (!esExtra || expandido);
+                fila.classList.toggle('hidden', !ok);
+                fila.classList.toggle('contents', ok);
+                if (ok) visibles++;
+            });
+
+            document.querySelectorAll('.item-buscable').forEach(item => {
+                const ok = !texto || (item.dataset.buscar || '').includes(texto);
+                item.classList.toggle('hidden', !ok);
+                if (ok) visibles++;
+            });
+
+            aviso.classList.toggle('hidden', !texto || visibles > 0);
         });
-    });
+    })();
+
+    // =====================================================
+    // CALENDARIO: ver todas las canchas / ver menos
+    // =====================================================
+    (function () {
+        const btn = document.getElementById('btnVerCanchas');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            const abrir = this.getAttribute('aria-expanded') !== 'true';
+            this.setAttribute('aria-expanded', abrir);
+            document.querySelectorAll('.fila-extra').forEach(f => {
+                f.classList.toggle('hidden', !abrir);
+                f.classList.toggle('contents', abrir);
+            });
+            document.getElementById('textoVerCanchas').textContent = abrir ? this.dataset.textoMenos : this.dataset.textoMas;
+            const icono = this.querySelector('svg, i');
+            if (icono) icono.style.transform = abrir ? 'rotate(180deg)' : '';
+            if (!abrir) document.getElementById('calendario').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    })();
+
+    // =====================================================
+    // CALENDARIO: abrir en la hora actual (si es hoy)
+    // =====================================================
+    (function () {
+        const caja = document.getElementById('scrollCalendario');
+        if (!caja || caja.dataset.esHoy !== '1') return;
+        const inicio = parseInt(caja.dataset.horaInicio, 10);
+        const ahora = new Date();
+        const horasDesdeInicio = ahora.getHours() - inicio - 1;
+        if (horasDesdeInicio <= 0) return;
+        const anchoHora = (caja.scrollWidth - 210) / Math.max(1, caja.querySelectorAll('.col-span-2').length);
+        caja.scrollLeft = Math.max(0, horasDesdeInicio * anchoHora);
+    })();
 </script>

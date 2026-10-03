@@ -8,6 +8,16 @@
         "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80";
 
     string imagenUrl = !string.IsNullOrWhiteSpace(Model.Imagen) ? Model.Imagen : imagenPorDefecto;
+
+    string descripcion = !string.IsNullOrWhiteSpace(Model.Descripcion)
+        ? Model.Descripcion
+        : "Escenario deportivo disponible para reservar.";
+
+    string capacidadTexto = Model.Capacidad.HasValue
+        ? $"{Model.Capacidad} {(Model.Capacidad == 1 ? "persona" : "personas")}"
+        : "N/D";
+
+    double duracionInicial = (Model.HoraFin.ToTimeSpan() - Model.HoraInicio.ToTimeSpan()).TotalHours;
 }
 
 @functions {
@@ -21,20 +31,30 @@
         if (n.Contains("efectivo")) return "efectivo";
         return "otro";
     }
+
+    // Texto corto que acompaña a cada método de pago
+    string DescribirMetodo(string tipo) => tipo switch
+    {
+        "tarjeta" => "Visa, Mastercard, American Express",
+        "transferencia" => "Desde la cuenta de tu banco",
+        "efectivo" => "Pagas en el escenario",
+        _ => "Pago en línea rápido y seguro"
+    };
 }
 
-<div class="min-h-screen bg-slate-950 text-white py-10">
+<div class="min-h-screen bg-slate-950 text-white">
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <div class="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
 
-        <a asp-controller="Cliente" asp-action="Index"
-           class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-6">
-            ← Volver a escenarios
+        <a href="@Url.Action("Index", "Cliente")#escenarios"
+           class="inline-flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-white">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6" /></svg>
+            Volver a escenarios
         </a>
 
         @if (!ViewData.ModelState.IsValid)
         {
-            <div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-5 py-4 text-sm font-semibold">
+            <div class="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-300" role="alert">
                 @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
                 {
                     <p>@error.ErrorMessage</p>
@@ -42,208 +62,398 @@
             </div>
         }
 
-        <div class="rounded-2xl border border-white/10 bg-slate-900 shadow-2xl overflow-hidden grid md:grid-cols-2">
+        <div class="mt-6 grid items-start gap-6 lg:grid-cols-2 xl:grid-cols-[1.1fr_1fr_0.9fr]">
 
             <!-- =================================================
-                 IZQUIERDA: INFORMACIÓN DEL ESCENARIO
+                 1) INFORMACIÓN DEL ESCENARIO
             ================================================== -->
 
-            <div class="relative bg-slate-950">
+            <section class="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60">
 
-                <img src="@imagenUrl" alt="@Model.NombreEscenario"
-                     class="w-full h-56 md:h-full object-cover" />
+                <div class="relative h-64 overflow-hidden sm:h-80">
+                    <img src="@imagenUrl" alt="@Model.NombreEscenario"
+                         class="reservar-kenburns h-full w-full object-cover" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
 
-                <div class="p-6 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-slate-950 md:via-slate-950/90 md:to-transparent">
+                    <span class="absolute left-4 top-4 rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30">
+                        @Model.Categoria
+                    </span>
 
-                    <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+                    <button type="button" id="btnFavoritoReserva" data-id="@Model.IdEscenario"
+                            class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-slate-950/60 text-white backdrop-blur transition hover:scale-110"
+                            aria-label="Guardar en favoritos" aria-pressed="false">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" /></svg>
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p class="flex items-center gap-2 font-semibold text-emerald-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z" /><circle cx="12" cy="10" r="2.5" /></svg>
                         @Model.Categoria
                     </p>
 
-                    <h1 class="text-2xl font-black mt-1">
-                        @Model.NombreEscenario
-                    </h1>
+                    <h1 class="mt-2 text-3xl font-black leading-tight sm:text-4xl">@Model.NombreEscenario</h1>
 
-                    <p class="text-sm text-slate-400 mt-3 leading-relaxed">
-                        @(!string.IsNullOrWhiteSpace(Model.Descripcion) ? Model.Descripcion : "Escenario deportivo disponible para reservar.")
-                    </p>
+                    <p class="mt-2 text-slate-400">@descripcion</p>
 
-                    <div class="flex items-center gap-2 mt-4">
-                        <span class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
-                            Capacidad: <span class="font-semibold text-white">@(Model.Capacidad?.ToString() ?? "N/D")</span>
-                        </span>
-                        <span class="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 font-semibold">
-                            Disponible
-                        </span>
+                    <div class="mt-6 grid grid-cols-2 gap-4 border-y border-white/10 py-5 sm:grid-cols-3">
+                        <div class="flex items-center gap-3">
+                            <svg class="h-7 w-7 shrink-0 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9" r="2.5" /><path d="M16 14.2a5 5 0 0 1 5.5 4.8" /></svg>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500">Capacidad</p>
+                                <p class="truncate font-semibold">@capacidadTexto</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <svg class="h-7 w-7 shrink-0 text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="1" /><path d="M12 5v14" /><circle cx="12" cy="12" r="2.5" /><path d="M2 9h3v6H2M22 9h-3v6h3" /></svg>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500">Tipo de cancha</p>
+                                <p class="truncate font-semibold">@Model.Categoria</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <svg class="h-7 w-7 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                            <div class="min-w-0">
+                                <p class="text-xs text-slate-500">Precio por hora</p>
+                                <p class="truncate font-semibold">
+                                    @(Model.PrecioHora > 0 ? "$" + Model.PrecioHora.ToString("N0") : "Según horario")
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
+                    <div class="mt-5 flex items-center gap-2 text-sm text-slate-400">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        Disponible para reservar
+                    </div>
                 </div>
-
-            </div>
+            </section>
 
 
             <!-- =================================================
-                 DERECHA: FORMULARIO DE RESERVA
+                 2) DATOS DE LA RESERVA + PAGO
             ================================================== -->
 
-            <div class="p-6">
+            <section class="min-w-0 rounded-3xl border border-white/10 bg-slate-900/60 p-6">
 
-                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-5">
-                    Reservar escenario
-                </p>
+                <div class="flex items-start gap-4">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 18h2" /></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-bold">Datos de la reserva</h2>
+                        <p class="mt-1 text-sm text-slate-400">Selecciona la fecha, la hora y el método de pago para confirmar tu reserva.</p>
+                    </div>
+                </div>
 
-                <form asp-controller="Cliente" asp-action="Reservar" method="post" class="flex flex-col gap-4">
+                <form asp-controller="Cliente" asp-action="Reservar" method="post" id="formReserva" class="mt-6 flex flex-col gap-5" novalidate>
 
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="IdEscenario" />
 
+                    <!-- Fecha -->
                     <div>
-                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Fecha</label>
-                        <input type="date" id="inputFecha" asp-for="FechaUso"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
-                               class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                        <label for="inputFecha" class="mb-2 block text-sm font-medium text-slate-300">Fecha</label>
+                        <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-4 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                            <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                            <input type="date" id="inputFecha" asp-for="FechaUso"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   class="h-12 min-w-0 flex-1 bg-transparent text-white [color-scheme:dark] focus:outline-none" />
+                        </div>
                     </div>
 
+                    <!-- Horas -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Hora inicio</label>
-                            <input type="time" id="inputHoraInicio" asp-for="HoraInicio"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                            <label for="inputHoraInicio" class="mb-2 block text-sm font-medium text-slate-300">Hora inicio</label>
+                            <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-4 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                                <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                                <input type="time" id="inputHoraInicio" asp-for="HoraInicio"
+                                       class="h-12 min-w-0 flex-1 bg-transparent text-white [color-scheme:dark] focus:outline-none" />
+                            </div>
                         </div>
                         <div>
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Hora fin</label>
-                            <input type="time" id="inputHoraFin" asp-for="HoraFin"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
+                            <label for="inputHoraFin" class="mb-2 block text-sm font-medium text-slate-300">Hora fin</label>
+                            <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-4 transition focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/15">
+                                <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                                <input type="time" id="inputHoraFin" asp-for="HoraFin"
+                                       class="h-12 min-w-0 flex-1 bg-transparent text-white [color-scheme:dark] focus:outline-none" />
+                            </div>
                         </div>
                     </div>
 
-                    <!-- =============================================
-                         SELECCIÓN DE MÉTODO DE PAGO (estilo tarjetas)
-                    ============================================== -->
-
-                    <div>
-                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Método de pago</label>
+                    <!-- Método de pago -->
+                    <fieldset>
+                        <legend class="mb-2 text-sm font-medium text-slate-300">Método de pago</legend>
 
                         @if (Model.MetodosPagoDisponibles.Any())
                         {
-                            <div class="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div class="flex flex-col gap-2">
                                 @foreach (var metodo in Model.MetodosPagoDisponibles)
                                 {
                                     string tipo = ClasificarMetodo(metodo.Nombre);
-                                    <label class="metodo-card flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer transition hover:border-emerald-500/40"
+
+                                    <label class="metodo-card flex cursor-pointer items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-emerald-500/40"
                                            data-tipo="@tipo">
+                                        <span class="flex h-11 w-14 shrink-0 items-center justify-center rounded-lg @(tipo == "tarjeta" ? "bg-emerald-500/15 text-emerald-400" : tipo == "efectivo" ? "bg-amber-500/15 text-amber-400" : "bg-sky-500/15 text-sky-400")">
+                                            @if (tipo == "tarjeta")
+                                            {
+                                                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M6 15h4" /></svg>
+                                            }
+                                            else if (tipo == "efectivo")
+                                            {
+                                                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 12h.01M18 12h.01" /></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18" /></svg>
+                                            }
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block font-semibold">@metodo.Nombre</span>
+                                            <span class="block truncate text-xs text-slate-400">@DescribirMetodo(tipo)</span>
+                                        </span>
                                         <input type="radio" name="IdMetodoPago" value="@metodo.IdMetodo"
-                                               class="metodo-radio accent-emerald-500"
+                                               class="metodo-radio h-5 w-5 shrink-0 accent-emerald-500"
                                         @(Model.IdMetodoPago == metodo.IdMetodo ? "checked" : "") required />
-                                        <span class="text-sm text-slate-200">@metodo.Nombre</span>
                                     </label>
                                 }
                             </div>
                         }
                         else
                         {
-                            <p class="mt-1.5 text-sm text-red-400">
-                                No hay métodos de pago registrados en el sistema todavía.
-                            </p>
+                            <p class="text-sm text-red-400">No hay métodos de pago registrados en el sistema todavía.</p>
                         }
+                    </fieldset>
+
+                    <!-- Datos de la tarjeta -->
+                    <div id="camposTarjeta" class="hidden rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+
+                        <!-- Vista previa de la tarjeta -->
+                        <div class="relative mb-5 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 p-5 shadow-xl shadow-emerald-900/40">
+                            <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10"></div>
+                            <div class="relative flex items-center justify-between">
+                                <span class="h-8 w-11 rounded-md bg-gradient-to-br from-amber-200 to-amber-500"></span>
+                                <span id="marcaTarjeta" class="text-sm font-black italic tracking-wide text-white/90">TARJETA</span>
+                            </div>
+                            <p id="previewNumero" class="relative mt-6 font-mono text-xl tracking-[0.15em] text-white sm:text-2xl">•••• •••• •••• ••••</p>
+                            <div class="relative mt-4 flex items-end justify-between gap-4 text-white">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] uppercase tracking-wider text-white/60">Titular</p>
+                                    <p id="previewTitular" class="truncate text-sm font-semibold uppercase">Nombre del titular</p>
+                                </div>
+                                <div class="shrink-0 text-right">
+                                    <p class="text-[10px] uppercase tracking-wider text-white/60">Vence</p>
+                                    <p id="previewVence" class="font-mono text-sm font-semibold">MM/AA</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="col-span-2">
+                                <label for="NumeroTarjeta" class="mb-1.5 block text-xs font-medium text-slate-400">Número de tarjeta</label>
+                                <input type="text" id="NumeroTarjeta" name="NumeroTarjeta" inputmode="numeric" maxlength="19"
+                                       placeholder="1234 5678 9012 3456" autocomplete="cc-number"
+                                       class="h-12 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 font-mono tracking-wider text-white placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" />
+                            </div>
+                            <div>
+                                <label for="VencimientoTarjeta" class="mb-1.5 block text-xs font-medium text-slate-400">Vencimiento (MM/AA)</label>
+                                <input type="text" id="VencimientoTarjeta" name="VencimientoTarjeta" inputmode="numeric" maxlength="5"
+                                       placeholder="MM/AA" autocomplete="cc-exp"
+                                       class="h-12 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 font-mono text-white placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" />
+                            </div>
+                            <div>
+                                <label for="CvvTarjeta" class="mb-1.5 block text-xs font-medium text-slate-400">CVV</label>
+                                <input type="password" id="CvvTarjeta" name="CvvTarjeta" inputmode="numeric" maxlength="4"
+                                       placeholder="123" autocomplete="cc-csc"
+                                       class="h-12 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 font-mono text-white placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" />
+                            </div>
+                            <div class="col-span-2">
+                                <label for="NombreTitular" class="mb-1.5 block text-xs font-medium text-slate-400">Nombre del titular</label>
+                                <input type="text" id="NombreTitular" name="NombreTitular" placeholder="Como aparece en la tarjeta"
+                                       autocomplete="cc-name"
+                                       class="h-12 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 uppercase text-white placeholder:normal-case placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" />
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- =============================================
-                         CAMPOS EXTRA SEGÚN EL MÉTODO ELEGIDO
-                    ============================================== -->
-
-                    <div id="camposTarjeta" class="hidden grid grid-cols-2 gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                        <div class="col-span-2">
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Número de tarjeta</label>
-                            <input type="text" name="NumeroTarjeta" maxlength="19" placeholder="1234 5678 9012 3456" autocomplete="off"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Vencimiento (MM/AA)</label>
-                            <input type="text" name="VencimientoTarjeta" maxlength="5" placeholder="MM/AA" autocomplete="off"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">CVV</label>
-                            <input type="password" name="CvvTarjeta" maxlength="4" placeholder="123" autocomplete="off"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
-                        </div>
-                        <div class="col-span-2">
-                            <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Nombre del titular</label>
-                            <input type="text" name="NombreTitular" placeholder="Como aparece en la tarjeta" autocomplete="off"
-                                   class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
-                        </div>
-                        <p class="col-span-2 text-[11px] text-slate-600">
-                            🔒 Solo guardamos los últimos 4 dígitos de tu tarjeta. Nunca almacenamos el número completo ni el CVV.
-                        </p>
+                    <!-- Transferencia -->
+                    <div id="camposTransferencia" class="hidden rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                        <label for="ReferenciaTransferencia" class="mb-1.5 block text-xs font-medium text-slate-400">Número de referencia / comprobante</label>
+                        <input type="text" id="ReferenciaTransferencia" name="ReferenciaTransferencia" placeholder="Ej: 00123456789"
+                               class="h-12 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 text-white placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15" />
                     </div>
 
-                    <div id="camposTransferencia" class="hidden rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Número de referencia / comprobante</label>
-                        <input type="text" name="ReferenciaTransferencia" placeholder="Ej: 00123456789"
-                               class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50" />
-                    </div>
-
-                    <div id="camposEfectivo" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm px-4 py-3">
+                    <!-- Efectivo -->
+                    <div id="camposEfectivo" class="hidden rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                         Tu reserva quedará pendiente. Debes acercarte a pagar en efectivo antes de la fecha reservada.
                     </div>
 
+                    <!-- Observaciones -->
                     <div>
-                        <label class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Observaciones (opcional)</label>
-                        <textarea asp-for="Observaciones" rows="2"
-                                  class="mt-1.5 w-full bg-white/[0.04] border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50"></textarea>
+                        <label for="Observaciones" class="mb-2 block text-sm font-medium text-slate-300">Observaciones <span class="text-slate-500">(opcional)</span></label>
+                        <textarea asp-for="Observaciones" rows="2" placeholder="Algo que debamos saber sobre tu reserva"
+                                  class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white placeholder:text-slate-600 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/15"></textarea>
                     </div>
 
-                    <!-- =============================================
-                         RESUMEN DE PRECIO
-                    ============================================== -->
+                    <!-- Pago seguro -->
+                    <div class="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                        <svg class="h-7 w-7 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                        <div class="text-sm">
+                            <p class="font-semibold text-emerald-400">Tus datos están protegidos</p>
+                            <p class="text-slate-400">Solo guardamos los últimos 4 dígitos de tu tarjeta. Nunca almacenamos el número completo ni el CVV.</p>
+                        </div>
+                    </div>
 
-                    <div id="cajaPrecio" class="rounded-xl border border-white/10 bg-white/[0.03] p-4 mt-2">
+                    <p id="errorCliente" class="hidden rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300" role="alert"></p>
 
+                    <button type="submit" id="btnConfirmar"
+                            class="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-lg font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 disabled:shadow-none">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
+                        <span id="textoBtnConfirmar">Pagar ahora</span>
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    </button>
+
+                    <p class="text-center text-xs text-slate-500">
+                        Tu reserva quedará pendiente de confirmación y pago.
+                    </p>
+                </form>
+            </section>
+
+
+            <!-- =================================================
+                 3) RESUMEN DE LA RESERVA
+            ================================================== -->
+
+            <aside class="min-w-0 space-y-6 lg:col-span-2 xl:col-span-1">
+
+                <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+                    <h2 class="flex items-center gap-3 text-xl font-bold">
+                        <svg class="h-7 w-7 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6" /></svg>
+                        Resumen de la reserva
+                    </h2>
+
+                    <div class="mt-5 flex gap-4 border-b border-white/10 pb-5">
+                        <img src="@imagenUrl" alt="" class="h-20 w-24 shrink-0 rounded-xl object-cover" />
+                        <div class="min-w-0">
+                            <p class="truncate text-lg font-bold">@Model.NombreEscenario</p>
+                            <p class="text-sm text-emerald-400">@Model.Categoria</p>
+                            <p class="mt-1 line-clamp-2 text-xs text-slate-400">@descripcion</p>
+                        </div>
+                    </div>
+
+                    <dl class="space-y-3 border-b border-white/10 py-5 text-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <dt class="flex items-center gap-3 text-slate-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                                Fecha
+                            </dt>
+                            <dd id="resumenFecha" class="font-semibold">@Model.FechaUso.ToString("dd/MM/yyyy")</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <dt class="flex items-center gap-3 text-slate-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                                Hora
+                            </dt>
+                            <dd id="resumenHora" class="text-right font-semibold">@Model.HoraInicio.ToString("hh:mm tt") – @Model.HoraFin.ToString("hh:mm tt")</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <dt class="flex items-center gap-3 text-slate-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4M12 14l3-3" /><circle cx="12" cy="14" r="8" /></svg>
+                                Duración
+                            </dt>
+                            <dd id="textoDuracion" class="font-semibold">@duracionInicial hora(s)</dd>
+                        </div>
+                    </dl>
+
+                    <div id="cajaPrecio" class="pt-5">
                         @if (Model.MensajePrecio != null)
                         {
-                            <p id="textoMensajePrecio" class="text-sm text-red-400 font-semibold">@Model.MensajePrecio</p>
+                            <p id="textoMensajePrecio" class="text-sm font-semibold text-red-400">@Model.MensajePrecio</p>
+                            <div id="resumenPrecio" class="hidden space-y-3 text-sm">
+                                <div class="flex justify-between text-slate-400"><span>Precio por hora</span><span id="textoPrecioHora" class="font-semibold text-slate-200"></span></div>
+                                <div class="flex items-center justify-between border-t border-white/10 pt-4">
+                                    <span class="text-lg font-bold text-emerald-400">Total a pagar</span>
+                                    <span id="textoTotal" class="text-2xl font-black text-emerald-400"></span>
+                                </div>
+                            </div>
                         }
                         else
                         {
-                            <div id="resumenPrecio" class="space-y-1.5">
-                                <div class="flex justify-between text-sm text-slate-400">
+                            <div id="resumenPrecio" class="space-y-3 text-sm">
+                                <div class="flex justify-between text-slate-400">
                                     <span>Precio por hora</span>
-                                    <span id="textoPrecioHora" class="text-slate-200 font-semibold">$@Model.PrecioHora.ToString("N0")</span>
+                                    <span id="textoPrecioHora" class="font-semibold text-slate-200">$@Model.PrecioHora.ToString("N0")</span>
                                 </div>
-                                <div class="flex justify-between text-sm text-slate-400">
-                                    <span>Duración</span>
-                                    <span id="textoDuracion" class="text-slate-200 font-semibold">
-                                        @((Model.HoraFin.ToTimeSpan() - Model.HoraInicio.ToTimeSpan()).TotalHours) hora(s)
-                                    </span>
-                                </div>
-                                <div class="flex justify-between text-base pt-2 border-t border-white/10 mt-2">
-                                    <span class="font-bold">TOTAL</span>
-                                    <span id="textoTotal" class="font-black text-emerald-400 text-lg">$@Model.Total.ToString("N0")</span>
+                                <div class="flex items-center justify-between border-t border-white/10 pt-4">
+                                    <span class="text-lg font-bold text-emerald-400">Total a pagar</span>
+                                    <span id="textoTotal" class="text-2xl font-black text-emerald-400">$@Model.Total.ToString("N0")</span>
                                 </div>
                             </div>
-                            <p id="textoMensajePrecio" class="hidden text-sm text-red-400 font-semibold"></p>
+                            <p id="textoMensajePrecio" class="hidden text-sm font-semibold text-red-400"></p>
                         }
-
                     </div>
+                </section>
 
-                    <button type="submit" id="btnConfirmar"
-                            class="w-full mt-2 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold transition">
-                        Confirmar y pagar
-                    </button>
-
-                    <p class="text-[11px] text-slate-600 text-center">
-                        Tu reserva quedará pendiente de confirmación y pago.
-                    </p>
-
-                </form>
-
-            </div>
-
+                <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+                    <div class="flex items-start gap-4">
+                        <svg class="h-12 w-12 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
+                        <div>
+                            <p class="font-bold">Tu reserva está protegida</p>
+                            <p class="mt-1 text-sm text-slate-400">Revisamos que el horario esté libre antes de confirmar, para que nadie más reserve el mismo espacio.</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 grid grid-cols-3 gap-2 border-t border-white/10 pt-5 text-center text-xs text-slate-300">
+                        <div>
+                            <svg class="mx-auto h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
+                            <p class="mt-2">Reservas seguras</p>
+                        </div>
+                        <a asp-controller="Contacto" asp-action="Index" class="transition hover:text-white">
+                            <svg class="mx-auto h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1v-7h3zM3 19a2 2 0 0 0 2 2h1v-7H3z" /></svg>
+                            <p class="mt-2">Soporte</p>
+                        </a>
+                        <div>
+                            <svg class="mx-auto h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20M7 15l2 2 4-4" /></svg>
+                            <p class="mt-2">Pago confiable</p>
+                        </div>
+                    </div>
+                </section>
+            </aside>
         </div>
-
     </div>
 
+    <!-- Franja inferior -->
+    <div class="border-t border-white/10 bg-slate-950">
+        <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-6 px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 4v16m8-8H4" /></svg>
+                </span>
+                <div>
+                    <p class="font-bold">Sportia</p>
+                    <p class="text-xs text-slate-400">Más deporte, más momentos</p>
+                </div>
+            </div>
+            <p class="-rotate-6 text-2xl font-black italic text-emerald-400">Juega sin límites</p>
+        </div>
+    </div>
 </div>
+
+
+<style>
+    @@keyframes reservarKenBurns {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.1) translate(-1.5%, -1.5%); }
+    }
+
+    .reservar-kenburns {
+        animation: reservarKenBurns 16s ease-in-out infinite alternate;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .reservar-kenburns { animation: none; }
+    }
+</style>
 
 
 <script>
@@ -257,8 +467,34 @@
     const textoDuracion = document.getElementById('textoDuracion');
     const textoTotal = document.getElementById('textoTotal');
     const btnConfirmar = document.getElementById('btnConfirmar');
+    const resumenFecha = document.getElementById('resumenFecha');
+    const resumenHora = document.getElementById('resumenHora');
 
+    // =====================================================
+    // RESUMEN: FECHA Y HORA EN VIVO
+    // =====================================================
+    function formatoHora(valor) {
+        if (!valor) return '--:--';
+        const [h, m] = valor.split(':').map(Number);
+        const sufijo = h < 12 ? 'a. m.' : 'p. m.';
+        const h12 = ((h + 11) % 12) + 1;
+        return String(h12).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' ' + sufijo;
+    }
+
+    function actualizarResumen() {
+        if (inputFecha.value) {
+            const [a, m, d] = inputFecha.value.split('-');
+            resumenFecha.textContent = d + '/' + m + '/' + a;
+        }
+        resumenHora.textContent = formatoHora(inputHoraInicio.value) + ' – ' + formatoHora(inputHoraFin.value);
+    }
+
+    // =====================================================
+    // PRECIO (se consulta al servidor)
+    // =====================================================
     async function actualizarPrecio() {
+        actualizarResumen();
+
         const fecha = inputFecha.value;
         const horaInicio = inputHoraInicio.value;
         const horaFin = inputHoraFin.value;
@@ -305,12 +541,18 @@
     const camposTarjeta = document.getElementById('camposTarjeta');
     const camposTransferencia = document.getElementById('camposTransferencia');
     const camposEfectivo = document.getElementById('camposEfectivo');
+    const textoBtnConfirmar = document.getElementById('textoBtnConfirmar');
+
+    function tipoSeleccionado() {
+        const seleccionado = document.querySelector('.metodo-radio:checked');
+        return seleccionado ? seleccionado.closest('.metodo-card').dataset.tipo : null;
+    }
 
     function actualizarCamposMetodo() {
         const seleccionado = document.querySelector('.metodo-radio:checked');
 
         document.querySelectorAll('.metodo-card').forEach(c => {
-            c.classList.remove('border-emerald-500', 'bg-emerald-500/10');
+            c.classList.remove('border-emerald-500', 'bg-emerald-500/10', 'ring-1', 'ring-emerald-500/40');
         });
 
         [camposTarjeta, camposTransferencia, camposEfectivo].forEach(c => c.classList.add('hidden'));
@@ -318,17 +560,118 @@
         if (!seleccionado) return;
 
         const card = seleccionado.closest('.metodo-card');
-        card.classList.add('border-emerald-500', 'bg-emerald-500/10');
+        card.classList.add('border-emerald-500', 'bg-emerald-500/10', 'ring-1', 'ring-emerald-500/40');
 
         const tipo = card.dataset.tipo;
         if (tipo === 'tarjeta') camposTarjeta.classList.remove('hidden');
         else if (tipo === 'transferencia') camposTransferencia.classList.remove('hidden');
         else if (tipo === 'efectivo') camposEfectivo.classList.remove('hidden');
+
+        textoBtnConfirmar.textContent = tipo === 'efectivo' ? 'Confirmar reserva' : 'Pagar ahora';
     }
 
     document.querySelectorAll('.metodo-radio').forEach(r => {
         r.addEventListener('change', actualizarCamposMetodo);
     });
 
+    // =====================================================
+    // TARJETA: FORMATO AUTOMÁTICO Y VISTA PREVIA
+    // =====================================================
+    const inNumero = document.getElementById('NumeroTarjeta');
+    const inVence = document.getElementById('VencimientoTarjeta');
+    const inCvv = document.getElementById('CvvTarjeta');
+    const inTitular = document.getElementById('NombreTitular');
+
+    function marcaDe(numero) {
+        if (/^4/.test(numero)) return 'VISA';
+        if (/^(5[1-5]|2[2-7])/.test(numero)) return 'MASTERCARD';
+        if (/^3[47]/.test(numero)) return 'AMEX';
+        return 'TARJETA';
+    }
+
+    inNumero?.addEventListener('input', function () {
+        const digitos = this.value.replace(/\D/g, '').slice(0, 16);
+        this.value = digitos.replace(/(.{4})/g, '$1 ').trim();
+        const relleno = (digitos + '•'.repeat(16 - digitos.length)).replace(/(.{4})/g, '$1 ').trim();
+        document.getElementById('previewNumero').textContent = relleno;
+        document.getElementById('marcaTarjeta').textContent = marcaDe(digitos);
+    });
+
+    inVence?.addEventListener('input', function () {
+        let d = this.value.replace(/\D/g, '').slice(0, 4);
+        if (d.length >= 3) d = d.slice(0, 2) + '/' + d.slice(2);
+        this.value = d;
+        document.getElementById('previewVence').textContent = d || 'MM/AA';
+    });
+
+    inCvv?.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    inTitular?.addEventListener('input', function () {
+        document.getElementById('previewTitular').textContent = this.value.trim() || 'Nombre del titular';
+    });
+
+    // =====================================================
+    // VALIDACIÓN ANTES DE ENVIAR (el servidor vuelve a validar)
+    // =====================================================
+    document.getElementById('formReserva').addEventListener('submit', function (e) {
+        const error = document.getElementById('errorCliente');
+        let mensaje = '';
+        const tipo = tipoSeleccionado();
+
+        if (!tipo) mensaje = 'Selecciona un método de pago.';
+        else if (tipo === 'tarjeta') {
+            const numero = inNumero.value.replace(/\D/g, '');
+            const vence = inVence.value;
+            const mes = parseInt(vence.slice(0, 2), 10);
+            if (numero.length < 13) mensaje = 'Ingresa un número de tarjeta válido.';
+            else if (!/^\d{2}\/\d{2}$/.test(vence) || mes < 1 || mes > 12) mensaje = 'Revisa la fecha de vencimiento (MM/AA).';
+            else if (inCvv.value.length < 3) mensaje = 'Ingresa un CVV válido.';
+            else if (!inTitular.value.trim()) mensaje = 'Ingresa el nombre del titular de la tarjeta.';
+        } else if (tipo === 'transferencia' && !document.getElementById('ReferenciaTransferencia').value.trim()) {
+            mensaje = 'Ingresa el número de referencia de la transferencia.';
+        }
+
+        if (mensaje) {
+            e.preventDefault();
+            error.textContent = mensaje;
+            error.classList.remove('hidden');
+            error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        error.classList.add('hidden');
+        btnConfirmar.disabled = true;
+        textoBtnConfirmar.textContent = 'Procesando...';
+    });
+
+    // =====================================================
+    // FAVORITO (mismo listado que el panel del cliente)
+    // =====================================================
+    (function () {
+        const btn = document.getElementById('btnFavoritoReserva');
+        const CLAVE = 'sportia_favoritos';
+        let favs = [];
+        try { favs = JSON.parse(localStorage.getItem(CLAVE) || '[]'); } catch (e) { favs = []; }
+
+        function pintar() {
+            const activo = favs.includes(btn.dataset.id);
+            btn.setAttribute('aria-pressed', activo);
+            btn.classList.toggle('text-red-400', activo);
+            btn.querySelector('svg').setAttribute('fill', activo ? 'currentColor' : 'none');
+        }
+
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            favs = favs.includes(id) ? favs.filter(f => f !== id) : favs.concat(id);
+            try { localStorage.setItem(CLAVE, JSON.stringify(favs)); } catch (e) { }
+            pintar();
+        });
+
+        pintar();
+    })();
+
     actualizarCamposMetodo();
+    actualizarResumen();
 </script>

@@ -1,887 +1,733 @@
-﻿@{
-    ViewData["Title"] = "Inicio";
-}
+﻿@using System.Globalization
+@model Sportia.Models.ViewModels.InicioViewModel
+
 @{
     ViewData["Title"] = "Inicio";
+
+    var vm = Model ?? new Sportia.Models.ViewModels.InicioViewModel();
+    var destacado = vm.Escenarios.FirstOrDefault(e => Normalizar(e.Tipo).Contains("futbol")) ?? vm.Escenarios.FirstOrDefault();
+
+    // Cuántas tarjetas se ven antes de "Ver todos"
+    const int TarjetasIniciales = 8;
+    int indice = 0;
 }
 
-<!-- ========================================================= -->
-<!-- HERO -->
-<!-- ========================================================= -->
+@functions {
+    string Dinero(decimal? valor) => "$" + (valor ?? 0).ToString("N0", new CultureInfo("es-CO"));
 
-<section id="inicio" class="relative overflow-hidden bg-slate-950 text-white">
+    string Normalizar(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return "";
+        var formD = texto.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in formD)
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+        return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
 
-    <div class="pointer-events-none absolute -right-40 -top-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
-    <div class="pointer-events-none absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
+    // Foto de referencia cuando el escenario aún no tiene imagen propia
+    string ImagenPorTipo(string? tipo)
+    {
+        var t = Normalizar(tipo);
+        if (t.Contains("balon") || t.Contains("basket")) return "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("tenis")) return "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("padel")) return "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("voley") || t.Contains("volei")) return "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=800&q=70";
+        if (t.Contains("nata") || t.Contains("piscina")) return "https://images.unsplash.com/photo-1519315901367-f34ff9154487?auto=format&fit=crop&w=800&q=70";
+        return "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=70";
+    }
 
-    <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
+    string IconoTipo(string? tipo)
+    {
+        var t = Normalizar(tipo);
+        if (t.Contains("balon") || t.Contains("basket")) return "bi-dribbble text-orange-400";
+        if (t.Contains("tenis") || t.Contains("padel")) return "bi-record-circle text-lime-400";
+        if (t.Contains("nata") || t.Contains("piscina")) return "bi-water text-sky-400";
+        if (t.Contains("voley") || t.Contains("volei")) return "bi-circle-half text-sky-400";
+        return "bi-dribbble text-emerald-400";
+    }
+}
 
-        <div class="grid items-center gap-12 lg:grid-cols-2">
 
-            <!-- TEXTO -->
+<div class="bg-[#0B0F19] text-slate-200">
+
+    <!-- =========================================================
+         HERO
+    ========================================================== -->
+
+    <section id="inicio" class="relative overflow-hidden">
+
+        <div class="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
+        <div class="pointer-events-none absolute -right-20 -top-20 h-[28rem] w-[28rem] rounded-full bg-emerald-500/10 blur-3xl"></div>
+
+        <div class="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-14 lg:grid-cols-2 lg:px-8 lg:py-16">
+
+            <!-- Texto -->
             <div>
-
-                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-400">
-                    <i class="bi bi-lightning-charge-fill"></i>
-                    Gestión deportiva inteligente
+                <span class="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-400">
+                    <i class="bi bi-calendar2-check-fill"></i>
+                    Reserva tu cancha, juega sin límites
                 </span>
 
-                <h1 class="mt-6 font-['Montserrat'] text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                    No dejes que otro equipo
-                    <span class="text-emerald-400">se quede con tu cancha.</span>
+                <h1 class="font-heading mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl xl:text-6xl">
+                    No dejes que otro<br class="hidden sm:block" />
+                    equipo se quede<br />
+                    <span class="text-emerald-400">con tu cancha.</span>
                 </h1>
 
                 <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-                    Miles de personas reservan sus escenarios deportivos todos los días.
-                    Encuentra disponibilidad en tiempo real y asegura tu cancha en segundos con Sportia.
+                    En <span class="font-semibold text-emerald-400">Sportia</span> puedes reservar fácilmente canchas deportivas,
+                    organizar tus partidos y disfrutar del deporte con amigos, clubes o empresas.
                 </p>
 
-                <!-- BUSCADOR RÁPIDO -->
-                <div class="mt-8">
-                    <div class="text-sm font-medium text-slate-300 mb-2">
-                        Busca tu cancha ideal ahora mismo
-                    </div>
+                <!-- Buscador -->
+                <form id="formHero" class="mt-8 flex max-w-xl items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/70 p-2 shadow-xl shadow-black/20 transition focus-within:border-emerald-500/60">
+                    <label class="flex min-w-0 flex-1 items-center gap-3 px-3">
+                        <i class="bi bi-search text-slate-400"></i>
+                        <span class="sr-only">Buscar escenarios</span>
+                        <input id="buscadorHero" type="search" autocomplete="off"
+                               placeholder="Buscar escenarios por nombre, tipo o ciudad..."
+                               class="h-11 min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+                    </label>
+                    <button type="submit"
+                            class="h-11 shrink-0 rounded-xl bg-emerald-500 px-6 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                        Buscar
+                    </button>
+                </form>
 
-                    <form asp-controller="Login" asp-action="Index"
-                          class="flex items-stretch rounded-2xl border border-slate-700 bg-slate-900/70 p-1.5 shadow-xl">
-
-                        <div class="relative flex-1">
-                            <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                            <input type="text"
-                                   name="busqueda"
-                                   placeholder="Ej: microfútbol en Medellín"
-                                   class="w-full rounded-xl bg-transparent py-3.5 pl-11 pr-4 text-sm text-white outline-none placeholder:text-slate-500" />
-                        </div>
-
-                        <button type="submit"
-                                class="flex items-center gap-2 whitespace-nowrap rounded-xl bg-emerald-500 px-6 py-3.5 font-bold text-white transition hover:bg-emerald-400">
-                            <i class="bi bi-calendar-check"></i>
-                            Buscar
-                        </button>
-                    </form>
-
-                    <p class="mt-3 text-xs text-slate-500">
-                        Al buscar aceptas nuestros
-                        <a href="#" class="underline hover:text-emerald-400">Términos de uso</a> y
-                        <a href="#" class="underline hover:text-emerald-400">Política de privacidad</a>.
-                    </p>
+                <!-- Ventajas -->
+                <div class="mt-7 flex flex-wrap gap-x-5 gap-y-3 text-[13px] text-slate-300">
+                    <span class="flex items-center gap-2"><i class="bi bi-calendar-check text-emerald-400"></i> Reserva rápida</span>
+                    <span class="flex items-center gap-2"><i class="bi bi-tag text-emerald-400"></i> Precios transparentes</span>
+                    <span class="flex items-center gap-2"><i class="bi bi-patch-check text-emerald-400"></i> Canchas verificadas</span>
+                    <span class="flex items-center gap-2"><i class="bi bi-shield-check text-emerald-400"></i> Pago seguro</span>
                 </div>
-
-                <!-- VENTAJAS -->
-                <div class="mt-8 flex flex-wrap gap-6 text-sm text-slate-400">
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-check-circle-fill text-emerald-400"></i>
-                        Reservas rápidas
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-check-circle-fill text-emerald-400"></i>
-                        Disponibilidad en tiempo real
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-check-circle-fill text-emerald-400"></i>
-                        Gestión sencilla
-                    </div>
-                </div>
-
             </div>
 
-            <!-- IMAGEN PRINCIPAL -->
+            <!-- Imagen -->
             <div class="relative">
-
-                <div class="group relative overflow-hidden rounded-3xl border border-slate-700 shadow-2xl">
-
-                    <img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=1200&q=85"
-                         class="h-[420px] w-full object-cover transition duration-700 group-hover:scale-105 lg:h-[500px]"
-                         alt="Cancha de fútbol">
-
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <div class="flex items-end justify-between gap-4">
-                            <div>
-                                <p class="text-sm font-medium text-emerald-400">SPORTIA</p>
-                                <h2 class="mt-1 text-2xl font-bold text-white">Canchas deportivas</h2>
-                                <p class="mt-1 text-sm text-slate-300">Encuentra y reserva tu escenario favorito.</p>
-                            </div>
-                            <div class="hidden h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-xl text-white shadow-lg sm:flex">
-                                <i class="bi bi-dribbble"></i>
-                            </div>
-                        </div>
-                    </div>
+                <div class="group relative overflow-hidden rounded-3xl border border-slate-700/80 shadow-2xl shadow-black/40">
+                    <img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=1400&q=85"
+                         alt="Jugador con el balón en una cancha de fútbol"
+                         class="h-[340px] w-full object-cover transition duration-700 group-hover:scale-105 sm:h-[420px] lg:h-[460px]" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F19]/70 via-transparent to-transparent"></div>
                 </div>
 
-                <!-- TARJETA FLOTANTE -->
-                <div class="absolute -bottom-8 -left-6 hidden w-64 rounded-2xl border border-slate-700 bg-slate-900/95 p-5 shadow-2xl backdrop-blur sm:block">
-                    <p class="text-sm font-semibold text-white">Sportia te da...</p>
-                    <div class="mt-3 space-y-2">
-                        <div class="flex items-center gap-2 text-sm text-slate-300">
-                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                            Confirmación instantánea
-                        </div>
-                        <div class="flex items-center gap-2 text-sm text-slate-300">
-                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                            Pago seguro
-                        </div>
-                        <div class="flex items-center gap-2 text-sm text-slate-300">
-                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                            Recordatorios automáticos
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- BARRA DE ESTADÍSTICAS -->
-        <div class="mt-20 grid grid-cols-2 gap-4 border-t border-slate-800 pt-10 sm:grid-cols-4">
-            <div class="text-center">
-                <p class="text-2xl font-bold text-emerald-400 sm:text-3xl">+20</p>
-                <p class="mt-1 text-xs text-slate-500 sm:text-sm">Escenarios</p>
-            </div>
-            <div class="text-center">
-                <p class="text-2xl font-bold text-emerald-400 sm:text-3xl">+500</p>
-                <p class="mt-1 text-xs text-slate-500 sm:text-sm">Reservas</p>
-            </div>
-            <div class="text-center">
-                <p class="text-2xl font-bold text-emerald-400 sm:text-3xl">+300</p>
-                <p class="mt-1 text-xs text-slate-500 sm:text-sm">Usuarios</p>
-            </div>
-            <div class="text-center">
-                <p class="text-2xl font-bold text-emerald-400 sm:text-3xl">4.9★</p>
-                <p class="mt-1 text-xs text-slate-500 sm:text-sm">Valoración</p>
-            </div>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- ESCENARIOS DEPORTIVOS -->
-<!-- ========================================================= -->
-
-<section id="canchas" class="relative overflow-hidden bg-slate-950 py-24">
-
-    <div class="pointer-events-none absolute left-0 top-20 h-72 w-72 rounded-full bg-emerald-500/5 blur-3xl"></div>
-    <div class="pointer-events-none absolute right-0 bottom-10 h-80 w-80 rounded-full bg-cyan-500/5 blur-3xl"></div>
-
-    <div class="relative mx-auto max-w-7xl px-6 lg:px-8">
-
-        <!-- ENCABEZADO -->
-        <div class="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-
-            <div>
-                <div class="mb-3 flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                    <span class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
-                        Explora Sportia
-                    </span>
-                </div>
-
-                <h2 class="font-['Montserrat'] text-3xl font-extrabold text-white sm:text-4xl">
-                    Encuentra el escenario perfecto
-                </h2>
-
-                <p class="mt-3 max-w-2xl text-slate-400">
-                    Descubre espacios deportivos disponibles,
-                    consulta sus características y realiza tu reserva.
-                </p>
-            </div>
-
-            <div class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-                    <i class="bi bi-geo-alt-fill text-emerald-400"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500">Ubicación</p>
-                    <p class="font-semibold text-white">Medellín, Colombia</p>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- BUSCADOR -->
-        <div class="mb-10 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-2xl">
-
-            <div class="grid gap-3 md:grid-cols-[1fr_auto]">
-
-                <div class="relative">
-                    <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input id="searchInput"
-                           type="text"
-                           placeholder="Buscar cancha, deporte o escenario..."
-                           class="w-full rounded-xl border border-slate-700 bg-slate-950 py-3.5 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" />
-                </div>
-
-                <div class="flex gap-2 overflow-x-auto">
-                    <button data-filter="todos"
-                            class="filter-btn whitespace-nowrap rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-white transition hover:bg-emerald-400">
-                        Todos
-                    </button>
-                    <button data-filter="microfutbol"
-                            class="filter-btn whitespace-nowrap rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400">
-                        Microfútbol
-                    </button>
-                    <button data-filter="futbol"
-                            class="filter-btn whitespace-nowrap rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400">
-                        Fútbol
-                    </button>
-                    <button data-filter="baloncesto"
-                            class="filter-btn whitespace-nowrap rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400">
-                        Baloncesto
-                    </button>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- TARJETAS -->
-        <div id="courtGrid" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
-            <!-- MICROFÚTBOL -->
-            <article class="court-card group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl transition duration-300 hover:-translate-y-2 hover:border-emerald-500/50 hover:shadow-emerald-500/5"
-                     data-category="microfutbol"
-                     data-name="microfutbol cancha sintetica">
-
-                <div class="relative h-56 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=85"
-                         class="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                         alt="Cancha de microfútbol">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
-
-                    <div class="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-emerald-400/30 bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-emerald-400 backdrop-blur">
-                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                        Disponible
-                    </div>
-
-                    <div class="absolute bottom-4 left-4 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white">
-                        Microfútbol
-                    </div>
-                </div>
-
-                <div class="p-5">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <h3 class="text-xl font-bold text-white">Cancha Sintética</h3>
-                            <p class="mt-1 text-sm text-slate-500">
-                                <i class="bi bi-geo-alt mr-1"></i>
-                                Medellín
-                            </p>
-                        </div>
-                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                            <i class="bi bi-dribbble"></i>
-                        </div>
-                    </div>
-
-                    <div class="mb-5 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Capacidad</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">10 jugadores</p>
-                        </div>
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Horario</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">8:00 AM</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
-                        <div>
-                            <p class="text-xs text-slate-500">Desde</p>
-                            <p class="text-lg font-bold text-emerald-400">$50.000</p>
-                        </div>
-                        <a asp-controller="Login" asp-action="Index"
-                           class="inline-flex items-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400">
-                            Reservar
-                            <i class="bi bi-arrow-right ml-2"></i>
-                        </a>
-                    </div>
-                </div>
-
-            </article>
-
-            <!-- BALONCESTO -->
-            <article class="court-card group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl transition duration-300 hover:-translate-y-2 hover:border-blue-500/50"
-                     data-category="baloncesto"
-                     data-name="baloncesto cancha basketball">
-
-                <div class="relative h-56 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=85"
-                         class="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                         alt="Cancha de baloncesto">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
-
-                    <div class="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-blue-400/30 bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-blue-400 backdrop-blur">
-                        <span class="h-2 w-2 rounded-full bg-blue-400"></span>
-                        Disponible
-                    </div>
-
-                    <div class="absolute bottom-4 left-4 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
-                        Baloncesto
-                    </div>
-                </div>
-
-                <div class="p-5">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <h3 class="text-xl font-bold text-white">Cancha Basketball</h3>
-                            <p class="mt-1 text-sm text-slate-500">
-                                <i class="bi bi-geo-alt mr-1"></i>
-                                Medellín
-                            </p>
-                        </div>
-                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
-                            <i class="bi bi-circle-fill"></i>
-                        </div>
-                    </div>
-
-                    <div class="mb-5 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Superficie</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">Profesional</p>
-                        </div>
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Horario</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">7:00 AM</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
-                        <div>
-                            <p class="text-xs text-slate-500">Desde</p>
-                            <p class="text-lg font-bold text-blue-400">$40.000</p>
-                        </div>
-                        <a asp-controller="Login" asp-action="Index"
-                           class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-500">
-                            Reservar
-                            <i class="bi bi-arrow-right ml-2"></i>
-                        </a>
-                    </div>
-                </div>
-
-            </article>
-
-            <!-- FÚTBOL -->
-            <article class="court-card group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl transition duration-300 hover:-translate-y-2 hover:border-lime-500/50"
-                     data-category="futbol"
-                     data-name="futbol cancha futbol">
-
-                <div class="relative h-56 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=85"
-                         class="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                         alt="Cancha de fútbol">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
-
-                    <div class="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-lime-400/30 bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-lime-400 backdrop-blur">
-                        <span class="h-2 w-2 rounded-full bg-lime-400"></span>
-                        Disponible
-                    </div>
-
-                    <div class="absolute bottom-4 left-4 rounded-lg bg-lime-600 px-3 py-1.5 text-xs font-bold text-white">
-                        Fútbol
-                    </div>
-                </div>
-
-                <div class="p-5">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <h3 class="text-xl font-bold text-white">Cancha de Fútbol</h3>
-                            <p class="mt-1 text-sm text-slate-500">
-                                <i class="bi bi-geo-alt mr-1"></i>
-                                Medellín
-                            </p>
-                        </div>
-                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-lime-500/10 text-lime-400">
-                            <i class="bi bi-trophy-fill"></i>
-                        </div>
-                    </div>
-
-                    <div class="mb-5 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Capacidad</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">22 jugadores</p>
-                        </div>
-                        <div class="rounded-lg bg-slate-950 p-3">
-                            <p class="text-xs text-slate-500">Horario</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-200">6:00 AM</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
-                        <div>
-                            <p class="text-xs text-slate-500">Desde</p>
-                            <p class="text-lg font-bold text-lime-400">$80.000</p>
-                        </div>
-                        <a asp-controller="Login" asp-action="Index"
-                           class="inline-flex items-center rounded-xl bg-lime-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-lime-500">
-                            Reservar
-                            <i class="bi bi-arrow-right ml-2"></i>
-                        </a>
-                    </div>
-                </div>
-
-            </article>
-
-        </div>
-
-        <!-- SIN RESULTADOS -->
-        <div id="noResults" class="hidden py-16 text-center">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-2xl text-slate-500">
-                <i class="bi bi-search"></i>
-            </div>
-            <h3 class="mt-4 text-xl font-bold text-white">No encontramos escenarios</h3>
-            <p class="mt-2 text-slate-500">Intenta buscar otro deporte o escenario.</p>
-        </div>
-
-        <!-- ESTADÍSTICAS -->
-        <div class="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                        <i class="bi bi-building"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-white">+20</p>
-                        <p class="text-sm text-slate-500">Escenarios</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-                        <i class="bi bi-calendar-check"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-white">+500</p>
-                        <p class="text-sm text-slate-500">Reservas</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-white">+300</p>
-                        <p class="text-sm text-slate-500">Usuarios</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
-                        <i class="bi bi-star-fill"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-white">4.9</p>
-                        <p class="text-sm text-slate-500">Valoración</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- CARACTERÍSTICAS -->
-<!-- ========================================================= -->
-
-<section id="torneos" class="bg-slate-900 py-24">
-
-    <div class="mx-auto max-w-7xl px-6 lg:px-8">
-
-        <div class="mb-12 text-center">
-            <span class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
-                ¿Por qué Sportia?
-            </span>
-            <h2 class="mt-3 font-['Montserrat'] text-3xl font-extrabold text-white sm:text-4xl">
-                Todo lo que necesitas para jugar
-            </h2>
-            <p class="mx-auto mt-4 max-w-2xl text-slate-400">
-                Una experiencia sencilla para encontrar,
-                reservar y administrar tus escenarios deportivos.
-            </p>
-        </div>
-
-        <div class="grid gap-6 md:grid-cols-3">
-
-            <div class="group rounded-2xl border border-slate-800 bg-slate-950 p-8 transition duration-300 hover:-translate-y-2 hover:border-emerald-500/40">
-                <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/10 text-2xl text-emerald-400 transition group-hover:bg-emerald-500 group-hover:text-white">
-                    <i class="bi bi-calendar-check"></i>
-                </div>
-                <h3 class="mt-6 text-xl font-bold text-white">Reservas fáciles</h3>
-                <p class="mt-3 leading-7 text-slate-400">
-                    Consulta disponibilidad y reserva
-                    tu escenario en pocos pasos.
-                </p>
-            </div>
-
-            <div class="group rounded-2xl border border-slate-800 bg-slate-950 p-8 transition duration-300 hover:-translate-y-2 hover:border-blue-500/40">
-                <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500/10 text-2xl text-blue-400 transition group-hover:bg-blue-500 group-hover:text-white">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-                <h3 class="mt-6 text-xl font-bold text-white">Disponibilidad</h3>
-                <p class="mt-3 leading-7 text-slate-400">
-                    Consulta horarios disponibles
-                    antes de realizar tu reserva.
-                </p>
-            </div>
-
-            <div id="contacto" class="group rounded-2xl border border-slate-800 bg-slate-950 p-8 transition duration-300 hover:-translate-y-2 hover:border-purple-500/40">
-                <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-500/10 text-2xl text-purple-400 transition group-hover:bg-purple-500 group-hover:text-white">
-                    <i class="bi bi-shield-check"></i>
-                </div>
-                <h3 class="mt-6 text-xl font-bold text-white">Gestión segura</h3>
-                <p class="mt-3 leading-7 text-slate-400">
-                    Tus reservas y datos se gestionan
-                    desde una plataforma organizada.
-                </p>
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- TESTIMONIOS DE CLIENTES -->
-<!-- ========================================================= -->
-
-<section id="testimonios" class="relative overflow-hidden bg-slate-950 py-24">
-
-    <div class="pointer-events-none absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-500/5 blur-3xl"></div>
-
-    <div class="relative mx-auto max-w-7xl px-6 lg:px-8">
-
-        <div class="mb-14 text-center">
-            <span class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
-                Lo que dicen nuestros usuarios
-            </span>
-            <h2 class="mt-3 font-['Montserrat'] text-3xl font-extrabold text-white sm:text-4xl">
-                Miles de partidos ya se jugaron gracias a Sportia
-            </h2>
-            <p class="mx-auto mt-4 max-w-2xl text-slate-400">
-                Jugadores, equipos y administradores de canchas confían en nosotros
-                para gestionar sus reservas todos los días.
-            </p>
-        </div>
-
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-7 shadow-xl">
-                <div class="flex gap-1 text-amber-400">
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                </div>
-                <p class="mt-4 leading-7 text-slate-300">
-                    "Reservar la cancha de microfútbol para mi equipo antes tomaba llamadas y esperas.
-                    Con Sportia lo hago en menos de un minuto desde el celular."
-                </p>
-                <div class="mt-6 flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 font-bold text-emerald-400">
-                        JD
-                    </div>
-                    <div>
-                        <p class="font-semibold text-white">Juan David Restrepo</p>
-                        <p class="text-xs text-slate-500">Capitán, equipo Los Halcones</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-7 shadow-xl">
-                <div class="flex gap-1 text-amber-400">
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i>
-                </div>
-                <p class="mt-4 leading-7 text-slate-300">
-                    "Administro dos canchas de baloncesto y ahora todo el calendario está organizado.
-                    Ya no se me cruzan las reservas ni pierdo clientes."
-                </p>
-                <div class="mt-6 flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 font-bold text-blue-400">
-                        MC
-                    </div>
-                    <div>
-                        <p class="font-semibold text-white">María Camila Ortiz</p>
-                        <p class="text-xs text-slate-500">Administradora, Polideportivo Norte</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-7 shadow-xl">
-                <div class="flex gap-1 text-amber-400">
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    <i class="bi bi-star-half"></i>
-                </div>
-                <p class="mt-4 leading-7 text-slate-300">
-                    "Me encanta poder ver la disponibilidad en tiempo real antes de reservar.
-                    Ya no llego a una cancha ocupada por error."
-                </p>
-                <div class="mt-6 flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-lime-500/10 font-bold text-lime-400">
-                        AP
-                    </div>
-                    <div>
-                        <p class="font-semibold text-white">Andrés Pérez</p>
-                        <p class="text-xs text-slate-500">Jugador frecuente</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="mt-14 flex flex-col items-center gap-2 text-center">
-            <div class="flex gap-1 text-amber-400 text-xl">
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                <i class="bi bi-star-fill"></i>
-            </div>
-            <p class="text-white font-semibold">4.9 / 5 basado en +300 reseñas de usuarios</p>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- CTA FINAL -->
-<!-- ========================================================= -->
-
-<section class="relative overflow-hidden bg-slate-950 py-24 text-white">
-
-    <div class="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
-    <div class="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
-
-    <div class="relative mx-auto max-w-4xl px-6 text-center">
-
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl text-emerald-400">
-            <i class="bi bi-calendar-plus"></i>
-        </div>
-
-        <h2 class="mt-6 font-['Montserrat'] text-3xl font-extrabold sm:text-4xl">
-            ¿Listo para comenzar?
-        </h2>
-
-        <p class="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-400">
-            Encuentra tu escenario deportivo,
-            revisa su disponibilidad y reserva tu próximo partido.
-        </p>
-
-        <div class="mt-8 flex flex-wrap justify-center gap-4">
-
-            <a asp-controller="Login" asp-action="Index"
-               class="inline-flex items-center rounded-xl bg-emerald-500 px-8 py-4 font-bold text-white shadow-lg shadow-emerald-500/20 transition duration-300 hover:-translate-y-1 hover:bg-emerald-400">
-                <i class="bi bi-calendar-check mr-2"></i>
-                Reservar ahora
-            </a>
-
-            <a asp-controller="Login" asp-action="Register"
-               class="inline-flex items-center rounded-xl border border-slate-700 bg-slate-900 px-8 py-4 font-bold text-white transition hover:border-emerald-500 hover:text-emerald-400">
-                Crear cuenta
-                <i class="bi bi-arrow-right ml-2"></i>
-            </a>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="border-t border-slate-800 bg-slate-950 text-slate-300">
-
-    <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-
-        <div class="grid gap-10 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
-
-            <!-- SOBRE NOSOTROS -->
-            <div>
-                <div class="flex items-center gap-2">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                        <i class="bi bi-dribbble"></i>
-                    </div>
-                    <span class="font-['Montserrat'] text-xl font-extrabold text-white">Sportia</span>
-                </div>
-
-                <p class="mt-4 max-w-sm text-sm leading-6 text-slate-400">
-                    Sportia es una plataforma pensada para simplificar la gestión de escenarios
-                    deportivos. Conectamos jugadores con canchas disponibles en Medellín,
-                    permitiendo reservar, pagar y organizar partidos sin complicaciones,
-                    y ayudando a los administradores a llevar el control de sus espacios
-                    desde un solo lugar.
-                </p>
-
-                <div class="mt-6 flex gap-3">
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 transition hover:border-emerald-500 hover:text-emerald-400">
-                        <i class="bi bi-instagram"></i>
+                @if (destacado != null)
+                {
+                    <a href="#tarjeta-@destacado.IdEscenario" data-ir-tarjeta="@destacado.IdEscenario"
+                       class="absolute bottom-5 right-5 flex max-w-[calc(100%-2.5rem)] items-center gap-4 rounded-2xl border border-white/10 bg-[#0B0F19]/85 p-4 shadow-2xl backdrop-blur transition hover:border-emerald-500/50 sm:min-w-[300px]">
+                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-xl text-emerald-400">
+                            <i class="bi bi-trophy"></i>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-sm font-bold text-white">@destacado.Nombre</span>
+                            <span class="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-400">
+                                <i class="bi bi-geo-alt-fill text-emerald-400"></i> @destacado.Ubicacion
+                            </span>
+                            <span class="mt-0.5 block text-xs text-slate-300">
+                                Desde <span class="font-semibold text-emerald-400">@Dinero(destacado.Precio)</span> / hora
+                            </span>
+                        </span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[#03150d]">
+                            <i class="bi bi-arrow-right"></i>
+                        </span>
                     </a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 transition hover:border-emerald-500 hover:text-emerald-400">
-                        <i class="bi bi-facebook"></i>
-                    </a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 transition hover:border-emerald-500 hover:text-emerald-400">
-                        <i class="bi bi-tiktok"></i>
-                    </a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 transition hover:border-emerald-500 hover:text-emerald-400">
-                        <i class="bi bi-whatsapp"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- PRODUCTO -->
-            <div>
-                <p class="text-sm font-bold uppercase tracking-wider text-white">Producto</p>
-                <ul class="mt-4 space-y-3 text-sm">
-                    <li><a href="#canchas" class="transition hover:text-emerald-400">Buscar canchas</a></li>
-                    <li><a href="#torneos" class="transition hover:text-emerald-400">Beneficios</a></li>
-                    <li><a href="#testimonios" class="transition hover:text-emerald-400">Testimonios</a></li>
-                    <li><a asp-controller="Login" asp-action="Index" class="transition hover:text-emerald-400">Iniciar sesión</a></li>
-                    <li><a asp-controller="Login" asp-action="Register" class="transition hover:text-emerald-400">Crear cuenta</a></li>
-                </ul>
-            </div>
-
-            <!-- EMPRESA -->
-            <div>
-                <p class="text-sm font-bold uppercase tracking-wider text-white">Empresa</p>
-                <ul class="mt-4 space-y-3 text-sm">
-                    <li><a href="#" class="transition hover:text-emerald-400">Sobre nosotros</a></li>
-                    <li><a href="#" class="transition hover:text-emerald-400">Cómo funciona</a></li>
-                    <li><a href="#" class="transition hover:text-emerald-400">Preguntas frecuentes</a></li>
-                    <li><a href="#contacto" class="transition hover:text-emerald-400">Contacto</a></li>
-                </ul>
-            </div>
-
-            <!-- CONTACTO -->
-            <div>
-                <p class="text-sm font-bold uppercase tracking-wider text-white">Contacto</p>
-                <ul class="mt-4 space-y-3 text-sm">
-                    <li class="flex items-start gap-2">
-                        <i class="bi bi-geo-alt-fill mt-0.5 text-emerald-400"></i>
-                        Medellín, Antioquia, Colombia
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="bi bi-envelope-fill mt-0.5 text-emerald-400"></i>
-                        contacto@sportia.com
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="bi bi-telephone-fill mt-0.5 text-emerald-400"></i>
-                        +57 300 000 0000
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="bi bi-clock-fill mt-0.5 text-emerald-400"></i>
-                        Lun - Dom: 6:00 AM - 10:00 PM
-                    </li>
-                </ul>
-            </div>
-
-        </div>
-
-        <div class="my-10 border-t border-slate-800"></div>
-
-        <div class="flex flex-col items-center justify-between gap-4 text-sm text-slate-500 sm:flex-row">
-            <p>&copy; 2026 Sportia. Todos los derechos reservados.</p>
-            <div class="flex gap-6">
-                <a href="#" class="transition hover:text-emerald-400">Términos de servicio</a>
-                <a href="#" class="transition hover:text-emerald-400">Política de privacidad</a>
-            </div>
-        </div>
-
-    </div>
-
-</footer>
-
-
-<!-- ========================================================= -->
-<!-- JAVASCRIPT PARA BUSCAR Y FILTRAR -->
-<!-- ========================================================= -->
-
-<script>
-
-    document.addEventListener("DOMContentLoaded", function() {
-
-        const searchInput = document.getElementById("searchInput");
-        const cards = document.querySelectorAll(".court-card");
-        const buttons = document.querySelectorAll(".filter-btn");
-        const noResults = document.getElementById("noResults");
-
-        let activeFilter = "todos";
-
-        function filterCards() {
-
-            const search = searchInput.value.toLowerCase().trim();
-            let visibleCards = 0;
-
-            cards.forEach(card => {
-
-                const category = card.dataset.category;
-                const name = card.dataset.name;
-
-                const matchesFilter =
-                    activeFilter === "todos" ||
-                    category === activeFilter;
-
-                const matchesSearch =
-                    name.includes(search);
-
-                if (matchesFilter && matchesSearch) {
-                    card.classList.remove("hidden");
-                    visibleCards++;
-                } else {
-                    card.classList.add("hidden");
                 }
+            </div>
 
-            });
+        </div>
+    </section>
 
-            if (visibleCards === 0) {
-                noResults.classList.remove("hidden");
-            } else {
-                noResults.classList.add("hidden");
+
+    <!-- =========================================================
+         ESTADÍSTICAS
+    ========================================================== -->
+
+    <section class="border-y border-slate-800 bg-[#0d1424]">
+        <div class="mx-auto grid max-w-7xl grid-cols-2 gap-y-8 px-6 py-8 lg:grid-cols-4 lg:divide-x lg:divide-slate-800 lg:px-8">
+
+            <div class="flex items-center justify-center gap-4">
+                <i class="bi bi-calendar3 text-4xl text-emerald-400"></i>
+                <div>
+                    <p class="text-2xl font-extrabold text-emerald-400">@vm.TotalCanchas</p>
+                    <p class="text-sm text-slate-400">Canchas disponibles</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-4">
+                <i class="bi bi-people text-4xl text-emerald-400"></i>
+                <div>
+                    <p class="text-2xl font-extrabold text-emerald-400">@vm.TotalUsuarios</p>
+                    <p class="text-sm text-slate-400">Usuarios registrados</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-4">
+                <i class="bi bi-shield-check text-4xl text-emerald-400"></i>
+                <div>
+                    <p class="text-2xl font-extrabold text-emerald-400">@vm.TotalReservas</p>
+                    <p class="text-sm text-slate-400">Reservas realizadas</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-4">
+                <i class="bi bi-star text-4xl text-emerald-400"></i>
+                <div>
+                    <p class="text-2xl font-extrabold text-emerald-400">4.9</p>
+                    <p class="text-sm text-slate-400">Calificación promedio</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- =========================================================
+         ESCENARIOS
+    ========================================================== -->
+
+    <section id="canchas" class="relative scroll-mt-20 overflow-hidden py-16">
+
+        <div class="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full bg-emerald-500/5 blur-3xl"></div>
+
+        <div class="relative mx-auto max-w-7xl px-6 lg:px-8">
+
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Escenarios destacados</p>
+                    <h2 class="font-heading mt-2 text-3xl font-extrabold text-white sm:text-4xl">Encuentra el escenario perfecto</h2>
+                    <p class="mt-2 text-slate-400">Explora nuestras mejores canchas y elige la que se adapte a tus necesidades.</p>
+                </div>
+
+                @if (vm.Escenarios.Count > TarjetasIniciales)
+                {
+                    <button type="button" id="btnVerTodos" data-abierto="0"
+                            class="inline-flex h-11 w-fit shrink-0 items-center gap-2 rounded-full border border-slate-600 px-5 text-sm font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400">
+                        <span id="textoVerTodos">Ver todos los escenarios</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                }
+            </div>
+
+            @if (vm.Escenarios.Any())
+            {
+                <!-- Filtros -->
+                <form id="formFiltros" class="mt-8 grid gap-3 md:grid-cols-[minmax(0,1fr)_200px_220px_auto]">
+                    <label class="flex h-12 items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/70 px-4 transition focus-within:border-emerald-500/60">
+                        <i class="bi bi-search text-slate-400"></i>
+                        <span class="sr-only">Buscar por nombre, tipo o ciudad</span>
+                        <input id="filtroTexto" type="search" autocomplete="off" placeholder="Buscar por nombre, tipo o ciudad..."
+                               class="h-full min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+                    </label>
+
+                    <label class="relative block">
+                        <span class="sr-only">Tipo de escenario</span>
+                        <select id="filtroTipo" class="h-12 w-full appearance-none rounded-xl border border-slate-700 bg-slate-900/70 pl-4 pr-10 text-sm text-slate-200 focus:border-emerald-500/60 focus:outline-none">
+                            <option value="" class="bg-slate-900">Todos los tipos</option>
+                            @foreach (var tipo in vm.Tipos)
+                            {
+                                <option value="@Normalizar(tipo)" class="bg-slate-900">@tipo</option>
+                            }
+                        </select>
+                        <i class="bi bi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                    </label>
+
+                    <label class="relative block">
+                        <span class="sr-only">Empresa</span>
+                        <select id="filtroEmpresa" class="h-12 w-full appearance-none rounded-xl border border-slate-700 bg-slate-900/70 pl-4 pr-10 text-sm text-slate-200 focus:border-emerald-500/60 focus:outline-none">
+                            <option value="" class="bg-slate-900">Todas las empresas</option>
+                            @foreach (var empresa in vm.Empresas)
+                            {
+                                <option value="@Normalizar(empresa)" class="bg-slate-900">@empresa</option>
+                            }
+                        </select>
+                        <i class="bi bi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                    </label>
+
+                    <button type="submit" class="h-12 rounded-xl bg-emerald-500 px-8 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                        Buscar
+                    </button>
+                </form>
+
+                <p id="textoResultados" class="mt-4 hidden text-sm text-slate-400"></p>
+
+                <!-- Tarjetas -->
+                <div id="gridEscenarios" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+                    @foreach (var esc in vm.Escenarios)
+                    {
+                        bool extra = indice++ >= TarjetasIniciales;
+                        string imagen = !string.IsNullOrWhiteSpace(esc.Imagen) ? esc.Imagen! : ImagenPorTipo(esc.Tipo);
+
+                        <article id="tarjeta-@esc.IdEscenario"
+                                 class="tarjeta-cancha group flex scroll-mt-28 flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-[#101828] shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-emerald-500/50 @(extra ? "tarjeta-extra hidden" : "")"
+                                 data-id="@esc.IdEscenario"
+                                 data-extra="@(extra ? "1" : "0")"
+                                 data-tipo="@Normalizar(esc.Tipo)"
+                                 data-empresa="@Normalizar(esc.Empresa)"
+                                 data-texto="@Normalizar(esc.Nombre + " " + esc.Tipo + " " + esc.Empresa + " " + esc.Ubicacion)">
+
+                            <div class="relative h-44 overflow-hidden">
+                                <img src="@imagen" alt="@esc.Nombre" loading="lazy"
+                                     onerror="this.onerror=null;this.src='@ImagenPorTipo(esc.Tipo)';"
+                                     class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#101828]/60 via-transparent to-transparent"></div>
+
+                                <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-[#03150d]">
+                                    <i class="bi bi-check-circle-fill"></i> Disponible
+                                </span>
+
+                                <button type="button" data-favorito="@esc.IdEscenario" aria-pressed="false"
+                                        aria-label="Guardar @esc.Nombre en favoritos"
+                                        class="btn-favorito absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:scale-110">
+                                    <i class="bi bi-heart"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex flex-1 flex-col p-4">
+                                <h3 class="truncate text-lg font-bold text-white" title="@esc.Nombre">@esc.Nombre</h3>
+                                <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-400">
+                                    <i class="bi bi-geo-alt-fill text-emerald-400"></i>
+                                    <span class="truncate">@esc.Ubicacion</span>
+                                </p>
+
+                                <div class="mt-4 grid grid-cols-2 gap-2 border-b border-slate-800 pb-4">
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-sm text-slate-300">
+                                            <i class="bi bi-people-fill"></i>
+                                        </span>
+                                        <span class="min-w-0">
+                                            <span class="block truncate text-[13px] font-bold text-white">@(esc.Capacidad?.ToString() ?? "N/D") jugadores</span>
+                                            <span class="block text-[11px] text-slate-500">Capacidad</span>
+                                        </span>
+                                    </div>
+                                    <div class="flex min-w-0 items-center gap-2">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-sm text-emerald-400">
+                                            <i class="bi bi-shield-check"></i>
+                                        </span>
+                                        <span class="min-w-0">
+                                            <span class="block truncate text-[13px] font-bold text-white">@Dinero(esc.Precio)</span>
+                                            <span class="block whitespace-nowrap text-[11px] text-slate-500">Precio por hora</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto flex items-center justify-between gap-3 pt-4">
+                                    <span class="flex min-w-0 items-center gap-2 text-sm text-slate-400">
+                                        <i class="bi @IconoTipo(esc.Tipo) text-base"></i>
+                                        <span class="truncate">Tipo: <span class="text-slate-200">@esc.Tipo</span></span>
+                                    </span>
+
+                                    @if (vm.EsCliente)
+                                    {
+                                        <a asp-controller="Cliente" asp-action="Reservar" asp-route-idEscenario="@esc.IdEscenario"
+                                           class="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400">
+                                            Reservar
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Login" asp-action="Index"
+                                           class="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-[#03150d] transition hover:bg-emerald-400"
+                                           title="Inicia sesión para reservar">
+                                            Reservar
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    }
+
+                </div>
+
+                <!-- Sin resultados -->
+                <div id="sinResultados" class="mt-6 hidden rounded-2xl border border-dashed border-slate-700 p-12 text-center">
+                    <i class="bi bi-search text-3xl text-slate-500"></i>
+                    <h3 class="mt-3 text-lg font-bold text-white">No encontramos escenarios</h3>
+                    <p class="mt-1 text-sm text-slate-400">Prueba con otro nombre, tipo o empresa.</p>
+                    <button type="button" id="btnLimpiar" class="mt-5 rounded-xl border border-slate-600 px-5 py-2 text-sm font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400">
+                        Ver todos
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="mt-8 rounded-2xl border border-dashed border-slate-700 p-12 text-center">
+                    <i class="bi bi-calendar-x text-3xl text-slate-500"></i>
+                    <h3 class="mt-3 text-lg font-bold text-white">Pronto tendremos canchas disponibles</h3>
+                    <p class="mt-1 text-sm text-slate-400">Vuelve en unos días o crea tu cuenta para enterarte primero.</p>
+                </div>
             }
 
-        }
+        </div>
+    </section>
 
-        searchInput.addEventListener("input", filterCards);
 
-        buttons.forEach(button => {
+    <!-- =========================================================
+         POR QUÉ SPORTIA (fondo claro)
+    ========================================================== -->
 
-            button.addEventListener("click", function() {
+    <section id="torneos" class="scroll-mt-20 bg-slate-50 py-16 text-slate-900">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
 
-                activeFilter = this.dataset.filter;
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">¿Por qué elegir Sportia?</p>
+            <h2 class="font-heading mt-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">Todo lo que necesitas para jugar</h2>
+            <p class="mt-2 text-slate-500">Contamos con todo lo necesario para que tu experiencia sea fácil, rápida y segura.</p>
 
-                buttons.forEach(btn => {
-                    btn.classList.remove("bg-emerald-500", "text-white");
-                    btn.classList.add("border", "border-slate-700", "bg-slate-950", "text-slate-300");
+            <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                        <i class="bi bi-calendar-check"></i>
+                    </span>
+                    <h3 class="mt-5 font-bold text-slate-900">Reserva en minutos</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">Encuentra y reserva tu cancha de forma rápida y sencilla.</p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                    <h3 class="mt-5 font-bold text-slate-900">Disponibilidad en tiempo real</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">Consulta horarios y disponibilidad de todas las canchas.</p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                        <i class="bi bi-shield-check"></i>
+                    </span>
+                    <h3 class="mt-5 font-bold text-slate-900">Pagos seguros</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">Paga de forma segura con tarjeta, transferencia o efectivo.</p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                        <i class="bi bi-headset"></i>
+                    </span>
+                    <h3 class="mt-5 font-bold text-slate-900">Soporte cercano</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">¿Tienes un inconveniente? Escríbenos y te ayudamos.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- =========================================================
+         TESTIMONIOS (fondo claro)
+    ========================================================== -->
+
+    <section id="testimonios" class="border-t border-slate-200 bg-slate-100 py-16 text-slate-900">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">Lo que dicen nuestros usuarios</p>
+            <h2 class="font-heading mt-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">Miles de partidos ya se jugaron gracias a Sportia</h2>
+            <p class="mt-2 text-slate-500">La mejor prueba de nuestro servicio son nuestros usuarios. Conoce sus experiencias.</p>
+
+            <div class="mt-10 grid gap-6 md:grid-cols-3">
+
+                <figure class="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <i class="bi bi-quote absolute right-5 top-3 text-5xl text-emerald-100"></i>
+                    <div class="flex gap-1 text-amber-400">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    </div>
+                    <blockquote class="mt-4 text-sm leading-6 text-slate-600">
+                        "Reservar la cancha de microfútbol para mi equipo antes tomaba llamadas y esperas.
+                        Con Sportia lo hago en menos de un minuto desde el celular."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700">JD</span>
+                        <span>
+                            <span class="block text-sm font-bold text-slate-900">Juan David Restrepo</span>
+                            <span class="block text-xs text-slate-500">Capitán, equipo Los Halcones</span>
+                        </span>
+                    </figcaption>
+                </figure>
+
+                <figure class="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <i class="bi bi-quote absolute right-5 top-3 text-5xl text-emerald-100"></i>
+                    <div class="flex gap-1 text-amber-400">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    </div>
+                    <blockquote class="mt-4 text-sm leading-6 text-slate-600">
+                        "Administro dos canchas de baloncesto y ahora todo el calendario está organizado.
+                        Ya no se me cruzan las reservas ni pierdo clientes."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-sky-100 font-bold text-sky-700">MC</span>
+                        <span>
+                            <span class="block text-sm font-bold text-slate-900">María Camila Ortiz</span>
+                            <span class="block text-xs text-slate-500">Administradora, Polideportivo Norte</span>
+                        </span>
+                    </figcaption>
+                </figure>
+
+                <figure class="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <i class="bi bi-quote absolute right-5 top-3 text-5xl text-emerald-100"></i>
+                    <div class="flex gap-1 text-amber-400">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                    </div>
+                    <blockquote class="mt-4 text-sm leading-6 text-slate-600">
+                        "Me encanta poder ver la disponibilidad en tiempo real antes de reservar.
+                        Ya no llego a una cancha ocupada por error."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-lime-100 font-bold text-lime-700">AP</span>
+                        <span>
+                            <span class="block text-sm font-bold text-slate-900">Andrés Pérez</span>
+                            <span class="block text-xs text-slate-500">Jugador frecuente</span>
+                        </span>
+                    </figcaption>
+                </figure>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- =========================================================
+         CTA FINAL
+    ========================================================== -->
+
+    <section class="relative overflow-hidden bg-gradient-to-br from-[#04221a] via-[#0B0F19] to-[#062a20] py-16 text-center">
+
+        <!-- Líneas de cancha decorativas -->
+        <svg class="pointer-events-none absolute inset-0 h-full w-full text-emerald-400/10" preserveAspectRatio="none" viewBox="0 0 1200 300" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="40" y="20" width="1120" height="260" rx="4" />
+            <line x1="600" y1="20" x2="600" y2="280" />
+            <circle cx="600" cy="150" r="60" />
+            <rect x="40" y="90" width="110" height="120" />
+            <rect x="1050" y="90" width="110" height="120" />
+        </svg>
+        <div class="pointer-events-none absolute left-1/2 top-1/2 h-72 w-[40rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl"></div>
+
+        <div class="relative mx-auto max-w-3xl px-6">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Tu partido empieza aquí</p>
+            <h2 class="font-heading mt-2 text-3xl font-extrabold text-white sm:text-4xl">¿Listo para comenzar?</h2>
+            <p class="mt-3 text-slate-300">Únete a los deportistas que ya están viviendo la mejor experiencia deportiva.</p>
+
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+                @if (vm.EsCliente)
+                {
+                    <a asp-controller="Cliente" asp-action="Index"
+                       class="inline-flex h-12 items-center gap-2 rounded-xl bg-emerald-500 px-7 text-sm font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400">
+                        Ir a mi panel <i class="bi bi-arrow-right"></i>
+                    </a>
+                }
+                else if (vm.HaySesion)
+                {
+                    <a asp-controller="Dashboard" asp-action="Index"
+                       class="inline-flex h-12 items-center gap-2 rounded-xl bg-emerald-500 px-7 text-sm font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400">
+                        Ir al panel <i class="bi bi-arrow-right"></i>
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Login" asp-action="Register"
+                       class="inline-flex h-12 items-center gap-2 rounded-xl bg-emerald-500 px-7 text-sm font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400">
+                        Registrarse ahora <i class="bi bi-arrow-right"></i>
+                    </a>
+                }
+                <a href="#canchas"
+                   class="inline-flex h-12 items-center rounded-xl border border-emerald-500/60 px-7 text-sm font-bold text-white transition hover:bg-emerald-500/10">
+                    Ver canchas
+                </a>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- =========================================================
+         PIE DE PÁGINA
+    ========================================================== -->
+
+    <footer id="contacto" class="border-t border-slate-800 bg-[#080b12]">
+        <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+
+            <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.6fr]">
+
+                <div>
+                    <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-xl font-black text-[#03150d]">S</span>
+                        <span class="font-heading text-2xl font-extrabold text-white">SPORTIA</span>
+                    </a>
+                    <p class="mt-3 text-sm text-slate-400">Tu cancha, tu momento.</p>
+                </div>
+
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-wider text-white">Sportia</p>
+                    <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
+                        <li><a href="#inicio" class="transition hover:text-emerald-400">Inicio</a></li>
+                        <li><a href="#canchas" class="transition hover:text-emerald-400">Canchas</a></li>
+                        <li><a asp-controller="Login" asp-action="Index" class="transition hover:text-emerald-400">Reservas</a></li>
+                        <li><a href="#torneos" class="transition hover:text-emerald-400">Nosotros</a></li>
+                        <li><a asp-controller="Contacto" asp-action="Index" class="transition hover:text-emerald-400">Contacto</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-wider text-white">Ayuda</p>
+                    <ul class="mt-4 space-y-2.5 text-sm text-slate-400">
+                        <li><a href="#torneos" class="transition hover:text-emerald-400">Cómo funciona</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy" class="transition hover:text-emerald-400">Política de privacidad</a></li>
+                        <li><a asp-controller="Contacto" asp-action="Index" class="transition hover:text-emerald-400">Soporte</a></li>
+                        <li class="flex items-center gap-2"><i class="bi bi-envelope text-emerald-400"></i> contacto@sportia.com</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-wider text-white">Síguenos</p>
+                    <div class="mt-4 flex gap-3 text-slate-300">
+                        <a href="#" aria-label="Instagram" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 transition hover:border-emerald-500 hover:text-emerald-400"><i class="bi bi-instagram"></i></a>
+                        <a href="#" aria-label="Facebook" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 transition hover:border-emerald-500 hover:text-emerald-400"><i class="bi bi-facebook"></i></a>
+                        <a href="#" aria-label="TikTok" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 transition hover:border-emerald-500 hover:text-emerald-400"><i class="bi bi-tiktok"></i></a>
+                        <a href="#" aria-label="YouTube" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 transition hover:border-emerald-500 hover:text-emerald-400"><i class="bi bi-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-wider text-white">Recibe novedades</p>
+                    <p class="mt-2 text-sm text-slate-400">Crea tu cuenta gratis y entérate de nuevas canchas.</p>
+                    <form asp-controller="Login" asp-action="Register" method="get"
+                          class="mt-4 flex h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/70 pl-4 pr-1.5 focus-within:border-emerald-500/60">
+                        <span class="sr-only">Tu correo electrónico</span>
+                        <input type="email" name="correo" placeholder="Tu correo electrónico"
+                               class="h-full min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none" />
+                        <button type="submit" aria-label="Crear cuenta"
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-[#03150d] transition hover:bg-emerald-400">
+                            <i class="bi bi-send-fill text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+            <div class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-800 pt-6 text-xs text-slate-500 sm:flex-row">
+                <p>&copy; @DateTime.Now.Year Sportia. Todos los derechos reservados.</p>
+                <p>Hecho con <i class="bi bi-heart-fill text-red-500"></i> para los amantes del deporte</p>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
+
+<!-- =========================================================
+     BÚSQUEDA, FILTROS Y FAVORITOS
+========================================================== -->
+
+@section Scripts {
+    <script>
+        (() => {
+            const tarjetas = Array.from(document.querySelectorAll('.tarjeta-cancha'));
+            const grid = document.getElementById('gridEscenarios');
+            const filtroTexto = document.getElementById('filtroTexto');
+            const filtroTipo = document.getElementById('filtroTipo');
+            const filtroEmpresa = document.getElementById('filtroEmpresa');
+            const sinResultados = document.getElementById('sinResultados');
+            const textoResultados = document.getElementById('textoResultados');
+            const btnVerTodos = document.getElementById('btnVerTodos');
+            const textoVerTodos = document.getElementById('textoVerTodos');
+            let verTodos = false;
+
+            const normalizar = t => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+            function aplicar() {
+                const texto = normalizar(filtroTexto?.value);
+                const tipo = filtroTipo?.value || '';
+                const empresa = filtroEmpresa?.value || '';
+                const filtrando = texto || tipo || empresa;
+                let visibles = 0;
+
+                tarjetas.forEach(t => {
+                    const coincide = (!texto || texto.split(/\s+/).every(p => t.dataset.texto.includes(p))) &&
+                        (!tipo || t.dataset.tipo === tipo) &&
+                        (!empresa || t.dataset.empresa === empresa);
+                    const mostrar = coincide && (filtrando || verTodos || t.dataset.extra === '0');
+                    t.classList.toggle('hidden', !mostrar);
+                    if (mostrar) visibles++;
                 });
 
-                this.classList.remove("border", "border-slate-700", "bg-slate-950", "text-slate-300");
-                this.classList.add("bg-emerald-500", "text-white");
+                grid?.classList.toggle('hidden', visibles === 0);
+                sinResultados?.classList.toggle('hidden', visibles > 0);
+                if (textoResultados) {
+                    textoResultados.classList.toggle('hidden', !filtrando);
+                    textoResultados.textContent = visibles === 1 ? '1 escenario encontrado' : visibles + ' escenarios encontrados';
+                }
+                if (btnVerTodos) btnVerTodos.classList.toggle('hidden', !!filtrando);
+            }
 
-                filterCards();
+            filtroTexto?.addEventListener('input', aplicar);
+            filtroTipo?.addEventListener('change', aplicar);
+            filtroEmpresa?.addEventListener('change', aplicar);
+            document.getElementById('formFiltros')?.addEventListener('submit', e => { e.preventDefault(); aplicar(); });
 
+            btnVerTodos?.addEventListener('click', () => {
+                verTodos = !verTodos;
+                textoVerTodos.textContent = verTodos ? 'Ver menos' : 'Ver todos los escenarios';
+                aplicar();
             });
 
-        });
+            document.getElementById('btnLimpiar')?.addEventListener('click', () => {
+                if (filtroTexto) filtroTexto.value = '';
+                if (filtroTipo) filtroTipo.value = '';
+                if (filtroEmpresa) filtroEmpresa.value = '';
+                aplicar();
+            });
 
-    });
+            // Buscador del inicio: lleva a las canchas con la búsqueda aplicada
+            document.getElementById('formHero')?.addEventListener('submit', e => {
+                e.preventDefault();
+                if (filtroTexto) filtroTexto.value = document.getElementById('buscadorHero').value;
+                aplicar();
+                document.getElementById('canchas')?.scrollIntoView({ behavior: 'smooth' });
+            });
 
-</script>
+            // Tarjeta flotante del inicio: muestra esa cancha aunque esté entre las ocultas
+            document.querySelectorAll('[data-ir-tarjeta]').forEach(a => a.addEventListener('click', e => {
+                const t = document.getElementById('tarjeta-' + a.dataset.irTarjeta);
+                if (!t) return;
+                e.preventDefault();
+                if (t.classList.contains('hidden')) {
+                    if (filtroTexto) filtroTexto.value = '';
+                    if (filtroTipo) filtroTipo.value = '';
+                    if (filtroEmpresa) filtroEmpresa.value = '';
+                    verTodos = true;
+                    if (textoVerTodos) textoVerTodos.textContent = 'Ver menos';
+                    aplicar();
+                }
+                t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                t.classList.add('ring-2', 'ring-emerald-400');
+                setTimeout(() => t.classList.remove('ring-2', 'ring-emerald-400'), 1600);
+            }));
+
+            // Favoritos (los mismos del panel del cliente, guardados en este navegador)
+            const CLAVE_FAV = 'sportia_favoritos';
+            let favoritos = [];
+            try { favoritos = JSON.parse(localStorage.getItem(CLAVE_FAV) || '[]'); } catch (e) { favoritos = []; }
+            if (!Array.isArray(favoritos)) favoritos = [];
+
+            function pintarFavoritos() {
+                document.querySelectorAll('[data-favorito]').forEach(b => {
+                    const activo = favoritos.includes(b.dataset.favorito);
+                    b.setAttribute('aria-pressed', activo);
+                    const i = b.querySelector('i');
+                    i.classList.toggle('bi-heart', !activo);
+                    i.classList.toggle('bi-heart-fill', activo);
+                    i.classList.toggle('text-red-400', activo);
+                });
+            }
+
+            document.querySelectorAll('[data-favorito]').forEach(b => b.addEventListener('click', () => {
+                const id = b.dataset.favorito;
+                favoritos = favoritos.includes(id) ? favoritos.filter(f => f !== id) : favoritos.concat(id);
+                try { localStorage.setItem(CLAVE_FAV, JSON.stringify(favoritos)); } catch (e) { }
+                pintarFavoritos();
+            }));
+
+            pintarFavoritos();
+            aplicar();
+        })();
+    </script>
+}

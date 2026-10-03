@@ -1,0 +1,206 @@
+﻿@model Sportia.Models.Escenario
+
+@{
+    ViewData["Title"] = "Editar escenario";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    bool activo = Model.Estado == true;
+    bool tieneImagen = !string.IsNullOrWhiteSpace(Model.Imagen);
+
+    const string claseCampo = "h-11 w-full rounded-xl border border-slate-800 bg-[#0d1422] px-4 text-sm text-white placeholder:text-slate-500 transition focus:border-emerald-500/50 focus:outline-none";
+}
+
+<div class="mx-auto max-w-5xl space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-4">
+            <a asp-controller="Escenarios" asp-action="Index"
+               class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-[#0d1422] text-slate-300 transition hover:border-slate-700 hover:text-white"
+               aria-label="Volver a escenarios">
+                <i data-lucide="arrow-left" class="h-5 w-5"></i>
+            </a>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Escenarios</p>
+                <h1 class="text-2xl font-black tracking-tight text-white sm:text-3xl">Editar escenario</h1>
+                <p class="mt-1 text-sm text-slate-400">Actualiza la información de <span class="font-semibold text-slate-200">@Model.Nombre</span>.</p>
+            </div>
+        </div>
+        <span class="inline-flex w-fit items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs font-semibold text-slate-300">
+            <i data-lucide="hash" class="h-3.5 w-3.5"></i> Código @Model.IdEscenario
+        </span>
+    </div>
+
+    <form asp-controller="Escenarios" asp-action="Edit" asp-route-id="@Model.IdEscenario"
+          method="post" enctype="multipart/form-data"
+          class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="IdEscenario" value="@Model.IdEscenario" />
+
+        <!-- Datos -->
+        <div class="space-y-5 rounded-2xl border border-slate-800 bg-[#101928] p-6">
+
+            <div asp-validation-summary="ModelOnly" class="text-sm text-red-400"></div>
+
+            <div>
+                <label asp-for="Nombre" class="mb-2 block text-sm font-medium text-slate-300">Nombre del escenario</label>
+                <input asp-for="Nombre" class="@claseCampo" placeholder="Ej: Cancha de fútbol 1" />
+                <span asp-validation-for="Nombre" class="mt-1 block text-xs text-red-400"></span>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label asp-for="IdTipo" class="mb-2 block text-sm font-medium text-slate-300">Tipo de escenario</label>
+                    <select asp-for="IdTipo" class="@claseCampo">
+                        <option value="0" class="bg-[#0d1422]">Selecciona un tipo</option>
+                        @if (ViewBag.Tipos != null)
+                        {
+                            foreach (var tipo in ViewBag.Tipos)
+                            {
+                                <option value="@tipo.IdTipo" class="bg-[#0d1422]">@tipo.Nombre</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="IdTipo" class="mt-1 block text-xs text-red-400"></span>
+                </div>
+
+                <div>
+                    <label asp-for="IdEmpresa" class="mb-2 block text-sm font-medium text-slate-300">Empresa / sede</label>
+                    <select asp-for="IdEmpresa" class="@claseCampo">
+                        <option value="0" class="bg-[#0d1422]">Selecciona una empresa</option>
+                        @if (ViewBag.Empresas != null)
+                        {
+                            foreach (var empresa in ViewBag.Empresas)
+                            {
+                                <option value="@empresa.IdEmpresa" class="bg-[#0d1422]">@empresa.Nombre</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="IdEmpresa" class="mt-1 block text-xs text-red-400"></span>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Descripcion" class="mb-2 block text-sm font-medium text-slate-300">Descripción</label>
+                <textarea asp-for="Descripcion" rows="4"
+                          class="w-full rounded-xl border border-slate-800 bg-[#0d1422] px-4 py-3 text-sm text-white placeholder:text-slate-500 transition focus:border-emerald-500/50 focus:outline-none"
+                          placeholder="Describe el escenario, ubicación, características, etc."></textarea>
+                <span asp-validation-for="Descripcion" class="mt-1 block text-xs text-red-400"></span>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label asp-for="Capacidad" class="mb-2 block text-sm font-medium text-slate-300">Cantidad de canchas</label>
+                    <input asp-for="Capacidad" type="number" min="1" class="@claseCampo" placeholder="Ej: 3" />
+                    <p class="mt-1 text-xs text-slate-500">Cuántas canchas o unidades tiene este escenario.</p>
+                    <span asp-validation-for="Capacidad" class="mt-1 block text-xs text-red-400"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Precio" class="mb-2 block text-sm font-medium text-slate-300">Precio por hora</label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
+                        <input id="Precio" name="Precio" type="number" step="0.01" min="0" class="@claseCampo pl-8" placeholder="Ej: 50000"
+                               value="@(Model.Precio?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" />
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">Valor que se cobra por cada hora reservada.</p>
+                    <span asp-validation-for="Precio" class="mt-1 block text-xs text-red-400"></span>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-[#0d1422] p-4">
+                <span>
+                    <span class="block text-sm font-semibold text-white">Escenario activo</span>
+                    <span class="block text-xs text-slate-500">Si lo desactivas, los clientes no podrán reservarlo.</span>
+                </span>
+                <span class="relative inline-flex shrink-0">
+                    <input type="checkbox" name="Estado" value="true" @(activo ? "checked" : "") class="peer sr-only" />
+                    <span class="h-6 w-11 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500"></span>
+                    <span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                </span>
+            </label>
+            <input type="hidden" name="Estado" value="false" />
+
+        </div>
+
+        <!-- Imagen y acciones -->
+        <div class="space-y-5">
+
+            <div class="rounded-2xl border border-slate-800 bg-[#101928] p-5">
+                <p class="mb-3 text-sm font-medium text-slate-300">Imagen de la cancha</p>
+
+                <div class="relative mb-4 h-48 overflow-hidden rounded-xl border border-slate-800 bg-[#0d1422]">
+                    <img id="previewImagen" src="@(tieneImagen ? Model.Imagen : "")" alt="@Model.Nombre"
+                         class="h-full w-full object-cover @(tieneImagen ? "" : "hidden")" />
+                    <div id="sinImagen" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 @(tieneImagen ? "hidden" : "")">
+                        <i data-lucide="image" class="h-8 w-8"></i>
+                        <span class="mt-2 text-xs">Sin imagen</span>
+                    </div>
+                </div>
+
+                <label for="imagenArchivo"
+                       class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-emerald-500/50 hover:text-emerald-400">
+                    <i data-lucide="upload" class="h-4 w-4"></i>
+                    <span id="textoArchivo">@(tieneImagen ? "Cambiar imagen" : "Subir imagen")</span>
+                </label>
+                <input type="file" name="imagenArchivo" id="imagenArchivo" accept="image/*" class="sr-only" />
+                <p class="mt-2 text-xs text-slate-500">JPG, JPEG, PNG o WEBP. Máximo 5 MB. Si no eliges una, se conserva la actual.</p>
+                <span class="mt-1 block text-xs text-red-400">@Html.ValidationMessage("ImagenArchivo")</span>
+            </div>
+
+            <div class="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-[#101928] p-5">
+                <button type="submit"
+                        class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-[#03150d] shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400">
+                    <i data-lucide="save" class="h-4 w-4"></i>
+                    Guardar cambios
+                </button>
+                <a asp-controller="Escenarios" asp-action="Index"
+                   class="inline-flex h-12 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-300 transition hover:text-white">
+                    Cancelar
+                </a>
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const input = document.getElementById('imagenArchivo');
+            const preview = document.getElementById('previewImagen');
+            const sinImagen = document.getElementById('sinImagen');
+            const texto = document.getElementById('textoArchivo');
+            const original = preview.getAttribute('src');
+
+            input?.addEventListener('change', function () {
+                const archivo = this.files[0];
+                if (!archivo || !archivo.type.startsWith('image/')) {
+                    this.value = '';
+                    if (original) { preview.src = original; preview.classList.remove('hidden'); sinImagen.classList.add('hidden'); }
+                    else { preview.classList.add('hidden'); sinImagen.classList.remove('hidden'); }
+                    texto.textContent = original ? 'Cambiar imagen' : 'Subir imagen';
+                    return;
+                }
+                const lector = new FileReader();
+                lector.onload = e => {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    sinImagen.classList.add('hidden');
+                };
+                lector.readAsDataURL(archivo);
+                texto.textContent = archivo.name;
+            });
+
+            if (window.lucide) lucide.createIcons();
+        })();
+    </script>
+
+}
