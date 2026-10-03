@@ -28,6 +28,8 @@
     var accionActual = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     var esPanel = controladorActual == "Cliente" && accionActual == "Index";
     var esContacto = controladorActual == "Contacto";
+    var esMisReservas = controladorActual == "Reservas" && accionActual == "Mias";
+    var urlMisReservas = Url.Action("Mias", "Reservas");
     var urlPanel = Url.Action("Index", "Cliente");
 
     string ClaseNav(bool activo) => activo
@@ -207,7 +209,7 @@
                         Escenarios
                     </a>
 
-                    <a href="@(urlPanel)#reservas" class="@ClaseNav(false)">
+                    <a href="@urlMisReservas" class="@ClaseNav(esMisReservas)">
                         Mis reservas
                     </a>
 
@@ -565,7 +567,7 @@
 
                                 <!-- MIS RESERVAS -->
 
-                                <a href="@(urlPanel)#reservas"
+                                <a href="@urlMisReservas"
                                    onclick="toggleClientMenu()"
                                    class="flex items-center gap-3
                                     w-full
@@ -715,7 +717,7 @@
             <nav class="md:hidden -mx-1 flex gap-2 overflow-x-auto px-1 pb-3 text-sm" aria-label="Principal (celular)">
                 <a href="@urlPanel" class="@ClaseNavMovil(esPanel)">Inicio</a>
                 <a href="@(urlPanel)#escenarios" class="@ClaseNavMovil(false)">Escenarios</a>
-                <a href="@(urlPanel)#reservas" class="@ClaseNavMovil(false)">Mis reservas</a>
+                <a href="@urlMisReservas" class="@ClaseNavMovil(esMisReservas)">Mis reservas</a>
                 <a href="@(urlPanel)#ayuda" class="@ClaseNavMovil(false)">Ayuda</a>
                 <a asp-controller="Contacto" asp-action="Index" class="@ClaseNavMovil(esContacto)">Contacto</a>
             </nav>

@@ -1,407 +1,313 @@
 ﻿@{
     ViewData["Title"] = "Crear cuenta";
+
+    // Pantalla completa (sin el encabezado ni el pie del sitio)
+    Layout = null;
+
+    // Si hay un error, se conserva lo que la persona ya escribió (menos las contraseñas).
+    // El correo también puede venir desde la casilla "Recibe novedades" de la página principal.
+    string Valor(string campo)
+    {
+        if (Context.Request.HasFormContentType) return Context.Request.Form[campo].ToString();
+        return Context.Request.Query[campo].ToString();
+    }
 }
 
-<div class="min-h-screen bg-[#0B0F19] flex items-center justify-center px-4 py-12">
+@functions {
+    // Campo con ícono, en el mismo estilo del login
+    Microsoft.AspNetCore.Html.IHtmlContent Campo(string id, string etiqueta, string icono, string tipo, string placeholder, string valor, string autocomplete, string extra = "")
+    {
+        var e = System.Text.Encodings.Web.HtmlEncoder.Default;
+        return new Microsoft.AspNetCore.Html.HtmlString($@"
+<label for=""{id}"" class=""flex items-center gap-4 rounded-2xl border border-slate-600/60 bg-white/[0.02] px-5 py-2.5 transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20"">
+    <i class=""bi {icono} text-xl text-slate-300""></i>
+    <span class=""min-w-0 flex-1"">
+        <span class=""block text-xs text-slate-400"">{etiqueta}</span>
+        <input type=""{tipo}"" id=""{id}"" name=""{id}"" value=""{e.Encode(valor)}"" placeholder=""{placeholder}"" required autocomplete=""{autocomplete}"" {extra}
+               class=""mt-0.5 w-full bg-transparent text-base text-white placeholder:text-slate-500 focus:outline-none"" />
+    </span>
+</label>");
+    }
+}
 
-    <div class="w-full max-w-2xl">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sportia</title>
 
-        <!-- TARJETA -->
-        <div class="bg-[#1F2937] border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+    <link rel="stylesheet" href="~/css/output.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-            <div class="p-6 sm:p-8 md:p-10">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-heading { font-family: 'Montserrat', sans-serif; }
+    </style>
+</head>
 
-                <!-- LOGO -->
-                <div class="text-center mb-8">
+<body class="min-h-screen bg-[#07101f] text-white antialiased">
 
-                    <div class="mx-auto w-16 h-16 flex items-center justify-center
-                        rounded-full bg-emerald-500/10
-                        border border-emerald-500/30 mb-4">
+    <div class="relative grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
 
-                        <!-- Icono con SVG para no depender de Bootstrap Icons -->
-                        <svg class="w-8 h-8 text-emerald-400"
-                             fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24">
+        <!-- =====================================================
+             PANEL IZQUIERDO: IMAGEN Y MENSAJE
+        ====================================================== -->
 
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3
-                            M15 7a3 3 0 11-6 0 3 3 0 016 0z
-                            M5 20a7 7 0 0114 0" />
+        <section class="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between">
 
-                        </svg>
+            <img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=1600&q=80"
+                 alt="Jugador pateando un balón en una cancha de fútbol"
+                 class="absolute inset-0 h-full w-full object-cover" />
 
+            <div class="absolute inset-0 bg-gradient-to-t from-[#07101f] via-[#07101f]/40 to-[#07101f]/30"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#07101f]"></div>
+
+            <!-- Logo -->
+            <a asp-controller="Home" asp-action="Index" class="relative z-10 m-10 flex w-fit items-center gap-4 xl:m-12">
+                <span class="font-heading flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-3xl font-black text-[#03150d] shadow-lg shadow-emerald-500/30">S</span>
+                <span>
+                    <span class="font-heading block text-3xl font-extrabold tracking-tight">SPORTIA</span>
+                    <span class="block text-sm text-slate-300">Reserva • Juega • Disfruta</span>
+                </span>
+            </a>
+
+            <!-- Mensaje -->
+            <div class="relative z-10 m-10 max-w-xl xl:m-12">
+                <h1 class="font-heading text-5xl font-black leading-[1.05] tracking-tight xl:text-6xl">
+                    Únete y<br />
+                    <span class="text-emerald-400">juega hoy</span>
+                </h1>
+                <p class="mt-5 max-w-md text-lg leading-7 text-slate-200">
+                    Crea tu cuenta gratis en menos de un minuto y reserva tu próxima cancha cuando quieras.
+                </p>
+
+                <div class="mt-8 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-calendar2-check"></i></span>
+                        <span class="text-sm text-slate-200">Reserva en minutos, sin llamadas</span>
                     </div>
-
-
-                    <h1 class="text-3xl font-extrabold text-white tracking-tight">
-                        Crear cuenta
-                    </h1>
-
-                    <p class="text-gray-400 mt-2">
-                        Regístrate en Sportia para reservar tus escenarios deportivos.
-                    </p>
-
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-clock-history"></i></span>
+                        <span class="text-sm text-slate-200">Consulta y cancela tus reservas cuando quieras</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-heart"></i></span>
+                        <span class="text-sm text-slate-200">Guarda tus canchas favoritas</span>
+                    </div>
                 </div>
-
-
-                <!-- ERROR -->
-                @if (ViewBag.Error != null)
-                {
-                    <div class="mb-6 p-4 rounded-lg
-                        bg-red-500/10 border border-red-500/30
-                        text-red-400 flex items-start gap-3">
-
-                        <svg class="w-5 h-5 mt-0.5 flex-shrink-0"
-                             fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24">
-
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M12 8v4m0 4h.01
-                            M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-
-                        </svg>
-
-                        <span>
-                            @ViewBag.Error
-                        </span>
-
-                    </div>
-                }
-
-
-                <!-- FORMULARIO -->
-                <form asp-controller="Login"
-                      asp-action="Register"
-                      method="post"
-                      class="space-y-5">
-
-
-                    <!-- NOMBRES Y APELLIDOS -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                        <!-- NOMBRES -->
-                        <div>
-
-                            <label for="nombres"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Nombres
-
-                            </label>
-
-                            <input type="text"
-                                   id="nombres"
-                                   name="nombres"
-                                   placeholder="Ingrese sus nombres"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-
-                        <!-- APELLIDOS -->
-                        <div>
-
-                            <label for="apellidos"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Apellidos
-
-                            </label>
-
-                            <input type="text"
-                                   id="apellidos"
-                                   name="apellidos"
-                                   placeholder="Ingrese sus apellidos"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- DOCUMENTO Y TELÉFONO -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                        <!-- DOCUMENTO -->
-                        <div>
-
-                            <label for="documento"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Documento
-
-                            </label>
-
-                            <input type="text"
-                                   id="documento"
-                                   name="documento"
-                                   placeholder="Ingrese su documento"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-
-                        <!-- TELÉFONO -->
-                        <div>
-
-                            <label for="telefono"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Teléfono
-
-                            </label>
-
-                            <input type="tel"
-                                   id="telefono"
-                                   name="telefono"
-                                   placeholder="Ingrese su teléfono"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- CORREO -->
-                    <div>
-
-                        <label for="correo"
-                               class="block text-sm font-semibold text-gray-200 mb-2">
-
-                            <span class="text-emerald-400">●</span>
-                            Correo electrónico
-
-                        </label>
-
-                        <input type="email"
-                               id="correo"
-                               name="correo"
-                               placeholder="Ingrese su correo electrónico"
-                               required
-                               class="w-full px-4 py-3
-                        bg-[#111827]
-                        border border-gray-700
-                        rounded-lg
-                        text-white
-                        placeholder-gray-500
-                        outline-none
-                        transition
-                        focus:border-emerald-500
-                        focus:ring-2
-                        focus:ring-emerald-500/20" />
-
-                    </div>
-
-
-                    <!-- CONTRASEÑAS -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                        <!-- CONTRASEÑA -->
-                        <div>
-
-                            <label for="contrasena"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Contraseña
-
-                            </label>
-
-                            <input type="password"
-                                   id="contrasena"
-                                   name="contrasena"
-                                   placeholder="Ingrese una contraseña"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-
-                        <!-- CONFIRMAR CONTRASEÑA -->
-                        <div>
-
-                            <label for="confirmarContrasena"
-                                   class="block text-sm font-semibold text-gray-200 mb-2">
-
-                                <span class="text-emerald-400">●</span>
-                                Confirmar contraseña
-
-                            </label>
-
-                            <input type="password"
-                                   id="confirmarContrasena"
-                                   name="confirmarContrasena"
-                                   placeholder="Repita la contraseña"
-                                   required
-                                   class="w-full px-4 py-3
-                            bg-[#111827]
-                            border border-gray-700
-                            rounded-lg
-                            text-white
-                            placeholder-gray-500
-                            outline-none
-                            transition
-                            focus:border-emerald-500
-                            focus:ring-2
-                            focus:ring-emerald-500/20" />
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- BOTÓN -->
-                    <div class="pt-3">
-
-                        <button type="submit"
-                                class="w-full py-3.5
-                            bg-emerald-500
-                            hover:bg-emerald-600
-                            text-white
-                            font-bold
-                            rounded-lg
-                            transition duration-200
-                            shadow-lg
-                            shadow-emerald-500/20
-                            hover:shadow-emerald-500/30
-                            focus:outline-none
-                            focus:ring-2
-                            focus:ring-emerald-500
-                            focus:ring-offset-2
-                            focus:ring-offset-[#1F2937]">
-
-                            Crear cuenta
-
-                        </button>
-
-                    </div>
-
-                </form>
-
-
-                <!-- SEPARADOR -->
-                <div class="flex items-center gap-4 my-7">
-
-                    <div class="flex-1 h-px bg-gray-700"></div>
-
-                    <span class="text-gray-500 text-sm">
-                        O
-                    </span>
-
-                    <div class="flex-1 h-px bg-gray-700"></div>
-
-                </div>
-
-
-                <!-- LOGIN -->
-                <div class="text-center">
-
-                    <span class="text-gray-400">
-                        ¿Ya tienes una cuenta?
-                    </span>
-
-                    <a asp-controller="Login"
-                       asp-action="Index"
-                       class="ml-1 text-emerald-400
-                        font-bold
-                        hover:text-emerald-300
-                        transition">
-
-                        Iniciar sesión
-
-                    </a>
-
-                </div>
-
-
-                <!-- VOLVER -->
-                <div class="text-center mt-5">
-
-                    <a asp-controller="Home"
-                       asp-action="Index"
-                       class="text-sm text-gray-500
-                        hover:text-emerald-400
-                        transition">
-
-                        ← Volver al inicio
-
-                    </a>
-
-                </div>
-
             </div>
 
-        </div>
+            <svg class="pointer-events-none absolute bottom-0 left-0 z-10 h-24 w-full text-emerald-400/60" viewBox="0 0 800 100" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                <path d="M0 40 C 250 60, 500 85, 800 100" stroke="currentColor" stroke-width="2" />
+            </svg>
+        </section>
 
-        <!-- TEXTO INFERIOR -->
-        <p class="text-center text-gray-600 text-xs mt-5">
-            © 2026 Sportia · Gestión deportiva inteligente
-        </p>
 
+        <!-- =====================================================
+             PANEL DERECHO: FORMULARIO
+        ====================================================== -->
+
+        <section class="relative flex items-center justify-center overflow-hidden px-5 py-10 sm:px-10">
+
+            <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl"></div>
+            <div class="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-sky-500/5 blur-3xl"></div>
+            <svg class="pointer-events-none absolute right-0 top-0 hidden h-40 w-40 text-emerald-400/20 sm:block" viewBox="0 0 160 160" fill="none" aria-hidden="true">
+                <path d="M60 0 L160 100 M100 0 L160 60 M140 0 L160 20" stroke="currentColor" stroke-width="10" />
+            </svg>
+
+            <div class="relative w-full max-w-[640px]">
+
+                <div class="rounded-3xl border border-sky-400/20 bg-[#0b1628]/90 p-7 shadow-2xl shadow-black/50 backdrop-blur sm:p-10">
+
+                    <!-- Logo -->
+                    <a asp-controller="Home" asp-action="Index" class="mx-auto flex w-fit items-center gap-4">
+                        <span class="font-heading flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-3xl font-black text-[#03150d] shadow-lg shadow-emerald-500/30">S</span>
+                        <span class="font-heading text-3xl font-black tracking-tight sm:text-4xl">SPORTIA</span>
+                    </a>
+
+                    <div class="mt-5 text-center">
+                        <h2 class="text-2xl font-bold">Crea tu cuenta</h2>
+                        <p class="mt-1 text-slate-400">Regístrate para reservar tus escenarios deportivos.</p>
+                    </div>
+
+                    <!-- Error -->
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="mt-6 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
+                            <i class="bi bi-exclamation-circle-fill mt-0.5"></i>
+                            <span>@ViewBag.Error</span>
+                        </div>
+                    }
+
+                    <form asp-controller="Login" asp-action="Register" method="post" id="formRegistro" class="mt-7 space-y-4" novalidate>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @Campo("nombres", "Nombres", "bi-person", "text", "Tus nombres", Valor("nombres"), "given-name")
+                            @Campo("apellidos", "Apellidos", "bi-person", "text", "Tus apellidos", Valor("apellidos"), "family-name")
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @Campo("documento", "Documento", "bi-person-vcard", "text", "Número de documento", Valor("documento"), "off", "inputmode=\"numeric\"")
+                            @Campo("telefono", "Teléfono", "bi-telephone", "tel", "Ej: 300 123 4567", Valor("telefono"), "tel")
+                        </div>
+
+                        @Campo("correo", "Correo electrónico", "bi-envelope", "email", "tucorreo@ejemplo.com", Valor("correo"), "email")
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <!-- Contraseña -->
+                            <div>
+                                <div class="flex items-center gap-4 rounded-2xl border border-slate-600/60 bg-white/[0.02] px-5 py-2.5 transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
+                                    <i class="bi bi-lock text-xl text-slate-300"></i>
+                                    <label for="contrasena" class="min-w-0 flex-1">
+                                        <span class="block text-xs text-slate-400">Contraseña</span>
+                                        <input type="password" id="contrasena" name="contrasena" placeholder="Mínimo 6 caracteres"
+                                               required minlength="6" autocomplete="new-password"
+                                               class="mt-0.5 w-full bg-transparent text-base text-white placeholder:text-slate-500 focus:outline-none" />
+                                    </label>
+                                    <button type="button" data-ver="contrasena" aria-label="Mostrar contraseña"
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-300 transition hover:bg-white/5 hover:text-white">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <!-- Fuerza de la contraseña -->
+                                <div class="mt-2 flex gap-1" aria-hidden="true">
+                                    <span class="barra-fuerza h-1 flex-1 rounded-full bg-slate-700"></span>
+                                    <span class="barra-fuerza h-1 flex-1 rounded-full bg-slate-700"></span>
+                                    <span class="barra-fuerza h-1 flex-1 rounded-full bg-slate-700"></span>
+                                    <span class="barra-fuerza h-1 flex-1 rounded-full bg-slate-700"></span>
+                                </div>
+                                <p id="textoFuerza" class="mt-1 text-xs text-slate-500">Usa letras y números.</p>
+                            </div>
+
+                            <!-- Confirmar -->
+                            <div>
+                                <div class="flex items-center gap-4 rounded-2xl border border-slate-600/60 bg-white/[0.02] px-5 py-2.5 transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
+                                    <i class="bi bi-shield-lock text-xl text-slate-300"></i>
+                                    <label for="confirmarContrasena" class="min-w-0 flex-1">
+                                        <span class="block text-xs text-slate-400">Confirmar contraseña</span>
+                                        <input type="password" id="confirmarContrasena" name="confirmarContrasena" placeholder="Repítela"
+                                               required autocomplete="new-password"
+                                               class="mt-0.5 w-full bg-transparent text-base text-white placeholder:text-slate-500 focus:outline-none" />
+                                    </label>
+                                    <button type="button" data-ver="confirmarContrasena" aria-label="Mostrar contraseña"
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-300 transition hover:bg-white/5 hover:text-white">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <p id="textoCoincide" class="mt-2 text-xs text-slate-500">&nbsp;</p>
+                            </div>
+                        </div>
+
+                        <!-- Errores del formulario (antes de enviar) -->
+                        <p id="errorFormulario" class="hidden rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert"></p>
+
+                        <button type="submit" id="btnCrear"
+                                class="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 text-lg font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:from-emerald-300 hover:to-emerald-400 disabled:translate-y-0 disabled:opacity-70">
+                            <i class="bi bi-person-plus text-xl"></i>
+                            <span id="textoCrear">Crear cuenta</span>
+                        </button>
+                    </form>
+
+                    <p class="mt-7 border-t border-slate-700/70 pt-7 text-center text-slate-300">
+                        ¿Ya tienes una cuenta?
+                        <a asp-controller="Login" asp-action="Index" class="ml-1 inline-flex items-center gap-1 font-semibold text-emerald-400 transition hover:text-emerald-300">
+                            Inicia sesión <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </p>
+                </div>
+
+                <a asp-controller="Home" asp-action="Index"
+                   class="mx-auto mt-6 flex w-fit items-center gap-2 text-sm text-slate-400 transition hover:text-emerald-400">
+                    <i class="bi bi-arrow-left"></i> Volver al inicio
+                </a>
+            </div>
+        </section>
     </div>
 
-</div>
+    <script>
+        (() => {
+            const form = document.getElementById('formRegistro');
+            const pass = document.getElementById('contrasena');
+            const conf = document.getElementById('confirmarContrasena');
+            const textoFuerza = document.getElementById('textoFuerza');
+            const textoCoincide = document.getElementById('textoCoincide');
+            const errorForm = document.getElementById('errorFormulario');
+            const barras = document.querySelectorAll('.barra-fuerza');
+
+            // Mostrar / ocultar contraseñas
+            document.querySelectorAll('[data-ver]').forEach(btn => btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.ver);
+                const ver = input.type === 'password';
+                input.type = ver ? 'text' : 'password';
+                btn.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                btn.querySelector('i').className = ver ? 'bi bi-eye-slash' : 'bi bi-eye';
+            }));
+
+            // Fuerza de la contraseña
+            const colores = ['bg-red-500', 'bg-amber-400', 'bg-lime-400', 'bg-emerald-400'];
+            const textos = ['Muy débil', 'Débil', 'Buena', 'Fuerte'];
+
+            function fuerza(v) {
+                let p = 0;
+                if (v.length >= 6) p++;
+                if (v.length >= 10) p++;
+                if (/[a-zA-Z]/.test(v) && /\d/.test(v)) p++;
+                if (/[^a-zA-Z0-9]/.test(v) || (/[a-z]/.test(v) && /[A-Z]/.test(v))) p++;
+                return v.length === 0 ? 0 : Math.max(1, p);
+            }
+
+            function pintarFuerza() {
+                const p = fuerza(pass.value);
+                barras.forEach((b, i) => {
+                    b.className = 'barra-fuerza h-1 flex-1 rounded-full ' + (i < p ? colores[p - 1] : 'bg-slate-700');
+                });
+                textoFuerza.textContent = p === 0 ? 'Usa letras y números.' : 'Seguridad: ' + textos[p - 1];
+                textoFuerza.className = 'mt-1 text-xs ' + (p >= 3 ? 'text-emerald-300' : p > 0 ? 'text-amber-300' : 'text-slate-500');
+            }
+
+            function pintarCoincide() {
+                if (!conf.value) { textoCoincide.innerHTML = '&nbsp;'; textoCoincide.className = 'mt-2 text-xs text-slate-500'; return; }
+                const ok = conf.value === pass.value;
+                textoCoincide.textContent = ok ? '✓ Las contraseñas coinciden' : 'Las contraseñas no coinciden';
+                textoCoincide.className = 'mt-2 text-xs ' + (ok ? 'text-emerald-300' : 'text-red-300');
+            }
+
+            pass.addEventListener('input', () => { pintarFuerza(); pintarCoincide(); });
+            form.addEventListener('input', () => errorForm.classList.add('hidden'));
+            conf.addEventListener('input', pintarCoincide);
+
+            // Validar antes de enviar
+            form.addEventListener('submit', e => {
+                const mensajes = [];
+                const vacios = [...form.querySelectorAll('input[required]')].filter(i => !i.value.trim());
+                if (vacios.length) mensajes.push('Completa todos los campos.');
+                const correo = document.getElementById('correo');
+                if (correo.value && !correo.checkValidity()) mensajes.push('Escribe un correo válido.');
+                if (pass.value && pass.value.length < 6) mensajes.push('La contraseña debe tener al menos 6 caracteres.');
+                if (conf.value && conf.value !== pass.value) mensajes.push('Las contraseñas no coinciden.');
+
+                if (mensajes.length) {
+                    e.preventDefault();
+                    errorForm.textContent = mensajes.join(' ');
+                    errorForm.classList.remove('hidden');
+                    (vacios[0] || (pass.value.length < 6 ? pass : conf)).focus();
+                    return;
+                }
+
+                errorForm.classList.add('hidden');
+                document.getElementById('btnCrear').disabled = true;
+                document.getElementById('textoCrear').textContent = 'Creando tu cuenta...';
+            });
+
+            // Enfocar el primer campo vacío
+            const primerVacio = [...form.querySelectorAll('input')].find(i => !i.value);
+            if (primerVacio) primerVacio.focus();
+        })();
+    </script>
+
+</body>
+</html>

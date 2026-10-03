@@ -68,6 +68,12 @@ namespace Sportia.Controllers
             {
                 cliente.FechaRegistro ??= DateTime.Now;
 
+                // La contraseña se guarda encriptada (antes quedaba en texto plano)
+                if (!string.IsNullOrWhiteSpace(cliente.Password))
+                {
+                    cliente.Password = Sportia.Helpers.SeguridadPassword.Hash(cliente.Password);
+                }
+
                 _context.Clientes.Add(cliente);
 
                 await _context.SaveChangesAsync();

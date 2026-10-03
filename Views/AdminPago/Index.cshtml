@@ -5,7 +5,12 @@
     Layout = "_DashboardLayout";
 
     var totalPagos = Model.Sum(p => p.MontoPagado);
+    // Las reservas canceladas no cuentan como dinero pendiente
+    bool Cancelada(Sportia.Models.Pago p) =>
+        (p.IdReservaNavigation?.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("cancel");
+
     var totalPendiente = Model
+        .Where(p => !Cancelada(p))
         .GroupBy(p => p.IdReserva)
         .Sum(g => g.OrderByDescending(p => p.IdPago)
         .First().SaldoPendiente);
@@ -41,6 +46,13 @@
     {
         <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-400">
             @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+            @TempData["Error"]
         </div>
     }
 
@@ -212,7 +224,13 @@
 
                                 <td class="px-6 py-4">
 
-                                    @if (pago.SaldoPendiente <= 0)
+                                    @if (Cancelada(pago))
+                                    {
+                                        <span class="rounded-lg bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
+                                            Reserva cancelada
+                                        </span>
+                                    }
+                                    else if (pago.SaldoPendiente <= 0)
                                     {
                                         <span class="rounded-lg bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
                                             Pagado
@@ -238,6 +256,23 @@
 
                                 <td class="px-6 py-4 text-right">
 
+                                    <div class="flex items-center justify-end gap-2">
+
+                                    @if (pago.SaldoPendiente > 0 && !Cancelada(pago))
+                                    {
+                                        <form asp-action="ConfirmarPago" asp-route-id="@pago.IdPago" method="post" class="form-confirmar-pago">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    data-reserva="@pago.IdReservaNavigation?.Codigo"
+                                                    data-saldo="@pago.SaldoPendiente.ToString("N0")"
+                                                    title="Marcar como pagado cuando recibas el efectivo o la transferencia"
+                                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-slate-950 transition hover:bg-emerald-400">
+                                                <i data-lucide="check" class="h-3.5 w-3.5"></i>
+                                                Confirmar pago
+                                            </button>
+                                        </form>
+                                    }
+
                                     <a asp-action="Details"
                                        asp-route-id="@pago.IdPago"
                                        class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
@@ -245,6 +280,8 @@
                                         Ver
 
                                     </a>
+
+                                    </div>
 
                                 </td>
 
@@ -274,3 +311,30 @@
     </div>
 
 </div>
+
+
+@section Scripts {
+    <script>
+        // "Confirmar pago" pide un segundo clic para evitar errores
+        document.querySelectorAll('.form-confirmar-pago').forEach(form => {
+            const boton = form.querySelector('button[type=submit]');
+            const textoOriginal = boton.innerHTML;
+            let listo = false, temporizador = null;
+
+            form.addEventListener('submit', e => {
+                if (listo) { boton.disabled = true; return; }
+                e.preventDefault();
+                listo = true;
+                boton.textContent = '¿Recibiste $' + boton.dataset.saldo + '? Clic de nuevo';
+                boton.classList.add('ring-2', 'ring-emerald-300');
+                clearTimeout(temporizador);
+                temporizador = setTimeout(() => {
+                    listo = false;
+                    boton.innerHTML = textoOriginal;
+                    boton.classList.remove('ring-2', 'ring-emerald-300');
+                    if (window.lucide) lucide.createIcons();
+                }, 5000);
+            });
+        });
+    </script>
+}

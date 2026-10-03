@@ -19,11 +19,18 @@ namespace Sportia.Controllers
         // =====================================================
         public async Task<IActionResult> Index(string? buscar)
         {
+            if (!EsAdmin())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             IQueryable<Pago> pagos = _context.Pagos
                 .Include(p => p.IdReservaNavigation)
                     .ThenInclude(r => r.IdClienteNavigation)
                 .Include(p => p.IdReservaNavigation)
                     .ThenInclude(r => r.IdEscenarioNavigation)
+                .Include(p => p.IdReservaNavigation)
+                    .ThenInclude(r => r.IdEstadoNavigation)
                 .Include(p => p.IdMetodoNavigation);
 
             if (!string.IsNullOrWhiteSpace(buscar))
@@ -53,6 +60,11 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
+            if (!EsAdmin())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             await CargarReservas();
             await CargarMetodosPago();
 
@@ -67,6 +79,11 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Pago pago)
         {
+            if (!EsAdmin())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             // No validar propiedades de navegación
             ModelState.Remove(nameof(Pago.IdReservaNavigation));
             ModelState.Remove(nameof(Pago.IdMetodoNavigation));
@@ -193,6 +210,11 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int? id)
         {
+            if (!EsAdmin())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
             if (id == null)
             {
                 return NotFound();
@@ -200,6 +222,8 @@ namespace Sportia.Controllers
 
             var pago = await _context.Pagos
                 .Include(p => p.IdMetodoNavigation)
+                .Include(p => p.IdReservaNavigation)
+                    .ThenInclude(r => r.IdEstadoNavigation)
                 .Include(p => p.IdReservaNavigation)
                     .ThenInclude(r => r.IdClienteNavigation)
                 .Include(p => p.IdReservaNavigation)
@@ -213,6 +237,100 @@ namespace Sportia.Controllers
 
             return View(pago);
         }
+
+
+        // =====================================================
+        // CONFIRMAR PAGO (efectivo / transferencia recibidos)
+        // Deja el saldo en $0 y la reserva como "Confirmada".
+        // =====================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmarPago(int id, string? volverA)
+        {
+            if (!EsAdmin())
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var pago = await _context.Pagos
+                .Include(p => p.IdReservaNavigation)
+                    .ThenInclude(r => r.IdEstadoNavigation)
+                .FirstOrDefaultAsync(p => p.IdPago == id);
+
+            if (pago == null)
+            {
+                return NotFound();
+            }
+
+            var reserva = pago.IdReservaNavigation;
+
+            if ((reserva.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("cancel"))
+            {
+                TempData["Error"] = $"La reserva {reserva.Codigo} está cancelada; no se puede confirmar su pago.";
+                return VolverDespuesDeConfirmar(volverA, id);
+            }
+
+            var pagosReserva = await _context.Pagos
+                .Where(p => p.IdReserva == reserva.IdReserva)
+                .ToListAsync();
+
+            decimal faltante = reserva.ValorTotal - pagosReserva.Sum(p => p.MontoPagado);
+
+            if (faltante <= 0 && pago.SaldoPendiente <= 0)
+            {
+                TempData["Error"] = $"El pago de la reserva {reserva.Codigo} ya estaba completo.";
+                return VolverDespuesDeConfirmar(volverA, id);
+            }
+
+            if (faltante > 0)
+            {
+                pago.MontoPagado += faltante;
+            }
+
+            // La reserva queda sin saldo pendiente
+            foreach (var p in pagosReserva)
+            {
+                p.SaldoPendiente = 0;
+            }
+
+            pago.FechaPago = DateTime.Now;
+
+            string nota = $"Pago recibido y confirmado por el administrador el {DateTime.Now:dd/MM/yyyy HH:mm}.";
+            pago.Comprobante = string.IsNullOrWhiteSpace(pago.Comprobante) || pago.Comprobante.Contains("pendiente")
+                ? nota
+                : (pago.Comprobante + " · " + nota);
+
+            if (pago.Comprobante.Length > 255)
+            {
+                pago.Comprobante = pago.Comprobante[..255];
+            }
+
+            var estadoConfirmada = await _context.EstadosReservas
+                .FirstOrDefaultAsync(e => e.Nombre.ToLower().Contains("confirm"));
+
+            if (estadoConfirmada != null && (reserva.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("pend"))
+            {
+                reserva.IdEstado = estadoConfirmada.IdEstado;
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Pago de la reserva {reserva.Codigo} confirmado. La reserva quedó pagada.";
+            return VolverDespuesDeConfirmar(volverA, id);
+        }
+
+        private IActionResult VolverDespuesDeConfirmar(string? volverA, int id) =>
+            volverA == "detalle"
+                ? RedirectToAction(nameof(Details), new { id })
+                : RedirectToAction(nameof(Index));
+
+
+        // =====================================================
+        // SOLO ADMINISTRADORES
+        // =====================================================
+        private bool EsAdmin() =>
+            HttpContext.Session.GetInt32("IdUsuario") != null &&
+            HttpContext.Session.GetInt32("IdRol") == 1;
 
 
         // =====================================================

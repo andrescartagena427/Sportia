@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sportia.Helpers;
 using Sportia.Models;
+using Sportia.Models.ViewModels;
 
 namespace Sportia.Controllers
 {
@@ -175,7 +177,8 @@ namespace Sportia.Controllers
                     r.IdEscenario == reserva.IdEscenario &&
                     r.FechaUso == reserva.FechaUso &&
                     r.HoraInicio < reserva.HoraFin &&
-                    r.HoraFin > reserva.HoraInicio);
+                    r.HoraFin > reserva.HoraInicio &&
+                    !r.IdEstadoNavigation.Nombre.ToLower().Contains("cancel"));
 
                 if (horarioOcupado)
                 {
@@ -257,7 +260,8 @@ namespace Sportia.Controllers
                 r.IdEscenario == idEscenario &&
                 r.FechaUso == fecha &&
                 r.HoraInicio < horaFin &&
-                r.HoraFin > horaInicio);
+                r.HoraFin > horaInicio &&
+                !r.IdEstadoNavigation.Nombre.ToLower().Contains("cancel"));
 
             if (ocupado)
             {
@@ -302,20 +306,9 @@ namespace Sportia.Controllers
             }
 
             // ---------------------------------------------------
-            // Ubicar al cliente logueado (mismo esquema que ClienteController)
+            // Ubicar al cliente logueado (ver Helpers/ClienteActual.cs)
             // ---------------------------------------------------
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(c => c.IdCliente == idUsuario.Value);
-
-            if (cliente == null)
-            {
-                var correoUsuario = HttpContext.Session.GetString("CorreoUsuario");
-                if (!string.IsNullOrWhiteSpace(correoUsuario))
-                {
-                    cliente = await _context.Clientes
-                        .FirstOrDefaultAsync(c => c.Correo == correoUsuario);
-                }
-            }
+            var cliente = ClienteActual.Obtener(_context, idUsuario.Value);
 
             if (cliente == null)
             {
@@ -365,7 +358,8 @@ namespace Sportia.Controllers
                 r.IdEscenario == IdEscenario &&
                 r.FechaUso == FechaUso &&
                 r.HoraInicio < HoraFin &&
-                r.HoraFin > HoraInicio);
+                r.HoraFin > HoraInicio &&
+                !r.IdEstadoNavigation.Nombre.ToLower().Contains("cancel"));
 
             if (ocupado)
             {
@@ -429,6 +423,180 @@ namespace Sportia.Controllers
 
             return RedirectToAction("Index", "Cliente");
         }
+
+
+        // =====================================================
+        // MIS RESERVAS (CLIENTE)
+        // =====================================================
+
+        // Horas mínimas de anticipación para que el cliente pueda cancelar
+        private const int HorasMinimasParaCancelar = 2;
+
+        [HttpGet]
+        public async Task<IActionResult> Mias(int? nueva)
+        {
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (idUsuario == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (idRol != 2)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var cliente = ClienteActual.Obtener(_context, idUsuario.Value);
+
+            var vm = new MisReservasViewModel
+            {
+                IdReservaNueva = nueva,
+                HorasMinimasParaCancelar = HorasMinimasParaCancelar
+            };
+
+            if (cliente == null)
+            {
+                return View(vm);
+            }
+
+            var reservas = await _context.Reservas
+                .AsNoTracking()
+                .Include(r => r.IdEscenarioNavigation).ThenInclude(e => e.IdTipoNavigation)
+                .Include(r => r.IdEscenarioNavigation).ThenInclude(e => e.IdEmpresaNavigation)
+                .Include(r => r.IdEstadoNavigation)
+                .Include(r => r.Pagos).ThenInclude(p => p.IdMetodoNavigation)
+                .Where(r => r.IdCliente == cliente.IdCliente)
+                .ToListAsync();
+
+            var ahora = DateTime.Now;
+
+            foreach (var r in reservas)
+            {
+                var inicio = r.FechaUso.ToDateTime(r.HoraInicio);
+                var fin = r.FechaUso.ToDateTime(r.HoraFin);
+                string estado = r.IdEstadoNavigation?.Nombre ?? "Pendiente";
+                bool cancelada = EsCancelada(estado);
+
+                decimal pagado = r.Pagos.Sum(p => p.MontoPagado);
+                decimal saldo = r.Pagos.Any() ? r.Pagos.Sum(p => p.SaldoPendiente) : r.ValorTotal;
+
+                var item = new MiReservaViewModel
+                {
+                    IdReserva = r.IdReserva,
+                    Codigo = r.Codigo,
+                    IdEscenario = r.IdEscenario,
+                    Escenario = r.IdEscenarioNavigation?.Nombre ?? "Escenario",
+                    Tipo = r.IdEscenarioNavigation?.IdTipoNavigation?.Nombre ?? "",
+                    Ubicacion = r.IdEscenarioNavigation?.IdEmpresaNavigation?.Direccion
+                        ?? r.IdEscenarioNavigation?.IdEmpresaNavigation?.Nombre ?? "",
+                    Imagen = r.IdEscenarioNavigation?.Imagen,
+                    FechaUso = r.FechaUso,
+                    HoraInicio = r.HoraInicio,
+                    HoraFin = r.HoraFin,
+                    Estado = estado,
+                    Cancelada = cancelada,
+                    ValorTotal = r.ValorTotal,
+                    Pagado = pagado,
+                    Saldo = saldo,
+                    MetodoPago = r.Pagos.Select(p => p.IdMetodoNavigation?.Nombre).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)),
+                    Observaciones = r.Observaciones,
+                    PuedeCancelar = !cancelada && inicio > ahora.AddHours(HorasMinimasParaCancelar)
+                };
+
+                if (cancelada)
+                {
+                    vm.Canceladas.Add(item);
+                }
+                else if (fin >= ahora)
+                {
+                    vm.Proximas.Add(item);
+                }
+                else
+                {
+                    vm.Pasadas.Add(item);
+                }
+            }
+
+            vm.Proximas = vm.Proximas.OrderBy(x => x.FechaUso).ThenBy(x => x.HoraInicio).ToList();
+            vm.Pasadas = vm.Pasadas.OrderByDescending(x => x.FechaUso).ThenByDescending(x => x.HoraInicio).ToList();
+            vm.Canceladas = vm.Canceladas.OrderByDescending(x => x.FechaUso).ThenByDescending(x => x.HoraInicio).ToList();
+            vm.TotalInvertido = vm.Proximas.Concat(vm.Pasadas).Sum(x => x.ValorTotal);
+
+            return View(vm);
+        }
+
+
+        // =====================================================
+        // CANCELAR UNA RESERVA PROPIA (CLIENTE)
+        // =====================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelarMia(int id)
+        {
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (idUsuario == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (idRol != 2)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var cliente = ClienteActual.Obtener(_context, idUsuario.Value);
+
+            var reserva = cliente == null
+                ? null
+                : await _context.Reservas
+                    .Include(r => r.IdEstadoNavigation)
+                    .FirstOrDefaultAsync(r => r.IdReserva == id && r.IdCliente == cliente.IdCliente);
+
+            // Solo puede cancelar sus propias reservas
+            if (reserva == null)
+            {
+                TempData["ErrorReserva"] = "No encontramos esa reserva en tu cuenta.";
+                return RedirectToAction(nameof(Mias));
+            }
+
+            if (EsCancelada(reserva.IdEstadoNavigation?.Nombre))
+            {
+                TempData["ErrorReserva"] = $"La reserva {reserva.Codigo} ya estaba cancelada.";
+                return RedirectToAction(nameof(Mias));
+            }
+
+            var inicio = reserva.FechaUso.ToDateTime(reserva.HoraInicio);
+
+            if (inicio <= DateTime.Now.AddHours(HorasMinimasParaCancelar))
+            {
+                TempData["ErrorReserva"] =
+                    $"Solo puedes cancelar con al menos {HorasMinimasParaCancelar} horas de anticipación. Comunícate con nosotros desde Contacto.";
+                return RedirectToAction(nameof(Mias));
+            }
+
+            var estadoCancelada = await _context.EstadosReservas
+                .FirstOrDefaultAsync(e => e.Nombre.ToLower().Contains("cancel"));
+
+            if (estadoCancelada == null)
+            {
+                TempData["ErrorReserva"] = "No hay un estado \"Cancelada\" configurado. Pide al administrador que lo cree.";
+                return RedirectToAction(nameof(Mias));
+            }
+
+            reserva.IdEstado = estadoCancelada.IdEstado;
+            await _context.SaveChangesAsync();
+
+            TempData["MensajeReserva"] = $"Cancelaste la reserva {reserva.Codigo}. El horario quedó libre para otras personas.";
+            return RedirectToAction(nameof(Mias));
+        }
+
+        private static bool EsCancelada(string? estado) =>
+            (estado ?? "").ToLower().Contains("cancel");
 
 
         // =====================================================

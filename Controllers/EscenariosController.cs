@@ -8,13 +8,16 @@ namespace Sportia.Controllers
     {
         private readonly SportiaDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<EscenariosController> _logger;
 
         public EscenariosController(
             SportiaDbContext context,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            ILogger<EscenariosController> logger)
         {
             _context = context;
             _environment = environment;
+            _logger = logger;
         }
 
         // =====================================================
@@ -110,7 +113,6 @@ namespace Sportia.Controllers
             Escenario escenario,
             IFormFile? ImagenArchivo)
         {
-            Console.WriteLine("RASTREO 0: entrando al POST Create().");
 
             if (!ValidarSesion())
             {
@@ -118,17 +120,6 @@ namespace Sportia.Controllers
             }
 
             ModelState.Clear();
-
-            Console.WriteLine("RASTREO A: datos recibidos. Nombre=" + escenario.Nombre + " Precio=" + escenario.Precio);
-
-            if (ImagenArchivo != null)
-            {
-                Console.WriteLine("RASTREO A2: imagen recibida, tamaño=" + ImagenArchivo.Length + " nombre=" + ImagenArchivo.FileName);
-            }
-            else
-            {
-                Console.WriteLine("RASTREO A2: sin imagen.");
-            }
 
             // =================================================
             // VALIDACIONES
@@ -182,12 +173,10 @@ namespace Sportia.Controllers
 
             if (!ModelState.IsValid)
             {
-                Console.WriteLine("RASTREO B: ModelState inválido.");
                 await CargarDatosFormulario();
                 return View(escenario);
             }
 
-            Console.WriteLine("RASTREO C: ModelState válido. Entrando a guardar.");
 
             string? imagenGuardada = null;
 
@@ -197,9 +186,7 @@ namespace Sportia.Controllers
 
                 if (ImagenArchivo != null && ImagenArchivo.Length > 0)
                 {
-                    Console.WriteLine("RASTREO D: llamando a GuardarImagenSincrono()...");
                     imagenGuardada = GuardarImagenSincrono(ImagenArchivo);
-                    Console.WriteLine("RASTREO E: GuardarImagenSincrono() retornó = " + imagenGuardada);
                     escenario.Imagen = imagenGuardada;
                 }
                 else
@@ -207,17 +194,14 @@ namespace Sportia.Controllers
                     escenario.Imagen = null;
                 }
 
-                Console.WriteLine("RASTREO F: agregando a EF y llamando SaveChangesAsync()...");
 
                 _context.Escenarios.Add(escenario);
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine("RASTREO G: SaveChangesAsync() terminó OK. Id=" + escenario.IdEscenario);
             }
             catch (DbUpdateException ex)
             {
-                Console.WriteLine("RASTREO ERROR (DbUpdateException): " + ex.Message);
-                Console.WriteLine("INNER: " + (ex.InnerException?.Message ?? "sin inner"));
+                _logger.LogError(ex, "No se pudo guardar el escenario {Nombre}.", escenario.Nombre);
 
                 if (!string.IsNullOrWhiteSpace(imagenGuardada))
                 {
@@ -230,9 +214,7 @@ namespace Sportia.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("RASTREO ERROR (Exception): " + ex.GetType().FullName);
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                _logger.LogError(ex, "Error inesperado al guardar el escenario {Nombre}.", escenario.Nombre);
 
                 if (!string.IsNullOrWhiteSpace(imagenGuardada))
                 {
@@ -244,7 +226,6 @@ namespace Sportia.Controllers
                 return View(escenario);
             }
 
-            Console.WriteLine("RASTREO H: éxito total, redirigiendo a Index.");
 
             TempData["MensajeEscenario"] = $"El escenario {escenario.Nombre} fue creado correctamente.";
             return RedirectToAction(nameof(Index));
@@ -477,25 +458,18 @@ namespace Sportia.Controllers
 
         private string GuardarImagenSincrono(IFormFile archivo)
         {
-            Console.WriteLine("RASTREO IMG-1: entrando. Tamaño=" + archivo.Length);
 
             string carpeta = Path.Combine(_environment.WebRootPath, "uploads", "escenarios");
 
-            Console.WriteLine("RASTREO IMG-2: carpeta=" + carpeta);
 
             if (!Directory.Exists(carpeta))
             {
                 Directory.CreateDirectory(carpeta);
-                Console.WriteLine("RASTREO IMG-3: carpeta creada.");
             }
 
             string extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
             string nombreArchivo = $"{Guid.NewGuid()}{extension}";
             string rutaCompleta = Path.Combine(carpeta, nombreArchivo);
-
-            Console.WriteLine("RASTREO IMG-4: rutaCompleta=" + rutaCompleta);
-
-            Console.WriteLine("RASTREO IMG-5: leyendo archivo a memoria...");
 
             byte[] bytes;
             using (var memoryStream = new MemoryStream())
@@ -504,11 +478,9 @@ namespace Sportia.Controllers
                 bytes = memoryStream.ToArray();
             }
 
-            Console.WriteLine("RASTREO IMG-6: leído en memoria, " + bytes.Length + " bytes. Escribiendo a disco...");
 
             System.IO.File.WriteAllBytes(rutaCompleta, bytes);
 
-            Console.WriteLine("RASTREO IMG-7: archivo escrito en disco correctamente.");
 
             return $"/uploads/escenarios/{nombreArchivo}";
         }

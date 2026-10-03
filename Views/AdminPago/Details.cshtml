@@ -22,6 +22,39 @@
 
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-400">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (Model.SaldoPendiente > 0 && !(Model.IdReservaNavigation?.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("cancel"))
+    {
+        <div class="flex flex-col gap-4 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="font-semibold text-orange-300">Este pago está pendiente: faltan $@Model.SaldoPendiente.ToString("N0")</p>
+                <p class="mt-1 text-sm text-slate-400">Cuando recibas el efectivo o verifiques la transferencia, confírmalo aquí.</p>
+            </div>
+            <form asp-action="ConfirmarPago" asp-route-id="@Model.IdPago" method="post" class="form-confirmar-pago shrink-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="volverA" value="detalle" />
+                <button type="submit" data-saldo="@Model.SaldoPendiente.ToString("N0")"
+                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+                    <i data-lucide="check" class="h-4 w-4"></i>
+                    Confirmar pago
+                </button>
+            </form>
+        </div>
+    }
+
 
     <div class="grid gap-6 md:grid-cols-2">
 
@@ -170,3 +203,30 @@
     }
 
 </div>
+
+
+@section Scripts {
+    <script>
+        // "Confirmar pago" pide un segundo clic para evitar errores
+        document.querySelectorAll('.form-confirmar-pago').forEach(form => {
+            const boton = form.querySelector('button[type=submit]');
+            const textoOriginal = boton.innerHTML;
+            let listo = false, temporizador = null;
+
+            form.addEventListener('submit', e => {
+                if (listo) { boton.disabled = true; return; }
+                e.preventDefault();
+                listo = true;
+                boton.textContent = '¿Recibiste $' + boton.dataset.saldo + '? Clic de nuevo';
+                boton.classList.add('ring-2', 'ring-emerald-300');
+                clearTimeout(temporizador);
+                temporizador = setTimeout(() => {
+                    listo = false;
+                    boton.innerHTML = textoOriginal;
+                    boton.classList.remove('ring-2', 'ring-emerald-300');
+                    if (window.lucide) lucide.createIcons();
+                }, 5000);
+            });
+        });
+    </script>
+}

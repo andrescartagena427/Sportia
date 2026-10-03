@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sportia.Helpers;
 using Sportia.Models;
 
 namespace Sportia.Controllers
@@ -7,10 +8,14 @@ namespace Sportia.Controllers
     public class ClienteController : Controller
     {
         private readonly SportiaDbContext _context;
+        private readonly IConfiguration _config;
+        private readonly ILogger<ClienteController> _logger;
 
-        public ClienteController(SportiaDbContext context)
+        public ClienteController(SportiaDbContext context, IConfiguration config, ILogger<ClienteController> logger)
         {
             _context = context;
+            _config = config;
+            _logger = logger;
         }
 
         // =========================================================
@@ -33,11 +38,18 @@ namespace Sportia.Controllers
             }
 
             var cliente = ObtenerClienteLogueado(idUsuario.Value);
-            var reservasCliente = cliente?.Reservas.ToList() ?? new List<Reserva>();
+            var reservasCliente = cliente == null
+                ? new List<Reserva>()
+                : _context.Reservas
+                    .Include(r => r.IdEstadoNavigation)
+                    .Where(r => r.IdCliente == cliente.IdCliente)
+                    .ToList();
             var hoy = DateOnly.FromDateTime(DateTime.Now);
 
             ViewBag.TotalReservas = reservasCliente.Count;
-            ViewBag.ReservasProximas = reservasCliente.Count(r => r.FechaUso >= hoy);
+            ViewBag.ReservasProximas = reservasCliente.Count(r =>
+                r.FechaUso >= hoy &&
+                !(r.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("cancel"));
 
             var escenarios = _context.Escenarios
                 .Include(e => e.IdTipoNavigation)
@@ -265,11 +277,13 @@ namespace Sportia.Controllers
             // ---------------------------------------------------
             // VERIFICAR QUE EL HORARIO NO ESTÉ OCUPADO
             // ---------------------------------------------------
+            // (las reservas canceladas ya no ocupan el horario)
             bool ocupado = await _context.Reservas.AnyAsync(r =>
                 r.IdEscenario == vm.IdEscenario &&
                 r.FechaUso == vm.FechaUso &&
                 r.HoraInicio < vm.HoraFin &&
-                r.HoraFin > vm.HoraInicio);
+                r.HoraFin > vm.HoraInicio &&
+                !r.IdEstadoNavigation.Nombre.ToLower().Contains("cancel"));
 
             if (ocupado)
             {
@@ -309,13 +323,34 @@ namespace Sportia.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // ---------------------------------------------------
+            // PAGO CON TARJETA: queda pagado y la reserva confirmada.
+            // Efectivo / transferencia: queda pendiente hasta que el
+            // administrador confirme el pago (AdminPago > Confirmar pago).
+            // ---------------------------------------------------
+            bool pagadoConTarjeta = metodoSeleccionado != null &&
+                ClasificarMetodo(metodoSeleccionado.Nombre) == "tarjeta";
+
+            var estadoInicial = estadoPendiente;
+
+            if (pagadoConTarjeta)
+            {
+                var estadoConfirmada = await _context.EstadosReservas
+                    .FirstOrDefaultAsync(e => e.Nombre.ToLower().Contains("confirm"));
+
+                if (estadoConfirmada != null)
+                {
+                    estadoInicial = estadoConfirmada;
+                }
+            }
+
             var reserva = new Reserva
             {
                 Codigo = "RES-" + DateTime.Now.ToString("yyyyMMddHHmmssfff"),
                 IdEscenario = vm.IdEscenario,
                 IdCliente = cliente.IdCliente,
                 IdUsuario = idUsuario.Value,
-                IdEstado = estadoPendiente.IdEstado,
+                IdEstado = estadoInicial.IdEstado,
                 FechaUso = vm.FechaUso,
                 HoraInicio = vm.HoraInicio,
                 HoraFin = vm.HoraFin,
@@ -330,23 +365,27 @@ namespace Sportia.Controllers
                 await _context.SaveChangesAsync();
 
                 // -----------------------------------------------
-                // CREAR EL PAGO ASOCIADO (queda pendiente por cobrar)
+                // CREAR EL PAGO ASOCIADO
+                // (tarjeta = pagado; efectivo/transferencia = pendiente)
                 // -----------------------------------------------
                 var pago = new Pago
                 {
                     IdReserva = reserva.IdReserva,
                     IdMetodo = vm.IdMetodoPago,
-                    MontoPagado = 0,
-                    SaldoPendiente = total,
-                    FechaPago = null,
+                    MontoPagado = pagadoConTarjeta ? total : 0,
+                    SaldoPendiente = pagadoConTarjeta ? 0 : total,
+                    FechaPago = DateTime.Now,
                     Comprobante = comprobante
                 };
 
                 _context.Pagos.Add(pago);
                 await _context.SaveChangesAsync();
 
-                TempData["MensajeReserva"] =
-                    $"¡Reserva creada! Código {reserva.Codigo} · Total: ${total:N0}. Queda pendiente de pago/confirmación.";
+                string totalTexto = total.ToString("N0", new System.Globalization.CultureInfo("es-CO"));
+
+                TempData["MensajeReserva"] = pagadoConTarjeta
+                    ? $"¡Pago aprobado! Tu reserva {reserva.Codigo} quedó confirmada · Total pagado: ${totalTexto}."
+                    : $"¡Reserva creada! Código {reserva.Codigo} · Total: ${totalTexto}. Queda pendiente hasta que se confirme tu pago.";
             }
             catch (DbUpdateException ex)
             {
@@ -359,7 +398,18 @@ namespace Sportia.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction(nameof(Index));
+            // ---------------------------------------------------
+            // CORREO DE CONFIRMACIÓN (si falla, la reserva sigue)
+            // ---------------------------------------------------
+            bool correoEnviado = await CorreoReserva.EnviarConfirmacionAsync(
+                _config, _logger, reserva, cliente, escenario.Nombre, metodoSeleccionado?.Nombre ?? "", pagadoConTarjeta);
+
+            if (correoEnviado)
+            {
+                TempData["MensajeReserva"] += $" Te enviamos la confirmación a {cliente.Correo}.";
+            }
+
+            return RedirectToAction("Mias", "Reservas", new { nueva = reserva.IdReserva });
         }
 
         // Clasifica el método de pago según su nombre, igual que en la vista,
@@ -401,24 +451,11 @@ namespace Sportia.Controllers
         // HELPERS PRIVADOS
         // =========================================================
 
+        // Busca el cliente por el correo/documento del usuario
+        // (ver Helpers/ClienteActual.cs)
         private Cliente? ObtenerClienteLogueado(int idUsuario)
         {
-            var cliente = _context.Clientes
-                .Include(c => c.Reservas)
-                .FirstOrDefault(c => c.IdCliente == idUsuario);
-
-            if (cliente == null)
-            {
-                var correoUsuario = HttpContext.Session.GetString("CorreoUsuario");
-                if (!string.IsNullOrWhiteSpace(correoUsuario))
-                {
-                    cliente = _context.Clientes
-                        .Include(c => c.Reservas)
-                        .FirstOrDefault(c => c.Correo == correoUsuario);
-                }
-            }
-
-            return cliente;
+            return ClienteActual.Obtener(_context, idUsuario, incluirReservas: true);
         }
 
         // Calcula precio/hora y total usando el precio fijo del escenario
@@ -446,11 +483,13 @@ namespace Sportia.Controllers
 
             decimal precioHora = escenario.Precio ?? 0;
 
+            // (las reservas canceladas ya no ocupan el horario)
             bool ocupado = _context.Reservas.Any(r =>
                 r.IdEscenario == idEscenario &&
                 r.FechaUso == fecha &&
                 r.HoraInicio < horaFin &&
-                r.HoraFin > horaInicio);
+                r.HoraFin > horaInicio &&
+                !r.IdEstadoNavigation.Nombre.ToLower().Contains("cancel"));
 
             if (ocupado)
             {

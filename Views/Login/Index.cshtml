@@ -1,134 +1,253 @@
 ﻿@{
     ViewData["Title"] = "Iniciar sesión";
+
+    // Pantalla completa (sin el encabezado ni el pie del sitio)
+    Layout = null;
+
+    // Si el login falla, se conserva el correo que escribió la persona
+    var correoEscrito = Context.Request.HasFormContentType ? Context.Request.Form["correo"].ToString() : "";
 }
 
-<div class="min-h-[calc(100vh-72px)] bg-[#0B0F19] flex items-center justify-center px-5 py-10">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sportia</title>
 
-    <div class="w-full max-w-[430px]">
+    <link rel="stylesheet" href="~/css/output.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-        <!-- TARJETA -->
-        <div class="bg-[#1F2937] border border-[#374151] rounded-[18px] p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-heading { font-family: 'Montserrat', sans-serif; }
+    </style>
+</head>
 
+<body class="min-h-screen bg-[#07101f] text-white antialiased">
 
-            <!-- LOGO Y TÍTULO -->
-            <div class="text-center mb-8">
+    <div class="relative grid min-h-screen lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
 
-                <div class="text-[45px] text-[#10B981] mb-2">
-                    <i class="bi bi-dribbble"></i>
-                </div>
+        <!-- =====================================================
+             PANEL IZQUIERDO: IMAGEN Y MENSAJE
+        ====================================================== -->
 
-                <h1 class="text-white font-['Montserrat'] font-extrabold text-3xl mb-1">
-                    SPORTIA
+        <section class="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between">
+
+            <img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=1600&q=80"
+                 alt="Jugador pateando un balón en una cancha de fútbol"
+                 class="absolute inset-0 h-full w-full object-cover" />
+
+            <!-- Oscurecer la foto para que el texto se lea -->
+            <div class="absolute inset-0 bg-gradient-to-t from-[#07101f] via-[#07101f]/40 to-[#07101f]/30"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#07101f]"></div>
+
+            <!-- Logo -->
+            <a asp-controller="Home" asp-action="Index" class="relative z-10 m-10 flex w-fit items-center gap-4 xl:m-12">
+                <span class="font-heading flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-3xl font-black text-[#03150d] shadow-lg shadow-emerald-500/30">S</span>
+                <span>
+                    <span class="font-heading block text-3xl font-extrabold tracking-tight">SPORTIA</span>
+                    <span class="block text-sm text-slate-300">Reserva • Juega • Disfruta</span>
+                </span>
+            </a>
+
+            <!-- Mensaje -->
+            <div class="relative z-10 m-10 max-w-xl xl:m-12">
+                <h1 class="font-heading text-5xl font-black leading-[1.05] tracking-tight xl:text-6xl">
+                    Tu cancha,<br />
+                    <span class="text-emerald-400">a un clic</span>
                 </h1>
-
-                <p class="text-[#9CA3AF] mb-0">
-                    Inicia sesión en tu cuenta
+                <p class="mt-5 max-w-md text-lg leading-7 text-slate-200">
+                    Reserva canchas, encuentra tu deporte favorito y vive la mejor experiencia deportiva con Sportia.
                 </p>
 
-            </div>
-
-
-            <!-- FORMULARIO -->
-            <form asp-controller="Login"
-                  asp-action="Index"
-                  method="post">
-
-
-                <!-- CORREO -->
-                <div class="mb-5">
-
-                    <label for="correo"
-                           class="block text-[#E5E7EB] font-semibold text-sm mb-2">
-
-                        Correo electrónico
-
-                    </label>
-
-                    <input type="email"
-                           id="correo"
-                           name="correo"
-                           placeholder="Ingresa tu correo"
-                           required
-                           class="w-full bg-[#111827] border border-[#374151] text-white placeholder-[#6B7280] px-3 py-3 rounded-[10px] outline-none transition-all duration-200 focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/15" />
-
-                </div>
-
-
-                <!-- CONTRASEÑA -->
-                <div class="mb-5">
-
-                    <label for="contrasena"
-                           class="block text-[#E5E7EB] font-semibold text-sm mb-2">
-
-                        Contraseña
-
-                    </label>
-
-                    <input type="password"
-                           id="contrasena"
-                           name="contrasena"
-                           placeholder="Ingresa tu contraseña"
-                           required
-                           class="w-full bg-[#111827] border border-[#374151] text-white placeholder-[#6B7280] px-3 py-3 rounded-[10px] outline-none transition-all duration-200 focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/15" />
-
-                </div>
-
-
-                <!-- MENSAJE DE ERROR -->
-                @if (ViewBag.Error != null)
-                {
-                    <div class="mb-5 rounded-[10px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                        @ViewBag.Error
+                <div class="mt-8 flex flex-wrap gap-6">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-calendar2-check"></i></span>
+                        <span class="text-sm leading-5 text-slate-200">Reservas<br />fáciles y rápidas</span>
                     </div>
-                }
-
-
-                <!-- BOTÓN -->
-                <button type="submit"
-                        class="w-full border-0 bg-[#10B981] text-white py-3 px-4 rounded-[10px] font-semibold mt-1 transition-all duration-200 hover:bg-[#059669] hover:-translate-y-[1px] hover:shadow-[0_6px_20px_rgba(16,185,129,0.25)]">
-
-                    <i class="bi bi-box-arrow-in-right mr-2"></i>
-
-                    Iniciar sesión
-
-                </button>
-
-            </form>
-
-
-            <!-- REGISTRO -->
-            <div class="text-center mt-6 text-[#9CA3AF] text-sm">
-
-                <span>
-                    ¿No tienes una cuenta?
-                </span>
-
-                <a asp-controller="Login"
-                   asp-action="Register"
-                   class="text-[#10B981] font-semibold ml-1 hover:text-[#059669] hover:underline">
-
-                    Registrarse
-
-                </a>
-
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-shield-check"></i></span>
+                        <span class="text-sm leading-5 text-slate-200">Espacios<br />seguros y verificados</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/15 text-lg text-emerald-400 ring-1 ring-emerald-500/30"><i class="bi bi-people"></i></span>
+                        <span class="text-sm leading-5 text-slate-200">Para todos<br />los deportes</span>
+                    </div>
+                </div>
             </div>
 
+            <!-- Línea decorativa -->
+            <svg class="pointer-events-none absolute bottom-0 left-0 z-10 h-24 w-full text-emerald-400/60" viewBox="0 0 800 100" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                <path d="M0 40 C 250 60, 500 85, 800 100" stroke="currentColor" stroke-width="2" />
+            </svg>
+        </section>
 
-            <!-- VOLVER -->
-            <div class="text-center mt-4">
 
-                <a asp-controller="Home"
-                   asp-action="Index"
-                   class="text-[#9CA3AF] text-sm no-underline transition-colors duration-200 hover:text-[#10B981]">
+        <!-- =====================================================
+             PANEL DERECHO: FORMULARIO
+        ====================================================== -->
 
-                    ← Volver al inicio
+        <section class="relative flex items-center justify-center overflow-hidden px-5 py-10 sm:px-10">
 
+            <!-- Brillos decorativos -->
+            <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl"></div>
+            <div class="pointer-events-none absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-sky-500/5 blur-3xl"></div>
+            <svg class="pointer-events-none absolute right-0 top-0 hidden h-40 w-40 text-emerald-400/20 sm:block" viewBox="0 0 160 160" fill="none" aria-hidden="true">
+                <path d="M60 0 L160 100 M100 0 L160 60 M140 0 L160 20" stroke="currentColor" stroke-width="10" />
+            </svg>
+
+            <div class="relative w-full max-w-[540px]">
+
+                <div class="rounded-3xl border border-sky-400/20 bg-[#0b1628]/90 p-7 shadow-2xl shadow-black/50 backdrop-blur sm:p-12">
+
+                    <!-- Logo -->
+                    <a asp-controller="Home" asp-action="Index" class="mx-auto flex w-fit items-center gap-4">
+                        <span class="font-heading flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-3xl font-black text-[#03150d] shadow-lg shadow-emerald-500/30 sm:h-16 sm:w-16">S</span>
+                        <span class="font-heading text-3xl font-black tracking-tight sm:text-4xl">SPORTIA</span>
+                    </a>
+
+                    <div class="mt-6 text-center">
+                        <h2 class="text-2xl font-bold">Inicia sesión en tu cuenta</h2>
+                        <p class="mt-1 text-slate-400">Accede a tus reservas, canchas y mucho más.</p>
+                    </div>
+
+                    <!-- Mensaje después de registrarse -->
+                    @if (TempData["Mensaje"] != null)
+                    {
+                        <div class="mt-6 flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300" role="status">
+                            <i class="bi bi-check-circle-fill mt-0.5"></i>
+                            <span>@TempData["Mensaje"]</span>
+                        </div>
+                    }
+
+                    <!-- Error -->
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="mt-6 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
+                            <i class="bi bi-exclamation-circle-fill mt-0.5"></i>
+                            <span>@ViewBag.Error</span>
+                        </div>
+                    }
+
+                    <form asp-controller="Login" asp-action="Index" method="post" id="formLogin" class="mt-7 space-y-5">
+
+                        <!-- Correo -->
+                        <label for="correo" class="flex items-center gap-4 rounded-2xl border border-slate-600/60 bg-white/[0.02] px-5 py-3 transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
+                            <i class="bi bi-envelope text-xl text-slate-300"></i>
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-xs text-slate-400">Correo electrónico</span>
+                                <input type="email" id="correo" name="correo" value="@correoEscrito"
+                                       placeholder="Ingresa tu correo" required autocomplete="email"
+                                       class="mt-0.5 w-full bg-transparent text-base text-white placeholder:text-slate-500 focus:outline-none" />
+                            </span>
+                        </label>
+
+                        <!-- Contraseña -->
+                        <div class="flex items-center gap-4 rounded-2xl border border-slate-600/60 bg-white/[0.02] px-5 py-3 transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
+                            <i class="bi bi-lock text-xl text-slate-300"></i>
+                            <label for="contrasena" class="min-w-0 flex-1">
+                                <span class="block text-xs text-slate-400">Contraseña</span>
+                                <input type="password" id="contrasena" name="contrasena"
+                                       placeholder="Ingresa tu contraseña" required autocomplete="current-password"
+                                       class="mt-0.5 w-full bg-transparent text-base text-white placeholder:text-slate-500 focus:outline-none" />
+                            </label>
+                            <button type="button" id="btnVerContrasena" aria-label="Mostrar contraseña" aria-pressed="false"
+                                    class="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-slate-300 transition hover:bg-white/5 hover:text-white">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+
+                        <!-- Aviso de bloq mayús -->
+                        <p id="avisoMayus" class="hidden text-xs text-amber-300"><i class="bi bi-capslock-fill"></i> Tienes activadas las mayúsculas.</p>
+
+                        <button type="submit" id="btnEntrar"
+                                class="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 text-lg font-bold text-[#03150d] shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:from-emerald-300 hover:to-emerald-400 disabled:translate-y-0 disabled:opacity-70">
+                            <i class="bi bi-box-arrow-in-right text-xl"></i>
+                            <span id="textoEntrar">Iniciar sesión</span>
+                        </button>
+
+                        <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+                            <label class="flex cursor-pointer items-center gap-2.5 text-slate-200">
+                                <input type="checkbox" id="recordarCorreo" class="peer sr-only" />
+                                <span class="flex h-5 w-5 items-center justify-center rounded-md border border-slate-500 text-transparent transition peer-checked:border-emerald-400 peer-checked:bg-emerald-400 peer-checked:text-[#03150d] peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400/40">
+                                    <i class="bi bi-check-lg text-sm"></i>
+                                </span>
+                                Recordar mi correo
+                            </label>
+                            <a asp-controller="Contacto" asp-action="Index" class="font-medium text-emerald-400 transition hover:text-emerald-300 hover:underline">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+                    </form>
+
+                    <p class="mt-7 border-t border-slate-700/70 pt-7 text-center text-slate-300">
+                        ¿No tienes una cuenta?
+                        <a asp-controller="Login" asp-action="Register" class="ml-1 inline-flex items-center gap-1 font-semibold text-emerald-400 transition hover:text-emerald-300">
+                            Regístrate aquí <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </p>
+                </div>
+
+                <a asp-controller="Home" asp-action="Index"
+                   class="mx-auto mt-6 flex w-fit items-center gap-2 text-sm text-slate-400 transition hover:text-emerald-400">
+                    <i class="bi bi-arrow-left"></i> Volver al inicio
                 </a>
-
             </div>
-
-        </div>
-
+        </section>
     </div>
 
-</div>
+    <script>
+        (() => {
+            const inputCorreo = document.getElementById('correo');
+            const inputPass = document.getElementById('contrasena');
+            const btnVer = document.getElementById('btnVerContrasena');
+            const recordar = document.getElementById('recordarCorreo');
+            const CLAVE = 'sportia_correo_recordado';
+
+            // Mostrar / ocultar contraseña
+            btnVer.addEventListener('click', () => {
+                const ver = inputPass.type === 'password';
+                inputPass.type = ver ? 'text' : 'password';
+                btnVer.setAttribute('aria-pressed', ver);
+                btnVer.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                btnVer.querySelector('i').className = ver ? 'bi bi-eye-slash' : 'bi bi-eye';
+                inputPass.focus();
+            });
+
+            // Aviso de mayúsculas activadas
+            const aviso = document.getElementById('avisoMayus');
+            inputPass.addEventListener('keyup', e => {
+                if (e.getModifierState) aviso.classList.toggle('hidden', !e.getModifierState('CapsLock'));
+            });
+
+            // Recordar el correo en este navegador
+            try {
+                const guardado = localStorage.getItem(CLAVE);
+                if (guardado) {
+                    recordar.checked = true;
+                    if (!inputCorreo.value) inputCorreo.value = guardado;
+                }
+            } catch (e) { }
+
+            (inputCorreo.value ? inputPass : inputCorreo).focus();
+
+            document.getElementById('formLogin').addEventListener('submit', () => {
+                try {
+                    if (recordar.checked) localStorage.setItem(CLAVE, inputCorreo.value.trim());
+                    else localStorage.removeItem(CLAVE);
+                } catch (e) { }
+
+                // Evitar doble clic mientras inicia sesión
+                const btn = document.getElementById('btnEntrar');
+                btn.disabled = true;
+                document.getElementById('textoEntrar').textContent = 'Iniciando sesión...';
+            });
+        })();
+    </script>
+
+</body>
+</html>

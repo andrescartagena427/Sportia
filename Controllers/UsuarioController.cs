@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sportia.Helpers;
 using Sportia.Models;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Sportia.Controllers
 {
@@ -219,18 +218,10 @@ namespace Sportia.Controllers
         // ENCRIPTAR CONTRASEÑA
         // =========================================================
 
+        // Ahora usa PBKDF2 con sal (ver Helpers/SeguridadPassword.cs)
         private string HashPassword(string password)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes =
-                    Encoding.UTF8.GetBytes(password);
-
-                byte[] hash =
-                    sha256.ComputeHash(bytes);
-
-                return Convert.ToBase64String(hash);
-            }
+            return SeguridadPassword.Hash(password);
         }
 
 
@@ -242,9 +233,7 @@ namespace Sportia.Controllers
             string password,
             string hashedPassword)
         {
-            string hash = HashPassword(password);
-
-            return hash == hashedPassword;
+            return SeguridadPassword.Verificar(password, hashedPassword, out _);
         }
     }
 }

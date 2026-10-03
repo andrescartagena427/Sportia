@@ -1,214 +1,476 @@
-﻿@{
+﻿@using System.Globalization
+@model Sportia.Models.ViewModels.ReporteViewModel
+
+@{
     ViewData["Title"] = "Reportes";
     Layout = "_DashboardLayout";
+
+    var periodos = new (string clave, string texto)[]
+    {
+        ("mes", "Este mes"),
+        ("mes-anterior", "Mes anterior"),
+        ("7d", "Últimos 7 días"),
+        ("30d", "Últimos 30 días"),
+        ("anio", "Este año"),
+        ("todo", "Todo el historial")
+    };
+
+    bool hayComparacion = Model.Periodo != "todo";
 }
+
+@functions {
+    static readonly CultureInfo Co = new("es-CO");
+
+    string Dinero(decimal v) => "$" + v.ToString("N0", Co);
+
+    string Compacto(double v)
+    {
+        if (Math.Abs(v) >= 1_000_000) return (v / 1_000_000).ToString("0.#", Co) + "M";
+        if (Math.Abs(v) >= 1_000) return (v / 1_000).ToString("0.#", Co) + "K";
+        return v.ToString("0.#", Co);
+    }
+
+    // ↑ 12% vs. mes anterior
+    Microsoft.AspNetCore.Html.IHtmlContent Variacion(double? valor, string texto, bool invertir = false)
+    {
+        string html;
+        if (valor == null)
+            html = $"<span class=\"font-semibold text-sky-300\">Nuevo</span> <span class=\"text-slate-400\">{texto}</span>";
+        else
+        {
+            bool sube = valor >= 0;
+            bool bueno = invertir ? !sube : sube;
+            string color = valor == 0 ? "text-slate-300" : bueno ? "text-emerald-400" : "text-red-400";
+            string flecha = valor == 0 ? "→" : sube ? "↗" : "↘";
+            html = $"<span class=\"font-semibold {color}\">{flecha} {(sube ? "+" : "")}{valor.Value.ToString("0.#", Co)}%</span> <span class=\"text-slate-400\">{texto}</span>";
+        }
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
+    }
+
+    // Mini gráfica de las tarjetas (120 x 44)
+    Microsoft.AspNetCore.Html.IHtmlContent Sparkline(List<double> valores, string color)
+    {
+        if (valores == null || valores.Count < 2 || valores.All(v => v == 0))
+        {
+            return new Microsoft.AspNetCore.Html.HtmlString(
+                $"<svg viewBox=\"0 0 120 44\" class=\"h-11 w-28\" aria-hidden=\"true\"><path d=\"M0 38 L120 38\" stroke=\"{color}\" stroke-opacity=\".35\" stroke-width=\"2\" stroke-dasharray=\"4 4\" fill=\"none\"/></svg>");
+        }
+        double max = valores.Max(), min = valores.Min(), rango = max - min == 0 ? 1 : max - min;
+        double paso = 120.0 / (valores.Count - 1);
+        var pts = valores.Select((v, i) => $"{(i * paso).ToString("0.#", CultureInfo.InvariantCulture)},{(40 - (v - min) / rango * 32).ToString("0.#", CultureInfo.InvariantCulture)}");
+        string linea = "M" + string.Join(" L", pts);
+        string id = "sp" + Guid.NewGuid().ToString("N")[..6];
+        return new Microsoft.AspNetCore.Html.HtmlString($@"
+<svg viewBox=""0 0 120 44"" class=""h-11 w-28"" aria-hidden=""true"">
+  <defs><linearGradient id=""{id}"" x1=""0"" y1=""0"" x2=""0"" y2=""1""><stop offset=""0"" stop-color=""{color}"" stop-opacity="".35""/><stop offset=""1"" stop-color=""{color}"" stop-opacity=""0""/></linearGradient></defs>
+  <path d=""{linea} L120,44 L0,44 Z"" fill=""url(#{id})""/>
+  <path d=""{linea}"" fill=""none"" stroke=""{color}"" stroke-width=""2.5"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+</svg>");
+    }
+
+    // Gráfica grande con ejes (área + línea + puntos)
+    Microsoft.AspNetCore.Html.IHtmlContent Grafica(Sportia.Models.ViewModels.SerieGrafica serie, string color)
+    {
+        const double W = 640, H = 230, izq = 44, der = 24, arr = 12, aba = 30;
+        var vals = serie.Valores;
+        int n = vals.Count;
+        var inv = CultureInfo.InvariantCulture;
+        if (n == 0) return new Microsoft.AspNetCore.Html.HtmlString("");
+
+        double max = vals.Max();
+        double tope = max <= 0 ? 4 : max;
+        // Escala "bonita"
+        double magnitud = Math.Pow(10, Math.Floor(Math.Log10(tope)));
+        double paso = new[] { 1, 2, 2.5, 5, 10 }.Select(m => m * magnitud).First(s => s * 4 >= tope);
+        if (!serie.EsDinero && paso < 1) paso = 1;
+        double yMax = paso * 4;
+
+        double X(int i) => izq + (n == 1 ? (W - izq - der) / 2 : i * (W - izq - der) / (n - 1));
+        double Y(double v) => arr + (H - arr - aba) * (1 - v / yMax);
+
+        var sb = new System.Text.StringBuilder();
+        string id = "gr" + Guid.NewGuid().ToString("N")[..6];
+        sb.Append($"<svg viewBox=\"0 0 {W} {H}\" class=\"h-auto w-full\" role=\"img\" aria-label=\"Gráfica\">");
+        sb.Append($"<defs><linearGradient id=\"{id}\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"{color}\" stop-opacity=\".45\"/><stop offset=\"1\" stop-color=\"{color}\" stop-opacity=\"0\"/></linearGradient></defs>");
+
+        // Líneas guía y valores del eje Y
+        for (int k = 0; k <= 4; k++)
+        {
+            double v = paso * k, y = Y(v);
+            sb.Append($"<line x1=\"{izq.ToString(inv)}\" x2=\"{(W - der).ToString(inv)}\" y1=\"{y.ToString("0.#", inv)}\" y2=\"{y.ToString("0.#", inv)}\" stroke=\"#1e293b\" stroke-width=\"1\"/>");
+            string etiqueta = serie.EsDinero ? Compacto(v) : v.ToString("0.#", Co);
+            sb.Append($"<text x=\"{(izq - 8).ToString(inv)}\" y=\"{(y + 4).ToString("0.#", inv)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#64748b\">{etiqueta}</text>");
+        }
+
+        // Etiquetas del eje X (máximo ~7)
+        int salto = Math.Max(1, (int)Math.Ceiling(n / 7.0));
+        for (int i = 0; i < n; i += salto)
+        {
+            sb.Append($"<text x=\"{X(i).ToString("0.#", inv)}\" y=\"{(H - 8).ToString(inv)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"#64748b\">{System.Net.WebUtility.HtmlEncode(serie.Etiquetas[i])}</text>");
+        }
+
+        var puntos = vals.Select((v, i) => $"{X(i).ToString("0.#", inv)},{Y(v).ToString("0.#", inv)}").ToList();
+        string linea = "M" + string.Join(" L", puntos);
+        sb.Append($"<path d=\"{linea} L{X(n - 1).ToString("0.#", inv)},{Y(0).ToString("0.#", inv)} L{X(0).ToString("0.#", inv)},{Y(0).ToString("0.#", inv)} Z\" fill=\"url(#{id})\"/>");
+        sb.Append($"<path d=\"{linea}\" fill=\"none\" stroke=\"{color}\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>");
+
+        // Puntos con tooltip (solo si no son demasiados)
+        if (n <= 62)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                string valor = serie.EsDinero ? "$" + vals[i].ToString("N0", Co) : vals[i].ToString("0.#", Co);
+                sb.Append($"<circle cx=\"{X(i).ToString("0.#", inv)}\" cy=\"{Y(vals[i]).ToString("0.#", inv)}\" r=\"{(n > 31 ? 2.5 : 3.5).ToString(inv)}\" fill=\"{color}\"><title>{System.Net.WebUtility.HtmlEncode(serie.Etiquetas[i])}: {valor}</title></circle>");
+            }
+        }
+
+        sb.Append("</svg>");
+        return new Microsoft.AspNetCore.Html.HtmlString(sb.ToString());
+    }
+
+    // Barras horizontales para las listas de cada pestaña
+    Microsoft.AspNetCore.Html.IHtmlContent Barras(List<Sportia.Models.ViewModels.ItemReporte> items, string colorBarra, bool dinero, string vacio)
+    {
+        if (items == null || !items.Any())
+        {
+            return new Microsoft.AspNetCore.Html.HtmlString($"<p class=\"rounded-xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500\">{vacio}</p>");
+        }
+        double max = items.Max(i => i.Valor);
+        if (max <= 0) max = 1;
+        var sb = new System.Text.StringBuilder("<div class=\"space-y-3\">");
+        foreach (var it in items)
+        {
+            string valor = dinero ? "$" + it.Valor.ToString("N0", Co) : it.Valor.ToString("0", Co);
+            double ancho = Math.Max(3, it.Valor / max * 100);
+            string color = colorBarra;
+            if (colorBarra == "estado")
+            {
+                var e = it.Nombre.ToLowerInvariant();
+                color = e.Contains("cancel") ? "bg-red-500" : e.Contains("pend") ? "bg-amber-400" : e.Contains("confirm") ? "bg-emerald-500" : "bg-sky-500";
+            }
+            sb.Append($@"
+<div>
+  <div class=""flex items-center justify-between gap-3 text-sm"">
+    <span class=""truncate text-slate-200"">{System.Net.WebUtility.HtmlEncode(it.Nombre)}</span>
+    <span class=""shrink-0 font-semibold text-white"">{valor}{(string.IsNullOrEmpty(it.Extra) ? "" : $" <span class=\"font-normal text-slate-500\">· {System.Net.WebUtility.HtmlEncode(it.Extra)}</span>")}</span>
+  </div>
+  <div class=""mt-1.5 h-2 overflow-hidden rounded-full bg-slate-800""><div class=""h-full rounded-full {color}"" style=""width:{ancho.ToString("0.#", CultureInfo.InvariantCulture)}%""></div></div>
+</div>");
+        }
+        sb.Append("</div>");
+        return new Microsoft.AspNetCore.Html.HtmlString(sb.ToString());
+    }
+}
+
 
 <div class="space-y-6">
 
-    <!-- ENCABEZADO -->
+    <!-- =====================================================
+         ENCABEZADO
+    ====================================================== -->
 
-    <div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-        <h1 class="text-2xl font-bold text-white">
-            Reportes
-        </h1>
+        <div class="flex items-center gap-4">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
+                <i data-lucide="chart-column" class="h-7 w-7 text-emerald-400"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-white">Reportes</h1>
+                <p class="mt-1 text-sm text-slate-400">Consulta las estadísticas y el rendimiento general de Sportia.</p>
+            </div>
+        </div>
 
-        <p class="mt-1 text-sm text-slate-400">
-            Consulta las estadísticas y el rendimiento general de Sportia.
-        </p>
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="get" asp-action="Index" id="formPeriodo"
+                  class="relative flex h-12 items-center gap-3 rounded-xl border border-slate-700 bg-[#0d1422] pl-4 pr-3 text-sm text-slate-200 transition focus-within:border-emerald-500/50">
+                <i data-lucide="calendar" class="h-5 w-5 text-slate-400"></i>
+                <span class="hidden font-semibold sm:inline">@Model.TextoRango</span>
+                <label class="sr-only" for="periodo">Período</label>
+                <select id="periodo" name="periodo" onchange="this.form.submit()"
+                        class="h-full cursor-pointer appearance-none bg-transparent pr-7 font-semibold text-emerald-400 focus:outline-none sm:font-normal sm:text-slate-400">
+                    @foreach (var p in periodos)
+                    {
+                        <option value="@p.clave" selected="@(p.clave == Model.Periodo)" class="bg-[#0d1422] text-slate-200">@p.texto</option>
+                    }
+                </select>
+                <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 h-4 w-4 text-slate-400"></i>
+                <noscript><button type="submit" class="text-emerald-400">Ver</button></noscript>
+            </form>
+
+            <a asp-action="Exportar" asp-route-periodo="@Model.Periodo"
+               class="inline-flex h-12 items-center gap-2 rounded-xl border border-emerald-500/40 px-4 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/10"
+               title="Descargar las reservas del período para abrir en Excel">
+                <i data-lucide="download" class="h-4 w-4"></i>
+                Exportar
+            </a>
+        </div>
 
     </div>
 
 
-    <!-- TARJETAS -->
+    <!-- =====================================================
+         TARJETAS PRINCIPALES
+    ====================================================== -->
 
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
 
-
-        <!-- CLIENTES -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-sm text-slate-400">
-                Total clientes
+        <div class="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/15 to-[#0d1422] p-5">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400"><i data-lucide="users" class="h-6 w-6"></i></span>
+                <p class="whitespace-nowrap text-sm font-medium text-slate-200">Total clientes</p>
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="text-3xl font-black text-white">@Model.TotalClientes</p>
+                <div class="shrink-0">@Sparkline(Model.SerieClientes, "#3b82f6")</div>
+            </div>
+            <p class="mt-3 text-xs">
+                @if (hayComparacion) { @Variacion(Model.VariacionClientes, Model.TextoComparacion) } else { <span class="text-slate-400">Histórico completo</span> }
+                <span class="text-slate-500">· @Model.ClientesNuevos nuevo(s)</span>
             </p>
-
-            <p class="mt-2 text-3xl font-bold text-white">
-                @ViewBag.TotalClientes
-            </p>
-
         </div>
 
-
-        <!-- EMPRESAS -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-sm text-slate-400">
-                Empresas
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-white">
-                @ViewBag.TotalEmpresas
-            </p>
-
+        <div class="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-500/15 to-[#0d1422] p-5">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-400"><i data-lucide="building-2" class="h-6 w-6"></i></span>
+                <p class="whitespace-nowrap text-sm font-medium text-slate-200">Empresas</p>
+            </div>
+            <div class="mt-3 flex h-11 items-end">
+                <p class="text-3xl font-black text-white">@Model.TotalEmpresas</p>
+            </div>
+            @{
+                double porcEmpresas = Model.TotalEmpresas == 0 ? 0 : (double)Model.EmpresasActivas / Model.TotalEmpresas * 100;
+            }
+            <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-violet-500" style="width:@porcEmpresas.ToString("0.#", CultureInfo.InvariantCulture)%"></div></div>
+            <p class="mt-2 text-xs text-slate-400"><span class="font-semibold text-violet-300">@Model.EmpresasActivas activa(s)</span> · aliadas de Sportia</p>
         </div>
 
+        <div class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 to-[#0d1422] p-5">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400"><i data-lucide="calendar-check" class="h-6 w-6"></i></span>
+                <p class="whitespace-nowrap text-sm font-medium text-slate-200">Reservas del período</p>
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="text-3xl font-black text-white">@Model.ReservasPeriodo</p>
+                <div class="shrink-0">@Sparkline(Model.SerieReservasMini, "#10b981")</div>
+            </div>
+            <p class="mt-3 text-xs">@if (hayComparacion) { @Variacion(Model.VariacionReservas, Model.TextoComparacion) } else { <span class="text-slate-400">Histórico completo · sin canceladas</span> }</p>
+        </div>
+
+        <div class="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-[#0d1422] p-5">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400"><i data-lucide="star" class="h-6 w-6"></i></span>
+                <p class="whitespace-nowrap text-sm font-medium text-slate-200">Reservas hoy</p>
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="text-3xl font-black text-white">@Model.ReservasHoy</p>
+                <div class="shrink-0">@Sparkline(Model.SerieHoy, "#f59e0b")</div>
+            </div>
+            <p class="mt-3 text-xs">@Variacion(Model.VariacionHoy, "vs. ayer")</p>
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         INGRESOS Y SALDO
+    ====================================================== -->
+
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+
+        <div class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-[#0d1422] to-[#0d1422] p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400"><i data-lucide="coins" class="h-6 w-6"></i></span>
+                    <p class="text-lg font-bold text-white">Ingresos recibidos</p>
+                </div>
+                @if (hayComparacion)
+                {
+                    <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs">@Variacion(Model.VariacionIngresos, Model.TextoComparacion)</span>
+                }
+            </div>
+            <p class="mt-4 break-all text-4xl font-black text-emerald-400 sm:text-5xl">@Dinero(Model.Ingresos)</p>
+            <p class="mt-2 text-sm text-slate-400">Dinero recibido en pagos durante el período.</p>
+            <i data-lucide="trending-up" class="pointer-events-none absolute -bottom-3 right-4 h-28 w-28 text-emerald-400/15"></i>
+        </div>
+
+        @{
+            bool sinDeudas = Model.SaldoPendiente <= 0;
+        }
+        <a asp-controller="AdminPago" asp-action="Index"
+           class="group relative overflow-hidden rounded-2xl border p-6 transition hover:-translate-y-0.5 @(sinDeudas ? "border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-[#0d1422]" : "border-red-500/30 bg-gradient-to-br from-red-500/15 via-[#0d1422] to-[#0d1422]")">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl @(sinDeudas ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")"><i data-lucide="credit-card" class="h-6 w-6"></i></span>
+                    <p class="text-lg font-bold text-white">Saldo pendiente</p>
+                </div>
+                @if (sinDeudas)
+                {
+                    <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"><i data-lucide="check" class="h-3.5 w-3.5"></i> Sin deudas</span>
+                }
+                else
+                {
+                    <span class="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300">@Model.ReservasConSaldo reserva(s) por cobrar</span>
+                }
+            </div>
+            <p class="mt-4 break-all text-4xl font-black sm:text-5xl @(sinDeudas ? "text-emerald-400" : "text-red-400")">@Dinero(Model.SaldoPendiente)</p>
+            <p class="mt-2 text-sm text-slate-400">Dinero pendiente por pagar de las reservas activas. <span class="text-slate-300 group-hover:text-white">Ver pagos →</span></p>
+            <i data-lucide="wallet" class="pointer-events-none absolute -bottom-3 right-4 h-28 w-28 @(sinDeudas ? "text-emerald-400/10" : "text-red-400/15")"></i>
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         RESUMEN DEL SISTEMA (pestañas)
+    ====================================================== -->
+
+    <section class="rounded-2xl border border-slate-800 bg-[#0d1422] p-5 sm:p-6">
+
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400"><i data-lucide="chart-column" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="text-lg font-bold text-white">Resumen del sistema</h2>
+                    <p class="text-sm text-slate-400">Información general registrada en Sportia.</p>
+                </div>
+            </div>
+
+            <div class="flex w-full overflow-x-auto rounded-xl border border-slate-700 bg-[#0B0F19] p-1 lg:w-auto" role="tablist">
+                @foreach (var t in new[] { ("general", "General"), ("reservas", "Reservas"), ("pagos", "Pagos"), ("usuarios", "Usuarios") })
+                {
+                    <button type="button" role="tab" data-pestana="@t.Item1" aria-selected="@(t.Item1 == "general" ? "true" : "false")"
+                            class="pestana-reporte flex-1 whitespace-nowrap rounded-lg px-5 py-2 text-sm font-semibold transition @(t.Item1 == "general" ? "bg-emerald-500 text-[#03150d]" : "text-slate-300 hover:text-white")">
+                        @t.Item2
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- GENERAL -->
+        <div data-panel="general" class="panel-reporte mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div class="grid grid-cols-2 gap-3 self-start rounded-2xl border border-slate-800 p-3">
+                <a asp-controller="AdminUsuario" asp-action="Index" class="flex items-center gap-3 rounded-xl border border-slate-800 bg-[#101928] p-4 transition hover:border-slate-700">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-400"><i data-lucide="users" class="h-6 w-6"></i></span>
+                    <span><span class="block text-xs uppercase tracking-wider text-slate-400">Usuarios</span><span class="block text-2xl font-black text-white">@Model.TotalUsuarios</span></span>
+                </a>
+                <a asp-controller="Escenarios" asp-action="Index" class="flex items-center gap-3 rounded-xl border border-slate-800 bg-[#101928] p-4 transition hover:border-slate-700">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400"><i data-lucide="landmark" class="h-6 w-6"></i></span>
+                    <span><span class="block text-xs uppercase tracking-wider text-slate-400">Escenarios</span><span class="block text-2xl font-black text-white">@Model.TotalEscenarios</span></span>
+                </a>
+                <a asp-controller="AdminPago" asp-action="Index" class="flex items-center gap-3 rounded-xl border border-slate-800 bg-[#101928] p-4 transition hover:border-slate-700">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400"><i data-lucide="credit-card" class="h-6 w-6"></i></span>
+                    <span><span class="block text-xs uppercase tracking-wider text-slate-400">Pagos</span><span class="block text-2xl font-black text-white">@Model.TotalPagos</span></span>
+                </a>
+                <a asp-controller="Reservas" asp-action="Index" class="flex items-center gap-3 rounded-xl border border-slate-800 bg-[#101928] p-4 transition hover:border-slate-700">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400"><i data-lucide="star" class="h-6 w-6"></i></span>
+                    <span><span class="block text-xs uppercase tracking-wider text-slate-400">Reservas</span><span class="block text-2xl font-black text-white">@Model.TotalReservas</span></span>
+                </a>
+            </div>
+            <div class="rounded-2xl border border-slate-800 p-4">
+                <p class="mb-2 flex items-center gap-2 font-semibold text-white"><i data-lucide="calendar" class="h-4 w-4 text-emerald-400"></i> Evolución de reservas</p>
+                @Grafica(Model.GraficaReservas, "#10b981")
+            </div>
+        </div>
 
         <!-- RESERVAS -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-sm text-slate-400">
-                Total reservas
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-emerald-400">
-                @ViewBag.TotalReservas
-            </p>
-
-        </div>
-
-
-        <!-- RESERVAS HOY -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-sm text-slate-400">
-                Reservas hoy
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-blue-400">
-                @ViewBag.ReservasHoy
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <!-- INGRESOS -->
-
-    <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
-
-
-        <!-- INGRESOS -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-
-            <p class="text-sm font-semibold text-slate-400">
-                Ingresos recibidos
-            </p>
-
-            <p class="mt-3 text-4xl font-bold text-emerald-400">
-
-                $@ViewBag.IngresosTotales.ToString("N0")
-
-            </p>
-
-            <p class="mt-2 text-sm text-slate-500">
-                Total de dinero registrado en pagos.
-            </p>
-
-        </div>
-
-
-        <!-- SALDO PENDIENTE -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-
-            <p class="text-sm font-semibold text-slate-400">
-                Saldo pendiente
-            </p>
-
-            <p class="mt-3 text-4xl font-bold text-red-400">
-
-                $@ViewBag.SaldoPendiente.ToString("N0")
-
-            </p>
-
-            <p class="mt-2 text-sm text-slate-500">
-                Dinero pendiente por pagar de las reservas.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <!-- RESUMEN DEL SISTEMA -->
-
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/70">
-
-        <div class="border-b border-slate-800 p-6">
-
-            <h2 class="text-lg font-bold text-white">
-                Resumen del sistema
-            </h2>
-
-            <p class="mt-1 text-sm text-slate-500">
-                Información general registrada en Sportia.
-            </p>
-
-        </div>
-
-
-        <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-4">
-
-
-            <div class="rounded-xl bg-slate-950 p-4">
-
-                <p class="text-xs uppercase tracking-wider text-slate-500">
-                    Usuarios
-                </p>
-
-                <p class="mt-2 text-2xl font-bold text-white">
-                    @ViewBag.TotalUsuarios
-                </p>
-
+        <div data-panel="reservas" class="panel-reporte mt-6 hidden gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div class="space-y-5">
+                <div class="rounded-2xl border border-slate-800 p-4">
+                    <p class="mb-4 font-semibold text-white">Reservas por estado</p>
+                    @Barras(Model.ReservasPorEstado, "estado", false, "No hay reservas en este período.")
+                </div>
+                <div class="rounded-2xl border border-slate-800 p-4">
+                    <p class="mb-4 font-semibold text-white">Escenarios más reservados</p>
+                    @Barras(Model.TopEscenarios, "bg-sky-500", false, "No hay reservas en este período.")
+                </div>
             </div>
-
-
-            <div class="rounded-xl bg-slate-950 p-4">
-
-                <p class="text-xs uppercase tracking-wider text-slate-500">
-                    Escenarios
-                </p>
-
-                <p class="mt-2 text-2xl font-bold text-white">
-                    @ViewBag.TotalEscenarios
-                </p>
-
+            <div class="self-start rounded-2xl border border-slate-800 p-4">
+                <p class="mb-2 flex items-center gap-2 font-semibold text-white"><i data-lucide="calendar-check" class="h-4 w-4 text-emerald-400"></i> Reservas por día de uso</p>
+                @Grafica(Model.GraficaReservas, "#10b981")
             </div>
-
-
-            <div class="rounded-xl bg-slate-950 p-4">
-
-                <p class="text-xs uppercase tracking-wider text-slate-500">
-                    Pagos
-                </p>
-
-                <p class="mt-2 text-2xl font-bold text-white">
-                    @ViewBag.TotalPagos
-                </p>
-
-            </div>
-
-
-            <div class="rounded-xl bg-slate-950 p-4">
-
-                <p class="text-xs uppercase tracking-wider text-slate-500">
-                    Reservas
-                </p>
-
-                <p class="mt-2 text-2xl font-bold text-white">
-                    @ViewBag.TotalReservas
-                </p>
-
-            </div>
-
         </div>
 
+        <!-- PAGOS -->
+        <div data-panel="pagos" class="panel-reporte mt-6 hidden gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div class="self-start rounded-2xl border border-slate-800 p-4">
+                <p class="mb-4 font-semibold text-white">Ingresos por método de pago</p>
+                @Barras(Model.IngresosPorMetodo, "bg-violet-500", true, "No se recibieron pagos en este período.")
+            </div>
+            <div class="rounded-2xl border border-slate-800 p-4">
+                <p class="mb-2 flex items-center gap-2 font-semibold text-white"><i data-lucide="coins" class="h-4 w-4 text-violet-400"></i> Ingresos recibidos</p>
+                @Grafica(Model.GraficaIngresos, "#8b5cf6")
+            </div>
+        </div>
+
+        <!-- USUARIOS -->
+        <div data-panel="usuarios" class="panel-reporte mt-6 hidden gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div class="space-y-5 self-start">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-slate-800 bg-[#101928] p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-400">Clientes</p>
+                        <p class="text-2xl font-black text-white">@Model.TotalClientes</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-[#101928] p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-400">Nuevos en el período</p>
+                        <p class="text-2xl font-black text-blue-400">@Model.ClientesNuevos</p>
+                    </div>
+                </div>
+                <div class="rounded-2xl border border-slate-800 p-4">
+                    <p class="mb-4 font-semibold text-white">Usuarios por rol</p>
+                    @Barras(Model.UsuariosPorRol, "bg-blue-500", false, "No hay usuarios registrados.")
+                </div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 p-4">
+                <p class="mb-2 flex items-center gap-2 font-semibold text-white"><i data-lucide="user-plus" class="h-4 w-4 text-blue-400"></i> Clientes nuevos</p>
+                @Grafica(Model.GraficaClientes, "#3b82f6")
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- Pie decorativo -->
+    <div class="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/15 via-[#0d1422] to-[#0d1422] px-6 py-4 text-sm">
+        <span class="font-semibold text-white">Sportia</span>
+        <span class="mx-2 text-slate-500">•</span>
+        <span class="italic text-slate-300">Más deporte, más cerca de ti</span>
+        <svg class="pointer-events-none absolute -right-4 top-1/2 hidden h-24 w-56 -translate-y-1/2 text-emerald-400/20 sm:block" viewBox="0 0 220 90" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="10" y="5" width="200" height="80" rx="2" /><line x1="110" y1="5" x2="110" y2="85" /><circle cx="110" cy="45" r="16" /><rect x="10" y="25" width="30" height="40" /><rect x="180" y="25" width="30" height="40" />
+        </svg>
     </div>
 
 </div>
+
+
+@section Scripts {
+    <script>
+        (() => {
+            const pestanas = document.querySelectorAll('.pestana-reporte');
+            const paneles = document.querySelectorAll('.panel-reporte');
+
+            function abrir(nombre) {
+                pestanas.forEach(p => {
+                    const activa = p.dataset.pestana === nombre;
+                    p.setAttribute('aria-selected', activa);
+                    p.classList.toggle('bg-emerald-500', activa);
+                    p.classList.toggle('text-[#03150d]', activa);
+                    p.classList.toggle('text-slate-300', !activa);
+                    p.classList.toggle('hover:text-white', !activa);
+                });
+                paneles.forEach(p => {
+                    const visible = p.dataset.panel === nombre;
+                    p.classList.toggle('hidden', !visible);
+                    p.classList.toggle('grid', visible);
+                });
+                try { sessionStorage.setItem('sportia_pestana_reporte', nombre); } catch (e) { }
+            }
+
+            pestanas.forEach(p => p.addEventListener('click', () => abrir(p.dataset.pestana)));
+
+            let guardada = null;
+            try { guardada = sessionStorage.getItem('sportia_pestana_reporte'); } catch (e) { }
+            abrir(guardada && document.querySelector(`[data-panel="${guardada}"]`) ? guardada : 'general');
+        })();
+    </script>
+}
