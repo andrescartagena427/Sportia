@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sportia.Models;
+using Sportia.Models.ViewModels;
 
 namespace Sportia.Controllers
 {
@@ -8,42 +9,177 @@ namespace Sportia.Controllers
     {
         private readonly SportiaDbContext _context;
 
+        // Id del rol Administrador (el mismo que se valida en todo el proyecto)
+        private const int RolAdministrador = 1;
+
         public AdminUsuarioController(SportiaDbContext context)
         {
             _context = context;
         }
 
-        // GET: /AdminUsuario
-        public async Task<IActionResult> Index(string? buscar)
+        // =========================================================
+        // SOLO EL ADMINISTRADOR PUEDE ENTRAR A ESTAS PÁGINAS
+        // =========================================================
+
+        private IActionResult? ValidarAdmin()
         {
-            IQueryable<Usuario> usuarios = _context.Usuarios
-                .Include(u => u.IdRolNavigation);
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
 
-            if (!string.IsNullOrWhiteSpace(buscar))
+            if (idUsuario == null)
             {
-                buscar = buscar.Trim();
-
-                usuarios = usuarios.Where(u =>
-                    u.Nombres.Contains(buscar) ||
-                    u.Apellidos.Contains(buscar) ||
-                    u.Documento.Contains(buscar) ||
-                    u.Correo.Contains(buscar) ||
-                    (u.Telefono != null && u.Telefono.Contains(buscar))
-                );
+                return RedirectToAction("Index", "Login");
             }
 
-            usuarios = usuarios
-                .OrderByDescending(u => u.FechaRegistro);
+            if (idRol != RolAdministrador)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
-            ViewBag.Buscar = buscar;
+            return null;
+        }
 
-            return View(await usuarios.ToListAsync());
+        private int IdUsuarioActual => HttpContext.Session.GetInt32("IdUsuario") ?? 0;
+
+        // ¿Quedaría el sistema sin ningún administrador activo?
+        private async Task<bool> EsUltimoAdminActivo(int idUsuario)
+        {
+            return !await _context.Usuarios.AnyAsync(u =>
+                u.IdUsuario != idUsuario &&
+                u.IdRol == RolAdministrador &&
+                u.Estado == true);
+        }
+
+        // GET: /AdminUsuario
+        public async Task<IActionResult> Index(string? buscar, int? rol, string? estado, int pagina = 1)
+        {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
+            var hoy = DateTime.Today;
+            var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
+            int idActual = IdUsuarioActual;
+
+            var datos = await _context.Usuarios
+                .AsNoTracking()
+                .Select(u => new
+                {
+                    u.IdUsuario,
+                    u.Nombres,
+                    u.Apellidos,
+                    u.Documento,
+                    u.Telefono,
+                    u.Correo,
+                    u.IdRol,
+                    Rol = u.IdRolNavigation.Nombre,
+                    u.Estado,
+                    u.FechaRegistro,
+                    Reservas = u.Reservas.Count()
+                })
+                .ToListAsync();
+
+            // ---------- Tarjetas (hoy vs. inicio del mes) ----------
+            var antes = datos.Where(d => d.FechaRegistro == null || d.FechaRegistro < inicioMes).ToList();
+
+            int total = datos.Count;
+            int admins = datos.Count(d => d.IdRol == RolAdministrador);
+            int clientes = datos.Count(d => d.IdRol != RolAdministrador);
+            int activos = datos.Count(d => d.Estado == true);
+
+            // ---------- Filtros ----------
+            string texto = (buscar ?? "").Trim();
+            string filtroEstado = (estado ?? "").Trim().ToLower();
+
+            var filas = datos
+                .OrderByDescending(d => d.FechaRegistro ?? DateTime.MinValue)
+                .ThenByDescending(d => d.IdUsuario)
+                .Select(d => new UsuarioFilaViewModel
+                {
+                    IdUsuario = d.IdUsuario,
+                    Nombre = $"{d.Nombres} {d.Apellidos}".Trim(),
+                    Documento = d.Documento,
+                    Telefono = d.Telefono,
+                    Correo = d.Correo,
+                    IdRol = d.IdRol,
+                    Rol = d.Rol,
+                    Activo = d.Estado == true,
+                    FechaRegistro = d.FechaRegistro,
+                    Reservas = d.Reservas,
+                    EsUsuarioActual = d.IdUsuario == idActual
+                });
+
+            if (texto.Length > 0)
+            {
+                filas = filas.Where(f =>
+                    Contiene(f.Nombre, texto) ||
+                    Contiene(f.Documento, texto) ||
+                    Contiene(f.Telefono, texto) ||
+                    Contiene(f.Correo, texto));
+            }
+
+            if (rol.HasValue && rol > 0) filas = filas.Where(f => f.IdRol == rol);
+            if (filtroEstado == "activo") filas = filas.Where(f => f.Activo);
+            if (filtroEstado == "inactivo") filas = filas.Where(f => !f.Activo);
+
+            var lista = filas.ToList();
+
+            const int tamano = 10;
+            int paginas = Math.Max(1, (int)Math.Ceiling(lista.Count / (double)tamano));
+            pagina = Math.Clamp(pagina, 1, paginas);
+
+            var paginaActual = lista.Skip((pagina - 1) * tamano).Take(tamano).ToList();
+            for (int i = 0; i < paginaActual.Count; i++)
+            {
+                paginaActual[i].Numero = (pagina - 1) * tamano + i + 1;
+            }
+
+            var vm = new AdminUsuariosViewModel
+            {
+                Buscar = texto,
+                IdRol = rol,
+                Estado = filtroEstado,
+                Roles = await _context.Roles.AsNoTracking().OrderBy(r => r.IdRol).ToListAsync(),
+
+                Total = total,
+                VariacionTotal = Variacion(total, antes.Count),
+                Administradores = admins,
+                VariacionAdministradores = Variacion(admins, antes.Count(d => d.IdRol == RolAdministrador)),
+                Clientes = clientes,
+                VariacionClientes = Variacion(clientes, antes.Count(d => d.IdRol != RolAdministrador)),
+                Activos = activos,
+                Inactivos = total - activos,
+                IdUsuarioActual = idActual,
+
+                Usuarios = paginaActual,
+                Pagina = pagina,
+                TamanoPagina = tamano,
+                TotalFiltrados = lista.Count
+            };
+
+            return View(vm);
+        }
+
+        private static bool Contiene(string? valor, string texto) =>
+            !string.IsNullOrEmpty(valor) && valor.Contains(texto, StringComparison.OrdinalIgnoreCase);
+
+        // null = no había datos antes para comparar
+        private static double? Variacion(int actual, int anterior)
+        {
+            if (anterior == 0)
+            {
+                return actual == 0 ? 0 : null;
+            }
+
+            return Math.Round((actual - anterior) * 100.0 / anterior, 0);
         }
 
         // GET: /AdminUsuario/Details/5
         [HttpGet]
         public async Task<IActionResult> Details(int? id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id == null)
             {
                 return NotFound();
@@ -66,6 +202,9 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             ViewBag.Roles = await _context.Roles
                 .OrderBy(r => r.Nombre)
                 .ToListAsync();
@@ -78,6 +217,9 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Usuario usuario)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             // Estas propiedades no vienen del formulario.
             // Evitamos que interfieran con la validación.
             ModelState.Remove(nameof(Usuario.IdRolNavigation));
@@ -133,6 +275,9 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id == null)
             {
                 return NotFound();
@@ -158,9 +303,40 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Usuario usuario)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id != usuario.IdUsuario)
             {
                 return NotFound();
+            }
+
+            // La contraseña ya no viaja en el formulario: se conserva la actual
+            ModelState.Remove(nameof(Usuario.Password));
+            ModelState.Remove(nameof(Usuario.IdRolNavigation));
+            ModelState.Remove(nameof(Usuario.Empresas));
+            ModelState.Remove(nameof(Usuario.Reservas));
+
+            var usuarioBD = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.IdUsuario == id);
+
+            if (usuarioBD == null)
+            {
+                return NotFound();
+            }
+
+            // No dejar al sistema sin administradores
+            bool dejaDeSerAdminActivo =
+                usuarioBD.IdRol == RolAdministrador && usuarioBD.Estado == true &&
+                (usuario.IdRol != RolAdministrador || usuario.Estado != true);
+
+            if (dejaDeSerAdminActivo && id == IdUsuarioActual)
+            {
+                ModelState.AddModelError("", "No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.");
+            }
+            else if (dejaDeSerAdminActivo && await EsUltimoAdminActivo(id))
+            {
+                ModelState.AddModelError("", "Debe quedar al menos un administrador activo en el sistema.");
             }
 
             if (!ModelState.IsValid)
@@ -174,14 +350,6 @@ namespace Sportia.Controllers
 
             try
             {
-                var usuarioBD = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.IdUsuario == id);
-
-                if (usuarioBD == null)
-                {
-                    return NotFound();
-                }
-
                 usuarioBD.IdRol = usuario.IdRol;
                 usuarioBD.Nombres = usuario.Nombres;
                 usuarioBD.Apellidos = usuario.Apellidos;
@@ -214,13 +382,60 @@ namespace Sportia.Controllers
             }
         }
 
+        // POST: /AdminUsuario/CambiarEstado/5  (activar / desactivar desde la lista)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int id, string? volver)
+        {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == id);
+
+            if (usuario == null)
+            {
+                return NotFound();
+            }
+
+            bool activar = usuario.Estado != true;
+
+            if (!activar && id == IdUsuarioActual)
+            {
+                TempData["Error"] = "No puedes desactivar tu propia cuenta.";
+            }
+            else if (!activar && usuario.IdRol == RolAdministrador && await EsUltimoAdminActivo(id))
+            {
+                TempData["Error"] = "Debe quedar al menos un administrador activo en el sistema.";
+            }
+            else
+            {
+                usuario.Estado = activar;
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = activar
+                    ? $"{usuario.Nombres} {usuario.Apellidos} fue activado y ya puede iniciar sesión."
+                    : $"{usuario.Nombres} {usuario.Apellidos} fue desactivado y no podrá iniciar sesión.";
+            }
+
+            if (!string.IsNullOrEmpty(volver) && Url.IsLocalUrl(volver))
+            {
+                return LocalRedirect(volver);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
         // POST: /AdminUsuario/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             var usuario = await _context.Usuarios
                 .Include(u => u.Reservas)
+                .Include(u => u.Empresas)
                 .FirstOrDefaultAsync(u => u.IdUsuario == id);
 
             if (usuario == null)
@@ -228,10 +443,30 @@ namespace Sportia.Controllers
                 return NotFound();
             }
 
+            if (id == IdUsuarioActual)
+            {
+                TempData["Error"] = "No puedes eliminar tu propia cuenta.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (usuario.IdRol == RolAdministrador && usuario.Estado == true && await EsUltimoAdminActivo(id))
+            {
+                TempData["Error"] = "Debe quedar al menos un administrador activo en el sistema.";
+                return RedirectToAction(nameof(Index));
+            }
+
             if (usuario.Reservas.Any())
             {
                 TempData["Error"] =
-                    "No se puede eliminar este usuario porque tiene reservas asociadas.";
+                    "No se puede eliminar este usuario porque tiene reservas asociadas. Puedes desactivarlo.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (usuario.Empresas.Any())
+            {
+                TempData["Error"] =
+                    "No se puede eliminar este usuario porque tiene empresas asociadas. Puedes desactivarlo.";
 
                 return RedirectToAction(nameof(Index));
             }

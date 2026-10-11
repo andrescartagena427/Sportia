@@ -1,0 +1,57 @@
+﻿@model Sportia.Models.ViewModels.ClienteFilaViewModel
+
+@* Botones Editar / Eliminar / menú de un cliente (se usa en la lista y en las tarjetas) *@
+@{
+    // Para "Ver reservas": se busca por documento (o nombre) en todas las fechas
+    string buscarReservas = string.IsNullOrWhiteSpace(Model.Documento) ? Model.Nombre : Model.Documento!;
+    bool tieneReservas = Model.Reservas > 0;
+}
+
+<div class="cl-acciones">
+    <a asp-controller="AdminCliente" asp-action="Edit" asp-route-id="@Model.IdCliente" class="cl-btn editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+        Editar
+    </a>
+
+    <form method="post" asp-controller="AdminCliente" asp-action="Delete" asp-route-id="@Model.IdCliente"
+          class="cl-form-eliminar" data-nombre="@Model.Nombre">
+        <button type="submit" class="cl-btn eliminar" disabled="@tieneReservas"
+                title="@(tieneReservas ? $"No se puede eliminar: tiene {Model.Reservas} reserva(s)" : "Eliminar cliente")">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+            Eliminar
+        </button>
+    </form>
+
+    <div class="cl-menu">
+        <button type="button" class="cl-menu-btn" title="Más opciones" aria-haspopup="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="18.5" r="1.7" /></svg>
+        </button>
+        <div class="cl-menu-lista">
+            <a asp-controller="AdminCliente" asp-action="Details" asp-route-id="@Model.IdCliente">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.8" /></svg>
+                Ver detalle
+            </a>
+            <a asp-controller="Reservas" asp-action="Index"
+               asp-route-buscar="@buscarReservas" asp-route-desde="2000-01-01" asp-route-hasta="2100-12-31">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /></svg>
+                Ver reservas (@Model.Reservas)
+            </a>
+            @if (!string.IsNullOrWhiteSpace(Model.Telefono))
+            {
+                var tel = new string(Model.Telefono.Where(char.IsDigit).ToArray());
+                if (tel.Length == 10) tel = "57" + tel;
+                <a href="https://wa.me/@tel" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19z" /><path d="M9 9.5c.3 2 2.2 4.2 4.5 5l1.3-1.3 2 1-.4 1.6c-3.6.4-8-3.8-7.8-7.6L10 8l1 2z" /></svg>
+                    Escribir por WhatsApp
+                </a>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Correo))
+            {
+                <a href="mailto:@Model.Correo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6l8.5 7 8.5-7" /></svg>
+                    Enviar correo
+                </a>
+            }
+        </div>
+    </div>
+</div>

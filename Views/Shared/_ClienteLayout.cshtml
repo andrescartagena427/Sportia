@@ -13,6 +13,20 @@
 
     var rolUsuario = Context.Session.GetString("Rol") ?? "Cliente";
 
+    // Teléfono para el menú de la cuenta (del cliente; si no, del usuario)
+    string? telefonoUsuario = null;
+    if (idUsuario.HasValue)
+    {
+        telefonoUsuario = Sportia.Helpers.ClienteActual.Obtener(_context, idUsuario.Value)?.Telefono;
+        if (string.IsNullOrWhiteSpace(telefonoUsuario))
+        {
+            telefonoUsuario = await _context.Usuarios
+                .Where(u => u.IdUsuario == idUsuario.Value)
+                .Select(u => u.Telefono)
+                .FirstOrDefaultAsync();
+        }
+    }
+
     // Obtener la primera letra del nombre real
     var inicialUsuario = !string.IsNullOrWhiteSpace(nombreUsuario)
         ? nombreUsuario.Trim().Substring(0, 1).ToUpper()
@@ -129,6 +143,76 @@
                 color: white;
             }
 
+
+            /* =====================================================
+               MENÚ DE LA CUENTA DEL CLIENTE (arriba a la derecha)
+            ====================================================== */
+            .cm-menu {
+                position: fixed; right: 20px; top: 80px; z-index: 9999;
+                width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 96px); overflow-y: auto;
+                padding: 14px; border-radius: 18px;
+                background: #09111e; border: 1px solid rgba(255, 255, 255, .09);
+                box-shadow: 0 24px 60px rgba(0, 0, 0, .55); backdrop-filter: blur(16px);
+                color: #eef3fa; font-size: 13px;
+            }
+            .cm-menu svg { flex-shrink: 0; }
+            .cm-cab { padding: 14px; border-radius: 14px; border: 1px solid rgba(34, 211, 154, .22); background: linear-gradient(150deg, rgba(34, 211, 154, .12), rgba(34, 211, 154, .02)); }
+            .cm-cab-fila { display: flex; align-items: center; gap: 12px; }
+            .cm-avatar {
+                position: relative; width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+                display: grid; place-items: center; font-size: 20px; font-weight: 800; color: #fff;
+                background: linear-gradient(135deg, #34d399, #047857); box-shadow: 0 0 0 3px rgba(34, 211, 154, .18);
+            }
+            .cm-avatar-editar {
+                position: absolute; right: -3px; bottom: -3px; width: 22px; height: 22px; border-radius: 50%;
+                display: grid; place-items: center; background: #1e293b; border: 2px solid #0b1424; color: #cbd5e1;
+            }
+            .cm-avatar-editar:hover { color: #22d39a; }
+            .cm-avatar-editar svg { width: 11px; height: 11px; }
+            .cm-cab-datos { flex: 1; min-width: 0; }
+            .cm-nombre { margin: 0; font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .cm-rol { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
+            .cm-pill { padding: 4px 10px; border-radius: 999px; background: rgba(34, 211, 154, .14); border: 1px solid rgba(34, 211, 154, .35); color: #22d39a; font-size: 11px; font-weight: 700; }
+            .cm-contacto { display: grid; gap: 7px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .07); }
+            .cm-contacto span { display: flex; align-items: center; gap: 9px; color: #cbd5e1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .cm-contacto svg { width: 15px; height: 15px; color: #64748b; }
+
+            .cm-info { margin-top: 12px; padding: 12px 14px 6px; border-radius: 14px; background: rgba(255, 255, 255, .025); border: 1px solid rgba(255, 255, 255, .07); }
+            .cm-info-titulo { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: #fff; }
+            .cm-dato { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+            .cm-dato:last-child { border-bottom: 0; }
+            .cm-dato svg { width: 16px; height: 16px; color: #64748b; }
+            .cm-dato span { flex: 0 0 auto; color: #94a3b8; font-size: 12px; }
+            .cm-dato b { flex: 1; min-width: 0; text-align: right; font-weight: 600; font-size: 12px; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .cm-activo { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; color: #22d39a !important; }
+            .cm-activo i { width: 7px; height: 7px; border-radius: 50%; background: #22d39a; }
+
+            .cm-opciones { display: grid; gap: 4px; margin-top: 10px; }
+            .cm-opcion {
+                display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px;
+                color: #e2e8f0; text-decoration: none; transition: background .15s ease;
+            }
+            .cm-opcion:hover { background: rgba(255, 255, 255, .05); color: #fff; }
+            .cm-opcion-icono { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(34, 211, 154, .1); border: 1px solid rgba(34, 211, 154, .25); color: #22d39a; }
+            .cm-opcion-icono svg { width: 19px; height: 19px; }
+            .cm-opcion-texto { flex: 1; min-width: 0; text-align: left; }
+            .cm-opcion-texto b { display: block; font-size: 14px; font-weight: 600; }
+            .cm-opcion-texto small { display: block; margin-top: 2px; font-size: 12px; color: #94a3b8; }
+            .cm-flecha { width: 16px; height: 16px; color: #64748b; }
+            .cm-contador { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center; background: rgba(34, 211, 154, .15); color: #22d39a; font-size: 11px; font-weight: 700; }
+
+            .cm-salir-form { margin: 10px 0 0; }
+            .cm-salir {
+                width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; cursor: pointer;
+                background: rgba(239, 68, 68, .08); border: 1px solid rgba(239, 68, 68, .28); color: #f87171; font: inherit;
+                transition: background .15s ease;
+            }
+            .cm-salir:hover { background: rgba(239, 68, 68, .15); }
+            .cm-salir .cm-opcion-texto small { color: #fca5a5; opacity: .8; }
+            .cm-salir-icono { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(239, 68, 68, .14); color: #f87171; }
+            .cm-salir-icono svg { width: 19px; height: 19px; }
+            .cm-menu.hidden { display: none; }
+            @@media (max-width: 480px) { .cm-menu { right: 12px; left: 12px; width: auto; top: 72px; } }
     </style>
 
 </head>
@@ -343,365 +427,107 @@
                              MENÚ DEL CLIENTE
                         ================================================== -->
 
-                        <div id="clientMenu"
-                             class="hidden
-                            fixed
-                            right-5
-                            top-20
-                            w-80
-                            rounded-2xl
-                            border border-white/10
-                            bg-slate-900/95
-                            backdrop-blur-xl
-                            shadow-2xl
-                            shadow-black/40
-                            overflow-hidden
-                            z-[9999]">
+                        <div id="clientMenu" class="hidden cm-menu" role="menu" aria-label="Mi cuenta">
 
-
-                            <!-- =================================================
-                                 INFORMACIÓN DEL USUARIO
-                            ================================================== -->
-
-                            <div class="p-5
-                                border-b border-white/10
-                                bg-gradient-to-br
-                                from-emerald-500/10
-                                to-transparent">
-
-                                <div class="flex items-center gap-3">
-
-
-                                    <!-- INICIAL -->
-
-                                    <div class="w-12 h-12
-                                        rounded-full
-                                        bg-gradient-to-br
-                                        from-emerald-400
-                                        to-emerald-700
-                                        flex items-center
-                                        justify-center
-                                        font-bold
-                                        text-lg">
-
+                            <!-- ENCABEZADO: foto, nombre y contacto -->
+                            <div class="cm-cab">
+                                <div class="cm-cab-fila">
+                                    <div class="cm-avatar">
                                         @inicialUsuario
-
+                                        <a asp-controller="Usuario" asp-action="EditarPerfil" class="cm-avatar-editar" title="Editar mis datos" aria-label="Editar mis datos">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /></svg>
+                                        </a>
                                     </div>
-
-
-                                    <!-- DATOS -->
-
-                                    <div class="min-w-0">
-
-                                        <p class="font-bold truncate">
-                                            @nombreUsuario
-                                        </p>
-
-                                        <p class="text-xs
-                                            text-slate-500
-                                            truncate
-                                            mt-1">
-
-                                            @correoUsuario
-
-                                        </p>
-
+                                    <div class="cm-cab-datos">
+                                        <p class="cm-nombre">@nombreUsuario</p>
+                                        <p class="cm-rol">@rolUsuario</p>
                                     </div>
-
+                                    <span class="cm-pill">Activo</span>
                                 </div>
-
-                            </div>
-
-
-                            <!-- =================================================
-                                 DATOS DEL CLIENTE
-                            ================================================== -->
-
-                            <div class="px-5 py-4
-                                border-b border-white/10">
-
-
-                                <!-- NOMBRE -->
-
-                                <div class="flex items-center justify-between gap-3">
-
-                                    <span class="text-xs text-slate-500">
-                                        Nombre
-                                    </span>
-
-                                    <span class="text-sm
-                                        font-medium
-                                        text-white
-                                        max-w-[180px]
-                                        truncate">
-
-                                        @nombreUsuario
-
-                                    </span>
-
-                                </div>
-
-
-                                <!-- CORREO -->
-
-                                <div class="flex items-center
-                                    justify-between
-                                    gap-3
-                                    mt-3">
-
-                                    <span class="text-xs text-slate-500">
-                                        Correo
-                                    </span>
-
-                                    <span class="text-sm
-                                        text-slate-300
-                                        max-w-[180px]
-                                        truncate">
-
+                                <div class="cm-contacto">
+                                    <span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6l8.5 7 8.5-7" /></svg>
                                         @correoUsuario
-
                                     </span>
-
-                                </div>
-
-
-                                <!-- ROL -->
-
-                                <div class="flex items-center
-                                    justify-between
-                                    gap-3
-                                    mt-3">
-
-                                    <span class="text-xs text-slate-500">
-                                        Tipo de cuenta
-                                    </span>
-
-                                    <span class="text-sm
-                                        text-slate-300">
-
-                                        @rolUsuario
-
-                                    </span>
-
-                                </div>
-
-
-                                <!-- ESTADO -->
-
-                                <div class="flex items-center
-                                    justify-between
-                                    mt-3">
-
-                                    <span class="text-xs text-slate-500">
-                                        Estado
-                                    </span>
-
-                                    <span class="inline-flex
-                                        items-center
-                                        gap-1.5
-                                        text-xs
-                                        font-semibold
-                                        text-emerald-400">
-
-                                        <span class="w-2 h-2
-                                            rounded-full
-                                            bg-emerald-400">
+                                    @if (!string.IsNullOrWhiteSpace(telefonoUsuario))
+                                    {
+                                        <span>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.6 3.5l2.6-.4 1.6 4.3-2 1.6a12.4 12.4 0 0 0 6.2 6.2l1.6-2 4.3 1.6-.4 2.6c-.2 1.2-1.3 2.1-2.5 2.1C10.4 19.5 4.5 13.6 4.5 6c0-1.2.9-2.3 2.1-2.5z" /></svg>
+                                            @telefonoUsuario
                                         </span>
-
-                                        Activo
-
-                                    </span>
-
+                                    }
                                 </div>
-
                             </div>
 
-
-                            <!-- =================================================
-                                 OPCIONES
-                            ================================================== -->
-
-                            <div class="p-2">
-
-
-                                <!-- MI PERFIL -->
-
-                                <a asp-controller="Usuario"
-                                   asp-action="Perfil"
-                                   class="flex items-center gap-3
-                                    w-full
-                                    px-3 py-3
-                                    rounded-xl
-                                    text-sm
-                                    text-slate-300
-                                    hover:bg-white/5
-                                    hover:text-white
-                                    transition">
-
-
-                                    <div class="w-9 h-9
-                                        rounded-lg
-                                        bg-white/5
-                                        flex items-center
-                                        justify-center">
-
-                                        👤
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <p class="font-semibold">
-                                            Mi perfil
-                                        </p>
-
-                                        <p class="text-xs text-slate-500">
-                                            Ver y editar mis datos
-                                        </p>
-
-                                    </div>
-
-                                </a>
-
-
-                                <!-- MIS RESERVAS -->
-
-                                <a href="@urlMisReservas"
-                                   onclick="toggleClientMenu()"
-                                   class="flex items-center gap-3
-                                    w-full
-                                    px-3 py-3
-                                    rounded-xl
-                                    text-sm
-                                    text-slate-300
-                                    hover:bg-white/5
-                                    hover:text-white
-                                    transition">
-
-
-                                    <div class="w-9 h-9
-                                        rounded-lg
-                                        bg-emerald-500/10
-                                        flex items-center
-                                        justify-center">
-
-                                        📅
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <p class="font-semibold">
-                                            Mis reservas
-                                        </p>
-
-                                        <p class="text-xs text-slate-500">
-                                            Consultar mis reservas
-                                        </p>
-
-                                    </div>
-
-                                </a>
-
-
-                                <!-- CAMBIAR CONTRASEÑA -->
-
-                                <a asp-controller="Usuario"
-                                   asp-action="CambiarPassword"
-                                   class="flex items-center gap-3
-                                    w-full
-                                    px-3 py-3
-                                    rounded-xl
-                                    text-sm
-                                    text-slate-300
-                                    hover:bg-white/5
-                                    hover:text-white
-                                    transition">
-
-
-                                    <div class="w-9 h-9
-                                        rounded-lg
-                                        bg-cyan-500/10
-                                        flex items-center
-                                        justify-center">
-
-                                        🔑
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <p class="font-semibold">
-                                            Cambiar contraseña
-                                        </p>
-
-                                        <p class="text-xs text-slate-500">
-                                            Actualiza tu contraseña
-                                        </p>
-
-                                    </div>
-
-                                </a>
-
+                            <!-- INFORMACIÓN DE LA CUENTA -->
+                            <div class="cm-info">
+                                <p class="cm-info-titulo">Información de la cuenta</p>
+                                <div class="cm-dato">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6" /></svg>
+                                    <span>Nombre completo</span>
+                                    <b title="@nombreUsuario">@nombreUsuario</b>
+                                </div>
+                                <div class="cm-dato">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6l8.5 7 8.5-7" /></svg>
+                                    <span>Correo electrónico</span>
+                                    <b title="@correoUsuario">@correoUsuario</b>
+                                </div>
+                                <div class="cm-dato">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.6 3.5l2.6-.4 1.6 4.3-2 1.6a12.4 12.4 0 0 0 6.2 6.2l1.6-2 4.3 1.6-.4 2.6c-.2 1.2-1.3 2.1-2.5 2.1C10.4 19.5 4.5 13.6 4.5 6c0-1.2.9-2.3 2.1-2.5z" /></svg>
+                                    <span>Teléfono</span>
+                                    <b>@(string.IsNullOrWhiteSpace(telefonoUsuario) ? "Sin teléfono" : telefonoUsuario)</b>
+                                </div>
+                                <div class="cm-dato">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5" /><circle cx="9" cy="11" r="2.2" /><path d="M5.8 16.2c.5-1.5 1.7-2.4 3.2-2.4s2.7.9 3.2 2.4M15 10h4M15 13.5h3" /></svg>
+                                    <span>Tipo de cuenta</span>
+                                    <b>@rolUsuario</b>
+                                </div>
+                                <div class="cm-dato">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                                    <span>Estado</span>
+                                    <b class="cm-activo"><i></i>Activo</b>
+                                </div>
                             </div>
 
-
-                            <!-- =================================================
-                                 CERRAR SESIÓN
-                            ================================================== -->
-
-                            <div class="p-2 border-t border-white/10">
-
-                                <form asp-controller="Login"
-                                      asp-action="Logout"
-                                      method="post">
-
-                                    @Html.AntiForgeryToken()
-
-                                    <button type="submit"
-                                            class="flex items-center gap-3
-                                        w-full
-                                        px-3 py-3
-                                        rounded-xl
-                                        text-sm
-                                        text-red-400
-                                        hover:bg-red-500/10
-                                        hover:text-red-300
-                                        transition">
-
-
-                                        <div class="w-9 h-9
-                                            rounded-lg
-                                            bg-red-500/10
-                                            flex items-center
-                                            justify-center">
-
-                                            🚪
-
-                                        </div>
-
-
-                                        <div class="text-left">
-
-                                            <p class="font-semibold">
-                                                Cerrar sesión
-                                            </p>
-
-                                            <p class="text-xs text-slate-600">
-                                                Salir de mi cuenta
-                                            </p>
-
-                                        </div>
-
-                                    </button>
-
-                                </form>
-
+                            <!-- OPCIONES -->
+                            <div class="cm-opciones">
+                                <a asp-controller="Usuario" asp-action="Perfil" class="cm-opcion" role="menuitem">
+                                    <span class="cm-opcion-icono">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6" /></svg>
+                                    </span>
+                                    <span class="cm-opcion-texto"><b>Mi perfil</b><small>Ver y editar mis datos</small></span>
+                                    <svg class="cm-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+                                </a>
+                                <a href="@urlMisReservas" onclick="toggleClientMenu()" class="cm-opcion" role="menuitem">
+                                    <span class="cm-opcion-icono">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01" /></svg>
+                                    </span>
+                                    <span class="cm-opcion-texto"><b>Mis reservas</b><small>Consultar y gestionar reservas</small></span>
+                                    @if (cantidadReservas > 0)
+                                    {
+                                        <span class="cm-contador">@cantidadReservas</span>
+                                    }
+                                    <svg class="cm-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+                                </a>
+                                <a asp-controller="Usuario" asp-action="CambiarPassword" class="cm-opcion" role="menuitem">
+                                    <span class="cm-opcion-icono">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4" /><path d="M10.8 12.2L20 3M17 6l2.5 2.5M14.5 8.5L16.5 10.5" /></svg>
+                                    </span>
+                                    <span class="cm-opcion-texto"><b>Cambiar contraseña</b><small>Actualiza tu contraseña</small></span>
+                                    <svg class="cm-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+                                </a>
                             </div>
 
+                            <!-- CERRAR SESIÓN -->
+                            <form asp-controller="Login" asp-action="Logout" method="post" class="cm-salir-form">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="cm-salir" role="menuitem">
+                                    <span class="cm-salir-icono">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /><path d="M10 16l-4-4 4-4M6 12h10" /></svg>
+                                    </span>
+                                    <span class="cm-opcion-texto"><b>Cerrar sesión</b><small>Salir de mi cuenta</small></span>
+                                </button>
+                            </form>
                         </div>
 
                     </div>

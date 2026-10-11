@@ -20,7 +20,8 @@ namespace Sportia.Controllers
         // =====================================================
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? buscar, DateOnly? desde, DateOnly? hasta,
+                                               int? estado, int? escenario, int pagina = 1)
         {
             int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
             int? idRol = HttpContext.Session.GetInt32("IdRol");
@@ -35,14 +36,217 @@ namespace Sportia.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            var reservas = await _context.Reservas
+            // ---------- Rango de fechas (por defecto: el mes actual) ----------
+            var hoy = DateOnly.FromDateTime(DateTime.Today);
+            var inicioMes = new DateOnly(hoy.Year, hoy.Month, 1);
+            DateOnly fDesde = desde ?? inicioMes;
+            DateOnly fHasta = hasta ?? inicioMes.AddMonths(1).AddDays(-1);
+            if (fHasta < fDesde)
+            {
+                (fDesde, fHasta) = (fHasta, fDesde);
+            }
+
+            // Período anterior del mismo largo (para los porcentajes de las tarjetas)
+            int dias = fHasta.DayNumber - fDesde.DayNumber + 1;
+            bool esMesCompleto = fDesde.Day == 1 && fHasta == fDesde.AddMonths(1).AddDays(-1);
+            DateOnly antDesde = esMesCompleto ? fDesde.AddMonths(-1) : fDesde.AddDays(-dias);
+            DateOnly antHasta = fDesde.AddDays(-1);
+
+            // ---------- Filtros que no dependen de la fecha ----------
+            var baseQuery = _context.Reservas.AsNoTracking().AsQueryable();
+
+            if (estado.HasValue && estado > 0)
+            {
+                baseQuery = baseQuery.Where(r => r.IdEstado == estado);
+            }
+
+            if (escenario.HasValue && escenario > 0)
+            {
+                baseQuery = baseQuery.Where(r => r.IdEscenario == escenario);
+            }
+
+            string texto = (buscar ?? "").Trim();
+            if (texto.Length > 0)
+            {
+                baseQuery = baseQuery.Where(r =>
+                    r.Codigo.Contains(texto) ||
+                    r.IdEscenarioNavigation.Nombre.Contains(texto) ||
+                    (r.IdClienteNavigation.Nombres + " " + r.IdClienteNavigation.Apellidos).Contains(texto) ||
+                    (r.IdClienteNavigation.Documento != null && r.IdClienteNavigation.Documento.Contains(texto)));
+            }
+
+            var periodo = baseQuery.Where(r => r.FechaUso >= fDesde && r.FechaUso <= fHasta);
+            var anterior = baseQuery.Where(r => r.FechaUso >= antDesde && r.FechaUso <= antHasta);
+
+            // ---------- Tarjetas ----------
+            var actual = await Resumen(periodo);
+            var previo = await Resumen(anterior);
+
+            // ---------- Tabla con paginación ----------
+            const int tamano = 9;
+            int total = actual.Total;
+            int paginas = Math.Max(1, (int)Math.Ceiling(total / (double)tamano));
+            pagina = Math.Clamp(pagina, 1, paginas);
+
+            var filas = await periodo
                 .Include(r => r.IdClienteNavigation)
-                .Include(r => r.IdEscenarioNavigation)
+                .Include(r => r.IdEscenarioNavigation).ThenInclude(e => e.IdTipoNavigation)
                 .Include(r => r.IdEstadoNavigation)
+                .Include(r => r.Pagos).ThenInclude(p => p.IdMetodoNavigation)
                 .OrderByDescending(r => r.FechaReserva)
+                .ThenByDescending(r => r.IdReserva)
+                .Skip((pagina - 1) * tamano)
+                .Take(tamano)
                 .ToListAsync();
 
-            return View(reservas);
+            var vm = new AdminReservasViewModel
+            {
+                Buscar = texto,
+                Desde = fDesde,
+                Hasta = fHasta,
+                IdEstado = estado,
+                IdEscenario = escenario,
+                Estados = await _context.EstadosReservas.AsNoTracking().OrderBy(e => e.IdEstado).ToListAsync(),
+                Escenarios = await _context.Escenarios.AsNoTracking().OrderBy(e => e.Nombre).ToListAsync(),
+
+                TotalReservas = actual.Total,
+                VariacionReservas = Variacion(actual.Total, previo.Total),
+                ClientesUnicos = actual.Clientes,
+                VariacionClientes = Variacion(actual.Clientes, previo.Clientes),
+                ValorTotal = actual.Valor,
+                VariacionValor = Variacion((double)actual.Valor, (double)previo.Valor),
+                Confirmadas = actual.Confirmadas,
+                VariacionConfirmadas = Variacion(actual.Confirmadas, previo.Confirmadas),
+                TextoComparacion = esMesCompleto ? "que el mes anterior" : "que el período anterior",
+
+                Pagina = pagina,
+                TamanoPagina = tamano,
+                TotalFiltradas = total,
+                Reservas = filas.Select(r =>
+                {
+                    string nombre = r.IdClienteNavigation != null
+                        ? $"{r.IdClienteNavigation.Nombres} {r.IdClienteNavigation.Apellidos}".Trim()
+                        : "Cliente no disponible";
+
+                    return new ReservaFilaViewModel
+                    {
+                        IdReserva = r.IdReserva,
+                        Codigo = r.Codigo,
+                        Cliente = nombre,
+                        Iniciales = Iniciales(r.IdClienteNavigation?.Nombres, r.IdClienteNavigation?.Apellidos),
+                        Documento = r.IdClienteNavigation?.Documento,
+                        Telefono = r.IdClienteNavigation?.Telefono,
+                        Correo = r.IdClienteNavigation?.Correo,
+                        Escenario = r.IdEscenarioNavigation?.Nombre ?? "Escenario no disponible",
+                        TipoEscenario = r.IdEscenarioNavigation?.IdTipoNavigation?.Nombre ?? "",
+                        FechaUso = r.FechaUso,
+                        HoraInicio = r.HoraInicio,
+                        HoraFin = r.HoraFin,
+                        ValorTotal = r.ValorTotal,
+                        Pagado = r.Pagos.Sum(p => p.MontoPagado),
+                        MetodoPago = r.Pagos.Select(p => p.IdMetodoNavigation?.Nombre)
+                                            .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)),
+                        Estado = r.IdEstadoNavigation?.Nombre ?? "Sin estado",
+                        Observaciones = r.Observaciones,
+                        FechaReserva = r.FechaReserva
+                    };
+                }).ToList()
+            };
+
+            return View(vm);
+        }
+
+
+        // =====================================================
+        // CAMBIAR ESTADO DE UNA RESERVA (ADMIN)
+        // accion = "confirmar" | "pendiente" | "cancelar"
+        // =====================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int id, string accion, string? volver)
+        {
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
+
+            if (idUsuario == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (idRol != 1)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            string clave = (accion ?? "").ToLower() switch
+            {
+                "confirmar" => "confirm",
+                "pendiente" => "pend",
+                "cancelar" => "cancel",
+                _ => ""
+            };
+
+            var reserva = await _context.Reservas.FirstOrDefaultAsync(r => r.IdReserva == id);
+            var nuevoEstado = clave == ""
+                ? null
+                : await _context.EstadosReservas.FirstOrDefaultAsync(e => e.Nombre.ToLower().Contains(clave));
+
+            if (reserva == null || nuevoEstado == null)
+            {
+                TempData["ErrorReserva"] = "No se pudo cambiar el estado de la reserva.";
+            }
+            else
+            {
+                reserva.IdEstado = nuevoEstado.IdEstado;
+                await _context.SaveChangesAsync();
+                TempData["MensajeReserva"] = $"La reserva {reserva.Codigo} quedó como \"{nuevoEstado.Nombre}\".";
+            }
+
+            // Volver a la misma página con los mismos filtros
+            if (!string.IsNullOrEmpty(volver) && Url.IsLocalUrl(volver))
+            {
+                return LocalRedirect(volver);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
+        // ---------- Ayudas para la página de reservas del admin ----------
+
+        private record ResumenReservas(int Total, int Clientes, decimal Valor, int Confirmadas);
+
+        private static async Task<ResumenReservas> Resumen(IQueryable<Reserva> q)
+        {
+            var datos = await q
+                .Select(r => new { r.IdCliente, r.ValorTotal, Estado = r.IdEstadoNavigation.Nombre.ToLower() })
+                .ToListAsync();
+
+            return new ResumenReservas(
+                datos.Count,
+                datos.Select(d => d.IdCliente).Distinct().Count(),
+                datos.Where(d => !d.Estado.Contains("cancel")).Sum(d => d.ValorTotal),
+                datos.Count(d => d.Estado.Contains("confirm")));
+        }
+
+        // null = no hay datos del período anterior para comparar
+        private static double? Variacion(double actual, double anterior)
+        {
+            if (anterior == 0)
+            {
+                return actual == 0 ? 0 : null;
+            }
+
+            return Math.Round((actual - anterior) / anterior * 100, 0);
+        }
+
+        private static string Iniciales(string? nombres, string? apellidos)
+        {
+            string a = (nombres ?? "").Trim();
+            string b = (apellidos ?? "").Trim();
+            string ini = (a.Length > 0 ? a[..1] : "") + (b.Length > 0 ? b[..1] : "");
+            return ini.Length > 0 ? ini.ToUpper() : "?";
         }
 
 

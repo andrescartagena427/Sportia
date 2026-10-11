@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sportia.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Sportia.Models.ViewModels;
 
 namespace Sportia.Controllers
 {
@@ -14,39 +15,104 @@ namespace Sportia.Controllers
             _context = context;
         }
 
-        // GET: /AdminEmpresa
-        public async Task<IActionResult> Index(string? buscar)
+        // =========================================================
+        // SOLO EL ADMINISTRADOR PUEDE ENTRAR A ESTAS PÁGINAS
+        // =========================================================
+
+        private IActionResult? ValidarAdmin()
         {
-            IQueryable<Empresa> empresas = _context.Empresas
-                .Include(e => e.IdUsuarioNavigation)
-                .Include(e => e.Escenarios);
+            int? idUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            int? idRol = HttpContext.Session.GetInt32("IdRol");
 
-            if (!string.IsNullOrWhiteSpace(buscar))
+            if (idUsuario == null)
             {
-                buscar = buscar.Trim();
-
-                empresas = empresas.Where(e =>
-                    e.Nombre.Contains(buscar) ||
-                    (e.Nit != null && e.Nit.Contains(buscar)) ||
-                    (e.Telefono != null && e.Telefono.Contains(buscar)) ||
-                    (e.Correo != null && e.Correo.Contains(buscar)) ||
-                    (e.Direccion != null && e.Direccion.Contains(buscar))
-                );
+                return RedirectToAction("Index", "Login");
             }
 
-            empresas = empresas
-                .OrderByDescending(e => e.IdEmpresa);
+            if (idRol != 1)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
-            ViewBag.Buscar = buscar;
-
-            return View(await empresas.ToListAsync());
+            return null;
         }
+
+        // GET: /AdminEmpresa
+        public async Task<IActionResult> Index(string? buscar, int pagina = 1)
+        {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
+            var datos = await _context.Empresas
+                .AsNoTracking()
+                .Select(e => new EmpresaFilaViewModel
+                {
+                    IdEmpresa = e.IdEmpresa,
+                    Nombre = e.Nombre,
+                    Nit = e.Nit,
+                    Telefono = e.Telefono,
+                    Correo = e.Correo,
+                    Direccion = e.Direccion,
+                    Logo = e.Logo,
+                    Responsable = e.IdUsuarioNavigation.Nombres + " " + e.IdUsuarioNavigation.Apellidos,
+                    RolResponsable = e.IdUsuarioNavigation.IdRolNavigation.Nombre,
+                    Escenarios = e.Escenarios.Count(),
+                    Activa = e.Estado == true
+                })
+                .OrderByDescending(e => e.IdEmpresa)
+                .ToListAsync();
+
+            // ---------- Tarjetas ----------
+            var escenarios = await _context.Escenarios
+                .AsNoTracking()
+                .Select(e => e.Estado)
+                .ToListAsync();
+
+            // ---------- Búsqueda ----------
+            string texto = (buscar ?? "").Trim();
+            var lista = texto.Length == 0
+                ? datos
+                : datos.Where(e =>
+                    Contiene(e.Nombre, texto) ||
+                    Contiene(e.Nit, texto) ||
+                    Contiene(e.Telefono, texto) ||
+                    Contiene(e.Correo, texto) ||
+                    Contiene(e.Direccion, texto) ||
+                    Contiene(e.Responsable, texto)).ToList();
+
+            const int tamano = 10;
+            int paginas = Math.Max(1, (int)Math.Ceiling(lista.Count / (double)tamano));
+            pagina = Math.Clamp(pagina, 1, paginas);
+
+            var vm = new AdminEmpresasViewModel
+            {
+                Buscar = texto,
+                Total = datos.Count,
+                ConEscenarios = datos.Count(e => e.Escenarios > 0),
+                Activas = datos.Count(e => e.Activa),
+                Inactivas = datos.Count(e => !e.Activa),
+                Escenarios = escenarios.Count,
+                EscenariosActivos = escenarios.Count(e => e == true),
+                Empresas = lista.Skip((pagina - 1) * tamano).Take(tamano).ToList(),
+                Pagina = pagina,
+                TamanoPagina = tamano,
+                TotalFiltradas = lista.Count
+            };
+
+            return View(vm);
+        }
+
+        private static bool Contiene(string? valor, string texto) =>
+            !string.IsNullOrEmpty(valor) && valor.Contains(texto, StringComparison.OrdinalIgnoreCase);
 
 
         // GET: /AdminEmpresa/Details/5
         [HttpGet]
         public async Task<IActionResult> Details(int? id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id == null)
             {
                 return NotFound();
@@ -70,6 +136,9 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             await CargarUsuarios();
 
             return View();
@@ -81,6 +150,9 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Empresa empresa)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             ModelState.Remove(nameof(Empresa.IdUsuarioNavigation));
             ModelState.Remove(nameof(Empresa.Escenarios));
 
@@ -120,6 +192,9 @@ namespace Sportia.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id == null)
             {
                 return NotFound();
@@ -133,7 +208,7 @@ namespace Sportia.Controllers
                 return NotFound();
             }
 
-            await CargarUsuarios();
+            await CargarUsuarios(empresa.IdUsuario);
 
             return View(empresa);
         }
@@ -144,6 +219,9 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Empresa empresa)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             if (id != empresa.IdEmpresa)
             {
                 return NotFound();
@@ -154,7 +232,7 @@ namespace Sportia.Controllers
 
             if (!ModelState.IsValid)
             {
-                await CargarUsuarios();
+                await CargarUsuarios(empresa.IdUsuario);
                 return View(empresa);
             }
 
@@ -191,7 +269,7 @@ namespace Sportia.Controllers
                     "No se pudo actualizar la empresa. Verifique los datos ingresados."
                 );
 
-                await CargarUsuarios();
+                await CargarUsuarios(empresa.IdUsuario);
 
                 return View(empresa);
             }
@@ -203,6 +281,9 @@ namespace Sportia.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var bloqueo = ValidarAdmin();
+            if (bloqueo != null) return bloqueo;
+
             var empresa = await _context.Empresas
                 .Include(e => e.Escenarios)
                 .FirstOrDefaultAsync(e => e.IdEmpresa == id);
@@ -231,10 +312,11 @@ namespace Sportia.Controllers
 
 
         // Cargar usuarios para el selector
-        private async Task CargarUsuarios()
+        // (incluir = el responsable actual, para que aparezca aunque esté inactivo)
+        private async Task CargarUsuarios(int? incluir = null)
         {
             ViewBag.Usuarios = await _context.Usuarios
-                .Where(u => u.Estado == true)
+                .Where(u => u.Estado == true || u.IdUsuario == incluir)
                 .OrderBy(u => u.Nombres)
                 .ThenBy(u => u.Apellidos)
                 .Select(u => new SelectListItem

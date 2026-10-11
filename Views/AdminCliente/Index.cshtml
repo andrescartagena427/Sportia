@@ -1,587 +1,615 @@
-﻿@model IEnumerable<Sportia.Models.Cliente>
+﻿@model Sportia.Models.ViewModels.AdminClientesViewModel
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Clientes";
     Layout = "_DashboardLayout";
+
+    var co = new CultureInfo("es-CO");
+
+    string UrlPagina(int pagina) => Url.Action("Index", "AdminCliente", new
+    {
+        buscar = string.IsNullOrEmpty(Model.Buscar) ? null : Model.Buscar,
+        estado = string.IsNullOrEmpty(Model.Estado) ? null : Model.Estado,
+        pagina
+    }) ?? "#";
+
+    string ColorAvatar(string nombre)
+    {
+        string[] colores = { "#14b88a", "#2f6fed", "#7c4dff", "#0ea5a5", "#e8508a", "#f59e0b" };
+        int h = 0;
+        foreach (char c in nombre) h = (h * 31 + c) & 0x7fffffff;
+        return colores[h % colores.Length];
+    }
+
+    string Inicial(string nombre) => string.IsNullOrWhiteSpace(nombre) ? "?" : nombre.Trim()[..1].ToUpper();
+
+    string Hora(DateTime d) => d.ToString("hh:mm tt", co);
+
+    string textoEstado = Model.Estado switch
+    {
+        "activo" => "Activos",
+        "inactivo" => "Inactivos",
+        _ => "Todos los estados"
+    };
 }
 
-<div class="space-y-6">
+@functions {
+    private Microsoft.AspNetCore.Html.IHtmlContent Variacion(double? v)
+    {
+        if (v == null)
+        {
+            return new Microsoft.AspNetCore.Html.HtmlString("<span class=\"cl-var sube\" title=\"Frente al inicio del mes\">Nuevo</span>");
+        }
+        bool sube = v >= 0;
+        string flecha = sube ? "M12 19V5M5 12l7-7 7 7" : "M12 5v14M5 12l7 7 7-7";
+        return new Microsoft.AspNetCore.Html.HtmlString(
+            $"<span class=\"cl-var {(sube ? "sube" : "baja")}\" title=\"Frente al inicio del mes\"><svg viewBox=\"0 0 24 24\"><path d=\"{flecha}\"/></svg>{Math.Abs(v.Value):0}%</span>");
+    }
+}
 
-    <!-- ===================================================== -->
-    <!-- ENCABEZADO -->
-    <!-- ===================================================== -->
+<style>
+    .cl {
+        --cl-card: #0f1a2c;
+        --cl-borde: #1e2c44;
+        --cl-borde-2: #263650;
+        --cl-texto: #eef3fa;
+        --cl-suave: #a3b0c4;
+        --cl-tenue: #6b7a92;
+        --cl-verde: #22d39a;
+        --cl-azul: #4f8cff;
+        --cl-rojo: #f05d6c;
+        width: 100%;
+        color: var(--cl-texto);
+    }
+    .cl *, .cl *::before, .cl *::after { box-sizing: border-box; }
+    .cl svg { flex-shrink: 0; }
 
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    /* ---------- Mensajes ---------- */
+    .cl-alerta { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding: 13px 16px; border-radius: 12px; font-size: 13px; }
+    .cl-alerta.ok { background: rgba(34, 211, 154, .10); border: 1px solid rgba(34, 211, 154, .30); color: var(--cl-verde); }
+    .cl-alerta.error { background: rgba(240, 93, 108, .10); border: 1px solid rgba(240, 93, 108, .30); color: var(--cl-rojo); }
+    .cl-alerta svg { width: 18px; height: 18px; }
 
-        <div>
-            <div class="flex items-center gap-3">
+    /* ---------- Encabezado ---------- */
+    .cl-cab { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    .cl-cab-izq { display: flex; align-items: center; gap: 18px; }
+    .cl-cab-icono { width: 56px; height: 56px; display: grid; place-items: center; color: var(--cl-verde); }
+    .cl-cab-icono svg { width: 50px; height: 50px; filter: drop-shadow(0 6px 18px rgba(34, 211, 154, .35)); }
+    .cl-cab h1 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.5px; color: #fff; }
+    .cl-cab p { margin: 6px 0 0; font-size: 15px; color: var(--cl-suave); }
+    .cl-btn-nuevo {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 14px 26px; border-radius: 12px;
+        background: linear-gradient(135deg, #2ee6ac, #19c48d);
+        color: #04241a; font-size: 15px; font-weight: 800; text-decoration: none; white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(34, 211, 154, .28);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .cl-btn-nuevo:hover { color: #04241a; transform: translateY(-1px); box-shadow: 0 12px 28px rgba(34, 211, 154, .38); }
+    .cl-btn-nuevo svg { width: 20px; height: 20px; }
 
-                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                    <svg class="h-6 w-6"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2"
-                         viewBox="0 0 24 24">
+    /* ---------- Tarjetas ---------- */
+    .cl-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .cl-kpi {
+        position: relative; overflow: hidden;
+        display: flex; align-items: flex-start; gap: 18px;
+        padding: 20px 20px 22px; border-radius: 16px; border: 1px solid; min-width: 0;
+    }
+    .cl-kpi::after {
+        content: ""; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, .08), transparent 70%); pointer-events: none;
+    }
+    .cl-kpi-icono { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+    .cl-kpi-icono svg { width: 28px; height: 28px; }
+    .cl-kpi-cuerpo { flex: 1; min-width: 0; }
+    .cl-kpi-label { font-size: 13px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: #e6ecf5; }
+    .cl-kpi-fila { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .cl-kpi-num { font-size: 34px; font-weight: 800; line-height: 1; color: #fff; }
+    .cl-kpi-desc { margin-top: 12px; font-size: 12px; color: #c9d3e2; }
+    .cl-var { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; }
+    .cl-var svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+    .cl-var.sube { color: var(--cl-verde); }
+    .cl-var.baja { color: var(--cl-rojo); }
 
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    .cl-kpi.azul { background: linear-gradient(150deg, #173a8a, #10235a); border-color: rgba(79, 140, 255, .45); }
+    .cl-kpi.azul .cl-kpi-icono { background: linear-gradient(145deg, #5b9bff, #2f6fed); }
+    .cl-kpi.verde { background: linear-gradient(150deg, #11493f, #0c2e2b); border-color: rgba(34, 211, 154, .38); }
+    .cl-kpi.verde .cl-kpi-icono { background: linear-gradient(145deg, #1fb98e, #0e8a68); }
+    .cl-kpi.morado { background: linear-gradient(150deg, #4b23a8, #2a1670); border-color: rgba(155, 107, 255, .45); }
+    .cl-kpi.morado .cl-kpi-icono { background: linear-gradient(145deg, #a46bff, #7a3fe6); }
+    .cl-kpi.ambar { background: linear-gradient(150deg, #5a3b16, #2f2214); border-color: rgba(245, 158, 11, .42); }
+    .cl-kpi.ambar .cl-kpi-icono { background: linear-gradient(145deg, #ffb340, #e48a0c); }
 
-                    </svg>
-                </div>
+    /* ---------- Barra de filtros ---------- */
+    .cl-filtros {
+        display: flex; align-items: center; gap: 14px;
+        padding: 12px; margin-bottom: 24px;
+        background: var(--cl-card); border: 1px solid var(--cl-borde); border-radius: 16px;
+    }
+    .cl-buscar { position: relative; flex: 1; min-width: 0; }
+    .cl-buscar svg { position: absolute; left: 16px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--cl-suave); pointer-events: none; }
+    .cl-buscar input {
+        width: 100%; height: 46px; padding: 0 16px 0 50px;
+        background: #0a1322; border: 1px solid var(--cl-borde-2); border-radius: 11px;
+        color: var(--cl-texto); font-size: 14px; outline: none;
+    }
+    .cl-buscar input::placeholder { color: var(--cl-tenue); }
+    .cl-buscar input:focus { border-color: var(--cl-verde); }
 
-                <div>
-                    <h1 class="text-2xl font-bold text-white">
-                        Clientes
-                    </h1>
+    .cl-estado { position: relative; width: 250px; }
+    .cl-estado-caja {
+        display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 16px;
+        background: #0a1322; border: 1px solid var(--cl-borde-2); border-radius: 11px;
+        font-size: 14px; color: var(--cl-texto);
+    }
+    .cl-estado-caja svg { width: 18px; height: 18px; color: var(--cl-suave); }
+    .cl-estado-caja span { flex: 1; }
+    .cl-estado select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .cl-estado select option { background: #0f1a2c; color: #eef3fa; }
 
-                    <p class="text-sm text-slate-400">
-                        Administra los clientes registrados en Sportia
-                    </p>
-                </div>
+    .cl-vistas { display: flex; gap: 4px; padding: 4px; background: #0a1322; border: 1px solid var(--cl-borde-2); border-radius: 11px; }
+    .cl-vistas button {
+        width: 40px; height: 36px; display: grid; place-items: center;
+        border: 0; border-radius: 8px; background: transparent; color: var(--cl-suave); cursor: pointer;
+    }
+    .cl-vistas button svg { width: 18px; height: 18px; }
+    .cl-vistas button.activo { background: #1b2a44; color: #fff; }
 
-            </div>
-        </div>
+    /* ---------- Tarjeta de la lista ---------- */
+    .cl-lista { background: var(--cl-card); border: 1px solid var(--cl-borde); border-radius: 18px; overflow: hidden; }
+    .cl-lista-cab { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 22px 18px; border-bottom: 1px solid var(--cl-borde); }
+    .cl-lista-cab h2 { margin: 0; font-size: 22px; font-weight: 800; color: #fff; }
+    .cl-lista-cab p { margin: 4px 0 0; font-size: 14px; color: var(--cl-suave); }
+    .cl-badge { padding: 8px 14px; border-radius: 10px; background: rgba(34, 211, 154, .12); color: var(--cl-verde); font-size: 14px; font-weight: 700; white-space: nowrap; }
 
-        <!-- NUEVO CLIENTE -->
+    .cl-tabla-wrap { width: 100%; overflow-x: auto; }
+    .cl-tabla { width: 100%; min-width: 1100px; border-collapse: collapse; }
+    .cl-tabla th {
+        padding: 16px; text-align: left;
+        font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #b6c2d4;
+        border-bottom: 1px solid var(--cl-borde); white-space: nowrap;
+    }
+    .cl-tabla td { padding: 14px 16px; font-size: 14px; color: #dbe3ef; border-bottom: 1px solid #18253a; vertical-align: middle; }
+    .cl-tabla tbody tr { transition: background .15s ease; }
+    .cl-tabla tbody tr:hover { background: #13213a; }
+    .cl-tabla tbody tr:last-child td { border-bottom: 0; }
+    .cl-tabla th:first-child, .cl-tabla td:first-child { padding-left: 22px; width: 48px; }
+    .cl-tabla th:last-child, .cl-tabla td:last-child { padding-right: 22px; }
+    .cl-num { font-weight: 700; color: #fff; }
 
-        <a asp-controller="AdminCliente"
-           asp-action="Create"
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+    .cl-persona { display: flex; align-items: center; gap: 14px; }
+    .cl-avatar {
+        width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+        display: grid; place-items: center; color: #fff; font-size: 19px; font-weight: 700;
+    }
+    .cl-persona b { display: block; font-weight: 600; color: #fff; white-space: nowrap; }
+    .cl-persona small { display: block; margin-top: 3px; font-size: 12px; color: var(--cl-tenue); }
+    .cl-nada { color: var(--cl-tenue); }
+    .cl-registro { display: flex; align-items: flex-start; gap: 10px; white-space: nowrap; }
+    .cl-registro svg { width: 18px; height: 18px; margin-top: 1px; color: var(--cl-suave); }
+    .cl-registro small { display: block; margin-top: 3px; font-size: 12px; color: var(--cl-tenue); }
 
-            <svg class="h-5 w-5"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 viewBox="0 0 24 24">
+    .cl-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .cl-chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .cl-chip.activo { background: rgba(34, 211, 154, .14); color: var(--cl-verde); }
+    .cl-chip.inactivo { background: rgba(163, 176, 196, .14); color: var(--cl-suave); }
 
-                <path d="M12 5v14" />
-                <path d="M5 12h14" />
+    .cl-acciones { display: flex; align-items: center; gap: 10px; }
+    .cl-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 38px; padding: 0 16px; border-radius: 9px;
+        font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap;
+        transition: .15s ease;
+    }
+    .cl-btn svg { width: 16px; height: 16px; }
+    .cl-btn.editar { background: rgba(79, 140, 255, .08); border: 1px solid rgba(79, 140, 255, .40); color: #dbe6ff; }
+    .cl-btn.editar:hover { background: rgba(79, 140, 255, .18); color: #fff; }
+    .cl-btn.eliminar { background: rgba(240, 93, 108, .08); border: 1px solid rgba(240, 93, 108, .45); color: #ff8b97; }
+    .cl-btn.eliminar:hover { background: rgba(240, 93, 108, .18); color: #ffb3bb; }
+    .cl-btn.eliminar:disabled { opacity: .4; cursor: not-allowed; background: transparent; }
+    .cl-acciones form { margin: 0; }
 
-            </svg>
+    .cl-menu { position: relative; }
+    .cl-menu-btn {
+        width: 38px; height: 38px; display: grid; place-items: center;
+        border-radius: 9px; border: 1px solid var(--cl-borde-2); background: #0c1627; color: #d4dceb; cursor: pointer;
+    }
+    .cl-menu-btn:hover { color: var(--cl-verde); border-color: var(--cl-verde); }
+    .cl-menu-btn svg { width: 18px; height: 18px; }
+    .cl-menu-lista {
+        display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+        min-width: 200px; padding: 6px;
+        background: #101c30; border: 1px solid var(--cl-borde-2); border-radius: 12px; box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    }
+    .cl-menu.abierto .cl-menu-lista { display: block; }
+    .cl-menu.arriba .cl-menu-lista { top: auto; bottom: calc(100% + 6px); }
+    .cl-menu-lista a {
+        display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+        color: #dbe3ef; font-size: 13px; text-decoration: none; white-space: nowrap;
+    }
+    .cl-menu-lista a:hover { background: #172741; color: #fff; }
+    .cl-menu-lista svg { width: 16px; height: 16px; color: var(--cl-suave); }
 
-            Nuevo cliente
+    /* ---------- Vista en cuadrícula ---------- */
+    .cl-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 20px 22px; }
+    .cl[data-vista="grid"] .cl-grid { display: grid; }
+    .cl[data-vista="grid"] .cl-tabla-wrap { display: none; }
+    .cl-tarjeta { display: flex; flex-direction: column; gap: 14px; padding: 18px; background: #0c1627; border: 1px solid var(--cl-borde); border-radius: 14px; }
+    .cl-tarjeta-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .cl-tarjeta dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; margin: 0; font-size: 13px; }
+    .cl-tarjeta dt { color: var(--cl-tenue); }
+    .cl-tarjeta dd { margin: 0; color: #dbe3ef; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cl-tarjeta .cl-acciones { justify-content: flex-end; flex-wrap: wrap; }
 
-        </a>
+    /* ---------- Pie ---------- */
+    .cl-pie { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 22px; border-top: 1px solid var(--cl-borde); font-size: 14px; color: var(--cl-suave); }
+    .cl-paginas { display: flex; align-items: center; gap: 8px; }
+    .cl-paginas a, .cl-paginas span {
+        min-width: 36px; height: 36px; padding: 0 8px; display: grid; place-items: center;
+        border-radius: 9px; border: 1px solid var(--cl-borde-2); background: #0c1627;
+        color: #dbe3ef; font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .cl-paginas a:hover { border-color: var(--cl-verde); color: var(--cl-verde); }
+    .cl-paginas .actual { background: var(--cl-verde); border-color: var(--cl-verde); color: #04241a; }
+    .cl-paginas .apagado { opacity: .4; }
+    .cl-paginas svg { width: 16px; height: 16px; }
 
-    </div>
+    .cl-vacio { padding: 64px 20px; text-align: center; }
+    .cl-vacio-icono { width: 58px; height: 58px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 16px; background: rgba(34, 211, 154, .10); color: var(--cl-verde); }
+    .cl-vacio-icono svg { width: 28px; height: 28px; }
+    .cl-vacio h3 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; }
+    .cl-vacio p { margin: 8px 0 18px; font-size: 13px; color: var(--cl-suave); }
 
+    /* ---------- Responsive ---------- */
+    @@media (max-width: 1280px) {
+        .cl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 760px) {
+        .cl-cab { flex-direction: column; align-items: flex-start; }
+        .cl-cab h1 { font-size: 28px; }
+        .cl-btn-nuevo { width: 100%; justify-content: center; }
+        .cl-kpis { grid-template-columns: 1fr; }
+        .cl-filtros { flex-wrap: wrap; }
+        .cl-buscar { flex-basis: 100%; }
+        .cl-estado { flex: 1; width: auto; }
+        .cl-pie { flex-direction: column; }
+    }
+</style>
 
-    <!-- ===================================================== -->
-    <!-- MENSAJES -->
-    <!-- ===================================================== -->
+@{
+    const string svgAttr = "viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"";
+    string icoCalendario = $"<svg {svgAttr}><rect x=\"3\" y=\"4.5\" width=\"18\" height=\"16.5\" rx=\"2.5\"/><path d=\"M16 2.5v4M8 2.5v4M3 10h18\"/><path d=\"M8 14h.01M12 14h.01M16 14h.01\"/></svg>";
+}
+
+<div class="cl" id="clPagina" data-vista="lista">
+
     @if (TempData["Success"] != null)
     {
-        <div class="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
-
-            <svg class="h-5 w-5"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 viewBox="0 0 24 24">
-
-                <path d="M20 6L9 17l-5-5" />
-
-            </svg>
-
-            @TempData["Success"]
-
+        <div class="cl-alerta ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5" /></svg>
+            <span>@TempData["Success"]</span>
         </div>
     }
-
     @if (TempData["Error"] != null)
     {
-        <div class="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-
-            <svg class="h-5 w-5"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 viewBox="0 0 24 24">
-
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 8v4" />
-                <path d="M12 16h.01" />
-
-            </svg>
-
-            @TempData["Error"]
-
+        <div class="cl-alerta error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+            <span>@TempData["Error"]</span>
         </div>
     }
 
-
-    <!-- ===================================================== -->
-    <!-- ESTADÍSTICAS -->
-    <!-- ===================================================== -->
-
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-        <!-- TOTAL -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Total clientes
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-white">
-                        @Model.Count()
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Registrados en el sistema
-                    </p>
-                </div>
-
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-
-                    <svg class="h-6 w-6"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2"
-                         viewBox="0 0 24 24">
-
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- CON CORREO -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Con correo
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-emerald-400">
-                        @Model.Count(c => !string.IsNullOrWhiteSpace(c.Correo))
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Clientes con correo registrado
-                    </p>
-                </div>
-
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-
-                    <svg class="h-6 w-6"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2"
-                         viewBox="0 0 24 24">
-
-                        <rect x="3" y="5" width="18" height="14" rx="2" />
-                        <path d="m3 7 9 6 9-6" />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- TELEFONO -->
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Teléfonos
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-purple-400">
-                        @Model.Count(c => !string.IsNullOrWhiteSpace(c.Telefono))
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Clientes con teléfono
-                    </p>
-                </div>
-
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
-
-                    <svg class="h-6 w-6"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2"
-                         viewBox="0 0 24 24">
-
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2
-                        19.79 19.79 0 0 1-8.63-3.07
-                        19.5 19.5 0 0 1-6-6
-                        19.79 19.79 0 0 1-3.07-8.67
-                        A2 2 0 0 1 4.11 2h3
-                        a2 2 0 0 1 2 1.72
-                        12.84 12.84 0 0 0 .7 2.81
-                        2 2 0 0 1-.45 2.11L8.09 9.91
-                        a16 16 0 0 0 6 6l1.27-1.27
-                        a2 2 0 0 1 2.11-.45
-                        12.84 12.84 0 0 0 2.81.7
-                        A2 2 0 0 1 22 16.92z" />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- BUSCADOR -->
-    <!-- ===================================================== -->
-
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-
-        <form asp-controller="AdminCliente"
-              asp-action="Index"
-              method="get"
-              class="flex flex-col gap-3 md:flex-row">
-
-            <div class="relative flex-1">
-
-                <svg class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2"
-                     viewBox="0 0 24 24">
-
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.3-4.3" />
-
+    <!-- ===================== ENCABEZADO ===================== -->
+    <div class="cl-cab">
+        <div class="cl-cab-izq">
+            <div class="cl-cab-icono">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="7.2" r="3.6" />
+                    <path d="M5.5 19.2c0-3.7 2.9-6.2 6.5-6.2s6.5 2.5 6.5 6.2v.8h-13z" />
+                    <circle cx="5.2" cy="9" r="2.5" opacity=".75" />
+                    <path d="M1 18.6c0-2.6 1.8-4.4 4.3-4.4.7 0 1.3.1 1.8.4-1.2 1.2-1.9 2.9-2 4.8H1z" opacity=".75" />
+                    <circle cx="18.8" cy="9" r="2.5" opacity=".75" />
+                    <path d="M23 18.6c0-2.6-1.8-4.4-4.3-4.4-.7 0-1.3.1-1.8.4 1.2 1.2 1.9 2.9 2 4.8H23z" opacity=".75" />
                 </svg>
-
-                <input type="text"
-                       name="buscar"
-                       value="@ViewBag.Buscar"
-                       placeholder="Buscar por nombre, documento, teléfono o correo..."
-                       class="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-12 pr-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-500" />
-
             </div>
-
-            <button type="submit"
-                    class="rounded-xl border border-slate-700 bg-slate-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
-
-                Buscar
-
-            </button>
-
-            @if (!string.IsNullOrWhiteSpace(ViewBag.Buscar))
-            {
-                <a asp-action="Index"
-                   class="rounded-xl border border-slate-700 px-6 py-3 text-center text-sm font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white">
-
-                    Limpiar
-
-                </a>
-            }
-
-        </form>
-
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- TABLA -->
-    <!-- ===================================================== -->
-
-    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
-
-        <div class="border-b border-slate-800 px-6 py-5">
-
-            <h2 class="text-lg font-bold text-white">
-                Clientes registrados
-            </h2>
-
-            <p class="mt-1 text-sm text-slate-500">
-                Consulta y administra los clientes de Sportia
-            </p>
-
+            <div>
+                <h1>Clientes</h1>
+                <p>Administra los clientes registrados en Sportia</p>
+            </div>
         </div>
 
+        <a asp-controller="AdminCliente" asp-action="Create" class="cl-btn-nuevo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nuevo cliente
+        </a>
+    </div>
 
-        <div class="overflow-x-auto">
+    <!-- ===================== TARJETAS ===================== -->
+    <section class="cl-kpis">
+        <div class="cl-kpi azul">
+            <div class="cl-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6z" /></svg>
+            </div>
+            <div class="cl-kpi-cuerpo">
+                <div class="cl-kpi-label">Total clientes</div>
+                <div class="cl-kpi-fila"><span class="cl-kpi-num">@Model.Total</span>@Variacion(Model.VariacionTotal)</div>
+                <div class="cl-kpi-desc">Clientes registrados en el sistema</div>
+            </div>
+        </div>
 
-            <table class="w-full min-w-[900px]">
+        <div class="cl-kpi verde">
+            <div class="cl-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6l8.5 7 8.5-7" /></svg>
+            </div>
+            <div class="cl-kpi-cuerpo">
+                <div class="cl-kpi-label">Con correo</div>
+                <div class="cl-kpi-fila"><span class="cl-kpi-num">@Model.ConCorreo</span>@Variacion(Model.VariacionCorreo)</div>
+                <div class="cl-kpi-desc">Clientes con correo registrado</div>
+            </div>
+        </div>
 
-                <thead class="border-b border-slate-800 bg-slate-950/50">
+        <div class="cl-kpi morado">
+            <div class="cl-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 3.5l2.6-.4 1.6 4.3-2 1.6a12.4 12.4 0 0 0 6.2 6.2l1.6-2 4.3 1.6-.4 2.6c-.2 1.2-1.3 2.1-2.5 2.1C10.4 19.5 4.5 13.6 4.5 6c0-1.2.9-2.3 2.1-2.5z" /></svg>
+            </div>
+            <div class="cl-kpi-cuerpo">
+                <div class="cl-kpi-label">Con teléfono</div>
+                <div class="cl-kpi-fila"><span class="cl-kpi-num">@Model.ConTelefono</span>@Variacion(Model.VariacionTelefono)</div>
+                <div class="cl-kpi-desc">Clientes con teléfono</div>
+            </div>
+        </div>
 
-                    <tr>
+        <div class="cl-kpi ambar">
+            <div class="cl-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10v-6z" opacity=".95" /><path d="M8.3 12.2l2.6 2.6 4.9-5" fill="none" stroke="#7a4504" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="cl-kpi-cuerpo">
+                <div class="cl-kpi-label">Activos</div>
+                <div class="cl-kpi-fila"><span class="cl-kpi-num">@Model.Activos</span>@Variacion(Model.VariacionActivos)</div>
+                <div class="cl-kpi-desc" title="Con reservas en los últimos @Model.MesesActividad meses o registrados hace menos de un mes">Clientes activos</div>
+            </div>
+        </div>
+    </section>
 
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Cliente
-                        </th>
+    <!-- ===================== FILTROS ===================== -->
+    <form method="get" asp-controller="AdminCliente" asp-action="Index" class="cl-filtros" id="clFiltros">
+        <div class="cl-buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input type="search" name="buscar" id="clBuscar" value="@Model.Buscar" placeholder="Buscar por nombre, documento, teléfono o correo..." autocomplete="off" />
+        </div>
 
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Documento
-                        </th>
+        <div class="cl-estado">
+            <div class="cl-estado-caja">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 5h17l-6.5 7.6V19l-4 1.5v-7.9z" /></svg>
+                <span>@textoEstado</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            <select name="estado" aria-label="Estado" onchange="this.form.submit()">
+                <option value="" selected="@(Model.Estado == "")">Todos los estados</option>
+                <option value="activo" selected="@(Model.Estado == "activo")">Activos</option>
+                <option value="inactivo" selected="@(Model.Estado == "inactivo")">Inactivos</option>
+            </select>
+        </div>
 
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Teléfono
-                        </th>
+        <div class="cl-vistas" role="group" aria-label="Vista">
+            <button type="button" data-vista="grid" title="Vista en tarjetas">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
+            </button>
+            <button type="button" data-vista="lista" title="Vista en lista" class="activo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" /></svg>
+            </button>
+        </div>
+    </form>
 
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Correo
-                        </th>
+    <!-- ===================== LISTA ===================== -->
+    <section class="cl-lista">
+        <div class="cl-lista-cab">
+            <div>
+                <h2>Clientes registrados</h2>
+                <p>Consulta y administra los clientes de Sportia</p>
+            </div>
+            <span class="cl-badge">@Model.TotalFiltrados cliente@(Model.TotalFiltrados == 1 ? "" : "s")</span>
+        </div>
 
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Registro
-                        </th>
-
-                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Acciones
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody class="divide-y divide-slate-800">
-
-                    @if (Model.Any())
-                    {
-                        foreach (var cliente in Model)
+        @if (Model.Clientes.Any())
+        {
+            <!-- Vista en lista -->
+            <div class="cl-tabla-wrap">
+                <table class="cl-tabla">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Documento</th>
+                            <th>Teléfono</th>
+                            <th>Correo</th>
+                            <th>Registro</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Clientes)
                         {
-                            <tr class="transition hover:bg-slate-800/40">
-
-                                <!-- CLIENTE -->
-
-                                <td class="px-6 py-5">
-
-                                    <div class="flex items-center gap-3">
-
-                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 font-bold text-emerald-400">
-
-                                            @cliente.Nombres.Substring(0, 1).ToUpper()
-
-                                        </div>
-
+                            <tr>
+                                <td class="cl-num">@c.Numero</td>
+                                <td>
+                                    <div class="cl-persona">
+                                        <span class="cl-avatar" style="background:@ColorAvatar(c.Nombre)">@Inicial(c.Nombre)</span>
                                         <div>
-
-                                            <p class="font-semibold text-white">
-                                                @cliente.Nombres @cliente.Apellidos
-                                            </p>
-
-                                            <p class="text-xs text-slate-500">
-                                                ID #@cliente.IdCliente
-                                            </p>
-
+                                            <b>@c.Nombre</b>
+                                            <small>ID #@c.IdCliente</small>
                                         </div>
-
                                     </div>
-
                                 </td>
-
-
-                                <!-- DOCUMENTO -->
-
-                                <td class="px-6 py-5">
-
-                                    @if (!string.IsNullOrWhiteSpace(cliente.Documento))
+                                <td>@if (string.IsNullOrWhiteSpace(c.Documento)) { <span class="cl-nada">—</span> } else { @c.Documento }</td>
+                                <td>@if (string.IsNullOrWhiteSpace(c.Telefono)) { <span class="cl-nada">—</span> } else { @c.Telefono }</td>
+                                <td>@if (string.IsNullOrWhiteSpace(c.Correo)) { <span class="cl-nada">Sin correo</span> } else { @c.Correo }</td>
+                                <td>
+                                    @if (c.FechaRegistro.HasValue)
                                     {
-                                        <span class="text-sm text-slate-300">
-                                            @cliente.Documento
-                                        </span>
+                                        <div class="cl-registro">
+                                            @Html.Raw(icoCalendario)
+                                            <div>@c.FechaRegistro.Value.ToString("dd/MM/yyyy")<small>@Hora(c.FechaRegistro.Value)</small></div>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <span class="text-xs text-slate-600">
-                                            No registrado
-                                        </span>
+                                        <span class="cl-nada">—</span>
                                     }
-
                                 </td>
-
-
-                                <!-- TELEFONO -->
-
-                                <td class="px-6 py-5">
-
-                                    <span class="text-sm text-slate-300">
-                                        @cliente.Telefono
-                                    </span>
-
+                                <td><span class="cl-chip @(c.Activo ? "activo" : "inactivo")">@(c.Activo ? "Activo" : "Inactivo")</span></td>
+                                <td>
+                                    <partial name="_AccionesCliente" model="c" />
                                 </td>
-
-
-                                <!-- CORREO -->
-
-                                <td class="px-6 py-5">
-
-                                    @if (!string.IsNullOrWhiteSpace(cliente.Correo))
-                                    {
-                                        <span class="text-sm text-slate-300">
-                                            @cliente.Correo
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-xs text-slate-600">
-                                            No registrado
-                                        </span>
-                                    }
-
-                                </td>
-
-
-                                <!-- FECHA -->
-
-                                <td class="px-6 py-5">
-
-                                    <span class="text-sm text-slate-400">
-                                        @(cliente.FechaRegistro?.ToString("dd/MM/yyyy") ?? "Sin fecha")
-                                    </span>
-
-                                </td>
-
-
-                                <!-- ACCIONES -->
-
-                                <td class="px-6 py-5">
-
-                                    <div class="flex justify-end gap-2">
-
-                                        <!-- EDITAR -->
-
-                                        <a asp-controller="AdminCliente"
-                                           asp-action="Edit"
-                                           asp-route-id="@cliente.IdCliente"
-                                           class="inline-flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:bg-blue-500/20">
-
-                                            <svg class="h-4 w-4"
-                                                 fill="none"
-                                                 stroke="currentColor"
-                                                 stroke-width="2"
-                                                 viewBox="0 0 24 24">
-
-                                                <path d="M12 20h9" />
-                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-
-                                            </svg>
-
-                                            Editar
-
-                                        </a>
-
-
-                                        <!-- ELIMINAR -->
-
-                                        <form asp-controller="AdminCliente"
-                                              asp-action="Delete"
-                                              asp-route-id="@cliente.IdCliente"
-                                              method="post"
-                                              onsubmit="return confirm('¿Está seguro de eliminar este cliente?');">
-
-                                            @Html.AntiForgeryToken()
-
-                                            <button type="submit"
-                                                    class="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20">
-
-                                                <svg class="h-4 w-4"
-                                                     fill="none"
-                                                     stroke="currentColor"
-                                                     stroke-width="2"
-                                                     viewBox="0 0 24 24">
-
-                                                    <path d="M3 6h18" />
-                                                    <path d="M8 6V4h8v2" />
-                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                                    <path d="M10 11v6" />
-                                                    <path d="M14 11v6" />
-
-                                                </svg>
-
-                                                Eliminar
-
-                                            </button>
-
-                                        </form>
-
-                                    </div>
-
-                                </td>
-
                             </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vista en tarjetas -->
+            <div class="cl-grid">
+                @foreach (var c in Model.Clientes)
+                {
+                    <article class="cl-tarjeta">
+                        <div class="cl-tarjeta-cab">
+                            <div class="cl-persona">
+                                <span class="cl-avatar" style="background:@ColorAvatar(c.Nombre)">@Inicial(c.Nombre)</span>
+                                <div>
+                                    <b>@c.Nombre</b>
+                                    <small>ID #@c.IdCliente</small>
+                                </div>
+                            </div>
+                            <span class="cl-chip @(c.Activo ? "activo" : "inactivo")">@(c.Activo ? "Activo" : "Inactivo")</span>
+                        </div>
+                        <dl>
+                            <dt>Documento</dt><dd>@(string.IsNullOrWhiteSpace(c.Documento) ? "—" : c.Documento)</dd>
+                            <dt>Teléfono</dt><dd>@(string.IsNullOrWhiteSpace(c.Telefono) ? "—" : c.Telefono)</dd>
+                            <dt>Correo</dt><dd title="@c.Correo">@(string.IsNullOrWhiteSpace(c.Correo) ? "Sin correo" : c.Correo)</dd>
+                            <dt>Registro</dt><dd>@(c.FechaRegistro.HasValue ? c.FechaRegistro.Value.ToString("dd/MM/yyyy") + " · " + Hora(c.FechaRegistro.Value) : "—")</dd>
+                            <dt>Reservas</dt><dd>@c.Reservas</dd>
+                        </dl>
+                        <partial name="_AccionesCliente" model="c" />
+                    </article>
+                }
+            </div>
+
+            <div class="cl-pie">
+                <span>Mostrando @Model.MostrandoDesde - @Model.MostrandoHasta de @Model.TotalFiltrados cliente@(Model.TotalFiltrados == 1 ? "" : "s")</span>
+
+                <nav class="cl-paginas" aria-label="Páginas">
+                    @if (Model.Pagina > 1)
+                    {
+                        <a href="@UrlPagina(Model.Pagina - 1)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></a>
                     }
                     else
                     {
-                        <tr>
-
-                            <td colspan="6"
-                                class="px-6 py-16 text-center">
-
-                                <div class="mx-auto flex max-w-md flex-col items-center">
-
-                                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800 text-slate-500">
-
-                                        <svg class="h-8 w-8"
-                                             fill="none"
-                                             stroke="currentColor"
-                                             stroke-width="2"
-                                             viewBox="0 0 24 24">
-
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                            <circle cx="9" cy="7" r="4" />
-                                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-
-                                        </svg>
-
-                                    </div>
-
-                                    <h3 class="mt-4 text-lg font-bold text-white">
-                                        No hay clientes
-                                    </h3>
-
-                                    <p class="mt-1 text-sm text-slate-500">
-                                        No encontramos clientes con la búsqueda realizada.
-                                    </p>
-
-                                    <a asp-action="Create"
-                                       class="mt-5 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-emerald-400">
-
-                                        Crear cliente
-
-                                    </a>
-
-                                </div>
-
-                            </td>
-
-                        </tr>
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></span>
                     }
 
-                </tbody>
+                    @{
+                        int ini = Math.Max(1, Model.Pagina - 2);
+                        int fin = Math.Min(Model.TotalPaginas, ini + 4);
+                        ini = Math.Max(1, fin - 4);
+                    }
+                    @for (int p = ini; p <= fin; p++)
+                    {
+                        if (p == Model.Pagina)
+                        {
+                            <span class="actual">@p</span>
+                        }
+                        else
+                        {
+                            <a href="@UrlPagina(p)">@p</a>
+                        }
+                    }
 
-            </table>
-
-        </div>
-
-    </div>
-
+                    @if (Model.Pagina < Model.TotalPaginas)
+                    {
+                        <a href="@UrlPagina(Model.Pagina + 1)" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></a>
+                    }
+                    else
+                    {
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></span>
+                    }
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="cl-vacio">
+                <div class="cl-vacio-icono">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Buscar) || !string.IsNullOrEmpty(Model.Estado))
+                {
+                    <h3>No se encontraron clientes</h3>
+                    <p>Prueba con otro nombre, documento o estado.</p>
+                    <a asp-action="Index" class="cl-btn editar">Ver todos los clientes</a>
+                }
+                else
+                {
+                    <h3>Aún no hay clientes registrados</h3>
+                    <p>Crea el primer cliente para empezar.</p>
+                    <a asp-action="Create" class="cl-btn-nuevo">Nuevo cliente</a>
+                }
+            </div>
+        }
+    </section>
 </div>
+
+<script>
+    (function () {
+        const pagina = document.getElementById('clPagina');
+
+        // ---------- Vista lista / tarjetas (se recuerda en este navegador) ----------
+        const botones = document.querySelectorAll('.cl-vistas button');
+        function ponerVista(v) {
+            pagina.dataset.vista = v;
+            botones.forEach(b => b.classList.toggle('activo', b.dataset.vista === v));
+        }
+        try { const v = localStorage.getItem('sportia-clientes-vista'); if (v === 'grid' || v === 'lista') ponerVista(v); } catch (e) { }
+        botones.forEach(b => b.addEventListener('click', () => {
+            ponerVista(b.dataset.vista);
+            try { localStorage.setItem('sportia-clientes-vista', b.dataset.vista); } catch (e) { }
+        }));
+
+        // ---------- Búsqueda: se aplica sola al dejar de escribir ----------
+        const input = document.getElementById('clBuscar');
+        const form = document.getElementById('clFiltros');
+        let espera;
+        input.addEventListener('input', () => {
+            clearTimeout(espera);
+            espera = setTimeout(() => form.submit(), 600);
+        });
+        if (input.value) {
+            input.focus();
+            const n = input.value.length;
+            input.setSelectionRange(n, n);
+        }
+
+        // ---------- Menú de tres puntos ----------
+        document.querySelectorAll('.cl-menu-btn').forEach(btn => btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const menu = btn.closest('.cl-menu');
+            const abierto = menu.classList.contains('abierto');
+            document.querySelectorAll('.cl-menu.abierto').forEach(m => m.classList.remove('abierto'));
+            if (!abierto) {
+                menu.classList.toggle('arriba', btn.getBoundingClientRect().bottom > window.innerHeight - 130);
+                menu.classList.add('abierto');
+            }
+        }));
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.cl-menu')) document.querySelectorAll('.cl-menu.abierto').forEach(m => m.classList.remove('abierto'));
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.querySelectorAll('.cl-menu.abierto').forEach(m => m.classList.remove('abierto'));
+        });
+
+        // ---------- Confirmar antes de eliminar ----------
+        document.querySelectorAll('.cl-form-eliminar').forEach(f => f.addEventListener('submit', e => {
+            if (!confirm('¿Seguro que deseas eliminar a ' + f.dataset.nombre + '? Esta acción no se puede deshacer.')) e.preventDefault();
+        }));
+    })();
+</script>

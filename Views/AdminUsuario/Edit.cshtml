@@ -84,9 +84,8 @@
             <input type="hidden"
                    asp-for="IdUsuario" />
 
-            <!-- PASSWORD OCULTA PARA MANTENER LA ACTUAL -->
-            <input type="hidden"
-                   asp-for="Password" />
+            <!-- La contraseña ya no se envía en la página (antes iba oculta aquí);
+                 el controlador conserva la actual. -->
 
 
             <div asp-validation-summary="ModelOnly"

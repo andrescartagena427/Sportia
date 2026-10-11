@@ -1,751 +1,520 @@
-﻿@model IEnumerable<Sportia.Models.Empresa>
+﻿@model Sportia.Models.ViewModels.AdminEmpresasViewModel
 
 @{
+    ViewData["Title"] = "Empresas";
     Layout = "_DashboardLayout";
 
-    ViewData["Title"] = "Empresas";
+    string UrlPagina(int pagina) => Url.Action("Index", "AdminEmpresa", new
+    {
+        buscar = string.IsNullOrEmpty(Model.Buscar) ? null : Model.Buscar,
+        pagina
+    }) ?? "#";
 
-    var empresas = Model?.ToList() ?? new List<Sportia.Models.Empresa>();
+    string ColorAvatar(string nombre)
+    {
+        string[] colores = { "#14b88a", "#2f6fed", "#7c4dff", "#0ea5a5", "#e8508a", "#f59e0b" };
+        int h = 0;
+        foreach (char c in nombre) h = (h * 31 + c) & 0x7fffffff;
+        return colores[h % colores.Length];
+    }
 
-    var totalEmpresas = empresas.Count;
-    var empresasActivas = empresas.Count(e => e.Estado == true);
-    var empresasInactivas = empresas.Count(e => e.Estado != true);
-    var totalEscenarios = empresas.Sum(e => e.Escenarios?.Count ?? 0);
+    string Inicial(string nombre) => string.IsNullOrWhiteSpace(nombre) ? "?" : nombre.Trim()[..1].ToUpper();
+
+    // El logo puede ser una ruta del sitio (/uploads/...) o una dirección web
+    bool LogoValido(string? logo) =>
+        !string.IsNullOrWhiteSpace(logo) &&
+        (logo.StartsWith("/") || logo.StartsWith("~/") || logo.StartsWith("http://") || logo.StartsWith("https://"));
+
+    const string icoEdificio = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 21V5.5L12 3v18M12 8.5l8 2.5v10M2.5 21h19\"/><path d=\"M7 8h2M7 11.5h2M7 15h2M15 13.5h2M15 17h2\"/></svg>";
 }
 
-<div class="min-h-screen bg-[#07101d] text-white px-6 py-6">
+<style>
+    .em {
+        --em-card: #0f1a2c;
+        --em-borde: #1e2c44;
+        --em-borde-2: #263650;
+        --em-texto: #eef3fa;
+        --em-suave: #a3b0c4;
+        --em-tenue: #6b7a92;
+        --em-verde: #22d39a;
+        --em-azul: #4f8cff;
+        --em-rojo: #f05d6c;
+        --em-morado: #a46bff;
+        width: 100%;
+        color: var(--em-texto);
+    }
+    .em *, .em *::before, .em *::after { box-sizing: border-box; }
+    .em svg { flex-shrink: 0; }
 
-    <!-- ENCABEZADO -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-7">
+    /* ---------- Mensajes ---------- */
+    .em-alerta { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding: 13px 16px; border-radius: 12px; font-size: 13px; }
+    .em-alerta.ok { background: rgba(34, 211, 154, .10); border: 1px solid rgba(34, 211, 154, .30); color: var(--em-verde); }
+    .em-alerta.error { background: rgba(240, 93, 108, .10); border: 1px solid rgba(240, 93, 108, .30); color: var(--em-rojo); }
+    .em-alerta svg { width: 18px; height: 18px; }
 
-        <div class="flex items-center gap-4">
+    /* ---------- Encabezado ---------- */
+    .em-cab { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    .em-cab-izq { display: flex; align-items: center; gap: 22px; }
+    .em-cab-icono {
+        width: 70px; height: 70px; border-radius: 18px; display: grid; place-items: center;
+        background: linear-gradient(145deg, #1fbf8d, #0e8a68); color: #fff;
+        box-shadow: 0 10px 30px rgba(34, 211, 154, .25), inset 0 1px 0 rgba(255, 255, 255, .2);
+    }
+    .em-cab-icono svg { width: 36px; height: 36px; }
+    .em-cab h1 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.5px; color: #fff; }
+    .em-cab p { margin: 6px 0 0; font-size: 15px; color: var(--em-suave); }
+    .em-btn-nueva {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 14px 26px; border-radius: 12px;
+        background: linear-gradient(135deg, #2ee6ac, #19c48d);
+        color: #04241a; font-size: 15px; font-weight: 800; text-decoration: none; white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(34, 211, 154, .28);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .em-btn-nueva:hover { color: #04241a; transform: translateY(-1px); box-shadow: 0 12px 28px rgba(34, 211, 154, .38); }
+    .em-btn-nueva svg { width: 20px; height: 20px; }
 
-            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <i data-lucide="building-2"
-                   class="w-5 h-5 text-emerald-400">
-                </i>
-            </div>
+    /* ---------- Tarjetas ---------- */
+    .em-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-bottom: 22px; }
+    .em-kpi {
+        --c: var(--em-azul);
+        position: relative; overflow: hidden;
+        display: flex; gap: 18px; padding: 22px 22px 20px;
+        background: var(--em-card); border: 1px solid var(--em-borde); border-radius: 16px;
+        min-width: 0;
+    }
+    /* figura diagonal de color en la esquina */
+    .em-kpi::after {
+        content: ""; position: absolute; right: -40px; bottom: -95px; width: 150px; height: 190px;
+        border-radius: 60px; transform: rotate(32deg);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--c) 34%, transparent), transparent);
+        pointer-events: none;
+    }
+    .em-kpi-icono {
+        position: relative; z-index: 1;
+        width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; color: #fff;
+        background: linear-gradient(145deg, color-mix(in srgb, var(--c) 85%, #fff), color-mix(in srgb, var(--c) 75%, #000));
+        box-shadow: 0 8px 22px color-mix(in srgb, var(--c) 30%, transparent);
+    }
+    .em-kpi-icono svg { width: 30px; height: 30px; }
+    .em-kpi-cuerpo { position: relative; z-index: 1; min-width: 0; }
+    .em-kpi-label { font-size: 13px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: #dfe6f1; }
+    .em-kpi-num { margin-top: 10px; font-size: 34px; font-weight: 800; line-height: 1; color: #fff; }
+    .em-kpi-desc { margin-top: 10px; font-size: 13px; color: #c3cddb; }
+    .em-kpi-pie { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 13px; font-weight: 700; color: var(--c); }
+    .em-kpi-pie svg { width: 18px; height: 18px; }
+    .em-kpi-pie.neutro { color: var(--em-suave); font-weight: 500; }
+    .em-kpi.azul { --c: #3b82f6; }
+    .em-kpi.verde { --c: #1fbf8d; }
+    .em-kpi.rojo { --c: #e5384f; }
+    .em-kpi.morado { --c: #8b5cf6; }
+    .em-kpi.verde .em-kpi-pie, .em-kpi.azul .em-kpi-pie { color: var(--em-verde); }
+    .em-kpi.morado .em-kpi-pie { color: #b794ff; }
 
-            <div>
-                <h1 class="text-2xl font-bold text-white">
-                    Empresas
-                </h1>
+    /* ---------- Buscador ---------- */
+    .em-buscador {
+        display: flex; gap: 16px; padding: 16px 18px; margin-bottom: 22px;
+        background: var(--em-card); border: 1px solid var(--em-borde); border-radius: 16px;
+    }
+    .em-buscar { position: relative; flex: 1; min-width: 0; }
+    .em-buscar svg { position: absolute; left: 18px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--em-suave); pointer-events: none; }
+    .em-buscar input {
+        width: 100%; height: 48px; padding: 0 16px 0 54px;
+        background: #0a1322; border: 1px solid var(--em-borde-2); border-radius: 11px;
+        color: var(--em-texto); font-size: 14px; outline: none;
+    }
+    .em-buscar input::placeholder { color: var(--em-tenue); }
+    .em-buscar input:focus { border-color: var(--em-verde); }
+    .em-btn-buscar {
+        display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 24px;
+        border: 0; border-radius: 11px; background: linear-gradient(135deg, #2ee6ac, #19c48d);
+        color: #04241a; font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .em-btn-buscar svg { width: 18px; height: 18px; }
+    .em-btn-limpiar {
+        display: inline-flex; align-items: center; height: 48px; padding: 0 16px; border-radius: 11px;
+        border: 1px solid var(--em-borde-2); color: var(--em-suave); font-size: 14px; text-decoration: none; white-space: nowrap;
+    }
+    .em-btn-limpiar:hover { color: #fff; }
 
-                <p class="text-sm text-slate-400 mt-0.5">
-                    Administra las empresas registradas en Sportia
-                </p>
-            </div>
+    /* ---------- Lista ---------- */
+    .em-lista { background: var(--em-card); border: 1px solid var(--em-borde); border-radius: 18px; overflow: hidden; }
+    .em-lista-cab { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 22px; }
+    .em-lista-titulo { display: flex; align-items: center; gap: 16px; }
+    .em-lista-icono { width: 54px; height: 54px; border-radius: 13px; display: grid; place-items: center; background: #0c1627; border: 1px solid var(--em-borde-2); color: #e6ecf5; }
+    .em-lista-icono svg { width: 28px; height: 28px; }
+    .em-lista-cab h2 { margin: 0; font-size: 19px; font-weight: 800; color: #fff; }
+    .em-lista-cab p { margin: 4px 0 0; font-size: 13px; color: var(--em-suave); }
+    .em-badge { padding: 9px 14px; border-radius: 10px; background: #0c1627; border: 1px solid var(--em-borde-2); color: #dfe6f1; font-size: 13px; white-space: nowrap; }
 
-        </div>
+    .em-tabla-wrap { width: 100%; overflow-x: auto; padding: 0 16px; }
+    .em-tabla { width: 100%; min-width: 1150px; border-collapse: collapse; }
+    .em-tabla th {
+        padding: 14px 14px; text-align: left;
+        font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #b6c2d4;
+        border-top: 1px solid var(--em-borde); border-bottom: 1px solid var(--em-borde); white-space: nowrap;
+    }
+    .em-tabla td { padding: 16px 14px; font-size: 14px; color: #dbe3ef; border-bottom: 1px solid #18253a; vertical-align: middle; }
+    .em-tabla tbody tr { transition: background .15s ease; }
+    .em-tabla tbody tr:hover { background: #13213a; }
+    .em-tabla tbody tr:last-child td { border-bottom: 0; }
+    .em-centro { text-align: center !important; }
 
-        <a asp-controller="AdminEmpresa"
-           asp-action="Create"
-           class="inline-flex items-center justify-center gap-2
-            px-4 py-2.5
-            rounded-xl
-            bg-emerald-500
-            hover:bg-emerald-400
-            text-slate-950
-            text-sm font-semibold
-            transition-all duration-200
-            shadow-lg shadow-emerald-500/10">
+    .em-empresa { display: flex; align-items: center; gap: 14px; }
+    .em-logo {
+        width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; overflow: hidden;
+        display: grid; place-items: center; color: #fff; font-size: 21px; font-weight: 800;
+    }
+    .em-logo img { width: 100%; height: 100%; object-fit: cover; background: #fff; }
+    .em-empresa b { display: block; font-size: 15px; font-weight: 700; color: #fff; }
+    .em-empresa small { display: block; margin-top: 3px; font-size: 12px; color: var(--em-tenue); }
+    .em-nada { color: var(--em-tenue); }
 
-            <i data-lucide="plus" class="w-4 h-4"></i>
+    .em-contacto { display: grid; gap: 6px; font-size: 13px; }
+    .em-contacto span { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+    .em-contacto svg { width: 16px; height: 16px; color: var(--em-suave); }
 
-            Nueva empresa
+    .em-resp b { display: block; max-width: 220px; font-size: 13px; font-weight: 500; color: #eef3fa; text-transform: uppercase; line-height: 1.45; }
+    .em-resp small { display: block; margin-top: 3px; font-size: 12px; color: var(--em-tenue); }
 
-        </a>
+    .em-num {
+        display: inline-grid; place-items: center; min-width: 40px; height: 30px; padding: 0 10px;
+        border-radius: 8px; background: rgba(59, 130, 246, .15); border: 1px solid rgba(59, 130, 246, .35);
+        color: #8fb8ff; font-size: 13px; font-weight: 700;
+    }
+    .em-num.cero { background: rgba(163, 176, 196, .08); border-color: var(--em-borde-2); color: var(--em-suave); }
 
-    </div>
+    .em-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .em-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .em-chip.activa { background: rgba(34, 211, 154, .12); border: 1px solid rgba(34, 211, 154, .32); color: var(--em-verde); }
+    .em-chip.inactiva { background: rgba(240, 93, 108, .10); border: 1px solid rgba(240, 93, 108, .32); color: #ff8b97; }
 
+    .em-acciones { display: flex; align-items: center; gap: 10px; }
+    .em-acciones form { margin: 0; }
+    .em-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 38px; padding: 0 15px; border-radius: 9px;
+        font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap;
+        transition: .15s ease;
+    }
+    .em-btn svg { width: 16px; height: 16px; }
+    .em-btn.ver { background: #0c1627; border: 1px solid var(--em-borde-2); color: #e6ecf5; }
+    .em-btn.ver:hover { border-color: #3d5072; color: #fff; }
+    .em-btn.editar { background: rgba(79, 140, 255, .08); border: 1px solid rgba(79, 140, 255, .45); color: #8fb8ff; }
+    .em-btn.editar:hover { background: rgba(79, 140, 255, .18); color: #cfe0ff; }
+    .em-btn.eliminar { background: rgba(240, 93, 108, .08); border: 1px solid rgba(240, 93, 108, .45); color: #ff8b97; }
+    .em-btn.eliminar:hover { background: rgba(240, 93, 108, .18); color: #ffb3bb; }
+    .em-btn.eliminar:disabled { opacity: .4; cursor: not-allowed; background: transparent; }
 
-    <!-- MENSAJES -->
+    /* ---------- Pie ---------- */
+    .em-pie { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 30px 18px; border-top: 1px solid var(--em-borde); font-size: 14px; color: var(--em-suave); }
+    .em-paginas { display: flex; align-items: center; gap: 8px; }
+    .em-paginas a, .em-paginas span {
+        min-width: 36px; height: 36px; padding: 0 8px; display: grid; place-items: center;
+        border-radius: 9px; border: 1px solid var(--em-borde-2); background: #0c1627;
+        color: #dbe3ef; font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .em-paginas a:hover { border-color: var(--em-verde); color: var(--em-verde); }
+    .em-paginas .actual { background: var(--em-verde); border-color: var(--em-verde); color: #04241a; }
+    .em-paginas .apagado { opacity: .4; }
+    .em-paginas svg { width: 16px; height: 16px; }
+
+    .em-vacio { padding: 60px 20px; text-align: center; border-top: 1px solid var(--em-borde); }
+    .em-vacio-icono { width: 58px; height: 58px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 16px; background: rgba(34, 211, 154, .10); color: var(--em-verde); }
+    .em-vacio-icono svg { width: 28px; height: 28px; }
+    .em-vacio h3 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; }
+    .em-vacio p { margin: 8px 0 18px; font-size: 13px; color: var(--em-suave); }
+
+    /* ---------- Responsive ---------- */
+    @@media (max-width: 1280px) {
+        .em-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 760px) {
+        .em-cab { flex-direction: column; align-items: flex-start; }
+        .em-cab h1 { font-size: 28px; }
+        .em-btn-nueva { width: 100%; justify-content: center; }
+        .em-kpis { grid-template-columns: 1fr; }
+        .em-buscador { flex-wrap: wrap; }
+        .em-btn-buscar, .em-btn-limpiar { flex: 1; justify-content: center; }
+        .em-pie { flex-direction: column; }
+    }
+</style>
+
+<div class="em">
+
     @if (TempData["Success"] != null)
     {
-        <div class="mb-5 flex items-center gap-3
-            rounded-xl
-            border border-emerald-500/20
-            bg-emerald-500/10
-            px-4 py-3
-            text-sm text-emerald-300">
-
-            <i data-lucide="circle-check" class="w-5 h-5"></i>
-
+        <div class="em-alerta ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5" /></svg>
             <span>@TempData["Success"]</span>
-
         </div>
     }
-
     @if (TempData["Error"] != null)
     {
-        <div class="mb-5 flex items-center gap-3
-            rounded-xl
-            border border-red-500/20
-            bg-red-500/10
-            px-4 py-3
-            text-sm text-red-300">
-
-            <i data-lucide="circle-alert" class="w-5 h-5"></i>
-
+        <div class="em-alerta error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
             <span>@TempData["Error"]</span>
-
         </div>
     }
 
-
-    <!-- ESTADÍSTICAS -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-
-        <!-- TOTAL -->
-        <div class="rounded-2xl
-            border border-slate-800
-            bg-[#0b1626]
-            p-5
-            hover:border-slate-700
-            transition">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-[11px] uppercase tracking-wider text-slate-500">
-                        Total empresas
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-white">
-                        @totalEmpresas
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Registradas en Sportia
-                    </p>
-                </div>
-
-                <div class="w-11 h-11 rounded-xl
-                    bg-blue-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="building-2"
-                       class="w-5 h-5 text-blue-400">
-                    </i>
-
-                </div>
-
+    <!-- ===================== ENCABEZADO ===================== -->
+    <div class="em-cab">
+        <div class="em-cab-izq">
+            <div class="em-cab-icono">@Html.Raw(icoEdificio)</div>
+            <div>
+                <h1>Empresas</h1>
+                <p>Administra las empresas registradas en Sportia</p>
             </div>
-
         </div>
 
-
-        <!-- ACTIVAS -->
-        <div class="rounded-2xl
-            border border-slate-800
-            bg-[#0b1626]
-            p-5
-            hover:border-slate-700
-            transition">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-[11px] uppercase tracking-wider text-slate-500">
-                        Empresas activas
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-emerald-400">
-                        @empresasActivas
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Actualmente activas
-                    </p>
-                </div>
-
-                <div class="w-11 h-11 rounded-xl
-                    bg-emerald-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="circle-check"
-                       class="w-5 h-5 text-emerald-400">
-                    </i>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- INACTIVAS -->
-        <div class="rounded-2xl
-            border border-slate-800
-            bg-[#0b1626]
-            p-5
-            hover:border-slate-700
-            transition">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-[11px] uppercase tracking-wider text-slate-500">
-                        Empresas inactivas
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-red-400">
-                        @empresasInactivas
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        Deshabilitadas
-                    </p>
-                </div>
-
-                <div class="w-11 h-11 rounded-xl
-                    bg-red-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="circle-x"
-                       class="w-5 h-5 text-red-400">
-                    </i>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- ESCENARIOS -->
-        <div class="rounded-2xl
-            border border-slate-800
-            bg-[#0b1626]
-            p-5
-            hover:border-slate-700
-            transition">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <p class="text-[11px] uppercase tracking-wider text-slate-500">
-                        Escenarios
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-purple-400">
-                        @totalEscenarios
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-500">
-                        De todas las empresas
-                    </p>
-                </div>
-
-                <div class="w-11 h-11 rounded-xl
-                    bg-purple-500/10
-                    flex items-center justify-center">
-
-                    <i data-lucide="map"
-                       class="w-5 h-5 text-purple-400">
-                    </i>
-
-                </div>
-
-            </div>
-
-        </div>
-
+        <a asp-controller="AdminEmpresa" asp-action="Create" class="em-btn-nueva">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nueva empresa
+        </a>
     </div>
 
-
-    <!-- BUSCADOR -->
-    <div class="rounded-2xl
-        border border-slate-800
-        bg-[#0b1626]
-        p-4 mb-6">
-
-        <form asp-controller="AdminEmpresa"
-              asp-action="Index"
-              method="get"
-              class="flex flex-col sm:flex-row gap-3">
-
-            <div class="relative flex-1">
-
-                <i data-lucide="search"
-                   class="absolute left-4 top-1/2 -translate-y-1/2
-                    w-4 h-4 text-slate-500">
-                </i>
-
-                <input type="text"
-                       name="buscar"
-                       value="@ViewBag.Buscar"
-                       placeholder="Buscar por nombre, NIT, teléfono, correo o dirección..."
-                       class="w-full
-                rounded-xl
-                border border-slate-800
-                bg-[#050b14]
-                pl-11 pr-4 py-3
-                text-sm text-white
-                placeholder:text-slate-600
-                outline-none
-                focus:border-emerald-500/50
-                focus:ring-2
-                focus:ring-emerald-500/10
-                transition" />
-
-            </div>
-
-            <button type="submit"
-                    class="inline-flex items-center justify-center gap-2
-                rounded-xl
-                border border-slate-700
-                bg-slate-800
-                hover:bg-slate-700
-                px-5 py-3
-                text-sm font-medium text-white
-                transition">
-
-                <i data-lucide="search" class="w-4 h-4"></i>
-
-                Buscar
-
-            </button>
-
-        </form>
-
-    </div>
-
-
-    <!-- TABLA -->
-    <div class="rounded-2xl
-        border border-slate-800
-        bg-[#0b1626]
-        overflow-hidden">
-
-        <!-- CABECERA -->
-        <div class="px-5 py-4 border-b border-slate-800">
-
-            <div class="flex items-center justify-between">
-
-                <div>
-                    <h2 class="text-base font-semibold text-white">
-                        Empresas registradas
-                    </h2>
-
-                    <p class="text-xs text-slate-500 mt-1">
-                        Consulta y administra las empresas de Sportia
-                    </p>
+    <!-- ===================== TARJETAS ===================== -->
+    <section class="em-kpis">
+        <div class="em-kpi azul">
+            <div class="em-kpi-icono">@Html.Raw(icoEdificio)</div>
+            <div class="em-kpi-cuerpo">
+                <div class="em-kpi-label">Total empresas</div>
+                <div class="em-kpi-num">@Model.Total</div>
+                <div class="em-kpi-desc">Registradas en Sportia</div>
+                <div class="em-kpi-pie">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>
+                    @Model.ConEscenarios con escenarios
                 </div>
-
-                <span class="hidden sm:inline-flex
-                    items-center
-                    rounded-lg
-                    border border-slate-800
-                    bg-slate-900/60
-                    px-3 py-1.5
-                    text-xs text-slate-400">
-
-                    @totalEmpresas empresas
-
-                </span>
-
             </div>
-
         </div>
 
+        <div class="em-kpi verde">
+            <div class="em-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.8l2.3 1.7 2.8-.1.9 2.7 2.3 1.6-.9 2.7.9 2.7-2.3 1.6-.9 2.7-2.8-.1L12 19.2l-2.3-1.7-2.8.1-.9-2.7-2.3-1.6.9-2.7-.9-2.7 2.3-1.6.9-2.7 2.8.1z" transform="translate(0 1.6)" /><path d="M8.4 12.3l2.5 2.5 4.8-5" fill="none" stroke="#0b3d2f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="em-kpi-cuerpo">
+                <div class="em-kpi-label">Empresas activas</div>
+                <div class="em-kpi-num">@Model.Activas</div>
+                <div class="em-kpi-desc">Actualmente activas</div>
+                <div class="em-kpi-pie">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>
+                    @Model.PorcentajeActivas% del total
+                </div>
+            </div>
+        </div>
 
-        @if (empresas.Any())
+        <div class="em-kpi rojo">
+            <div class="em-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5" /><path d="M15 9l-6 6M9 9l6 6" /></svg>
+            </div>
+            <div class="em-kpi-cuerpo">
+                <div class="em-kpi-label">Empresas inactivas</div>
+                <div class="em-kpi-num">@Model.Inactivas</div>
+                <div class="em-kpi-desc">Deshabilitadas</div>
+                <div class="em-kpi-pie neutro">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                    @Model.PorcentajeInactivas% del total
+                </div>
+            </div>
+        </div>
+
+        <div class="em-kpi morado">
+            <div class="em-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4h14v17M3 21h18" /><path d="M9 8h1.5M13.5 8H15M9 12h1.5M13.5 12H15M10 21v-4.5h4V21" /></svg>
+            </div>
+            <div class="em-kpi-cuerpo">
+                <div class="em-kpi-label">Escenarios</div>
+                <div class="em-kpi-num">@Model.Escenarios</div>
+                <div class="em-kpi-desc">De todas las empresas</div>
+                <div class="em-kpi-pie">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>
+                    @Model.EscenariosActivos activos
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== BUSCADOR ===================== -->
+    <form method="get" asp-controller="AdminEmpresa" asp-action="Index" class="em-buscador">
+        <div class="em-buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input type="search" name="buscar" value="@Model.Buscar" placeholder="Buscar por nombre, NIT, teléfono, correo o dirección..." autocomplete="off" />
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Buscar))
         {
-            <!-- CONTENEDOR RESPONSIVE -->
-            <div class="overflow-x-auto">
+            <a asp-action="Index" class="em-btn-limpiar">Limpiar</a>
+        }
+        <button type="submit" class="em-btn-buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            Buscar
+        </button>
+    </form>
 
-                <table class="w-full min-w-[1050px]">
+    <!-- ===================== LISTA ===================== -->
+    <section class="em-lista">
+        <div class="em-lista-cab">
+            <div class="em-lista-titulo">
+                <div class="em-lista-icono">@Html.Raw(icoEdificio)</div>
+                <div>
+                    <h2>Empresas registradas</h2>
+                    <p>Consulta y administra las empresas de Sportia</p>
+                </div>
+            </div>
+            <span class="em-badge">@Model.TotalFiltradas empresa@(Model.TotalFiltradas == 1 ? "" : "s")</span>
+        </div>
 
-                    <thead class="bg-[#091424]">
-
-                        <tr class="border-b border-slate-800">
-
-                            <th class="px-5 py-3.5 text-left
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Empresa
-                            </th>
-
-                            <th class="px-5 py-3.5 text-left
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                NIT
-                            </th>
-
-                            <th class="px-5 py-3.5 text-left
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Contacto
-                            </th>
-
-                            <th class="px-5 py-3.5 text-left
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Responsable
-                            </th>
-
-                            <th class="px-5 py-3.5 text-center
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Escenarios
-                            </th>
-
-                            <th class="px-5 py-3.5 text-center
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Estado
-                            </th>
-
-                            <th class="px-5 py-3.5 text-right
-                                text-[10px] font-semibold
-                                uppercase tracking-wider
-                                text-slate-500">
-                                Acciones
-                            </th>
-
+        @if (Model.Empresas.Any())
+        {
+            <div class="em-tabla-wrap">
+                <table class="em-tabla">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>NIT</th>
+                            <th>Contacto</th>
+                            <th>Responsable</th>
+                            <th class="em-centro">Escenarios</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
-
                     </thead>
-
-
-                    <tbody class="divide-y divide-slate-800/80">
-
-                        @foreach (var empresa in empresas)
+                    <tbody>
+                        @foreach (var e in Model.Empresas)
                         {
-                            <tr class="hover:bg-slate-900/50 transition">
-
-                                <!-- EMPRESA -->
-                                <td class="px-5 py-4">
-
-                                    <div class="flex items-center gap-3">
-
-                                        <div class="w-10 h-10 rounded-xl
-                                            bg-emerald-500/10
-                                            border border-emerald-500/10
-                                            flex items-center justify-center
-                                            shrink-0">
-
-                                            @if (!string.IsNullOrWhiteSpace(empresa.Logo))
-                                            {
-                                                <img src="@empresa.Logo"
-                                                     alt="@empresa.Nombre"
-                                                     class="w-10 h-10 rounded-xl object-cover" />
-                                            }
-                                            else
-                                            {
-                                                <span class="text-sm font-bold text-emerald-400">
-                                                    @(empresa.Nombre?.Substring(0, 1).ToUpper())
-                                                </span>
-                                            }
-
-                                        </div>
-
+                            <tr>
+                                <td>
+                                    <div class="em-empresa">
+                                        @if (LogoValido(e.Logo))
+                                        {
+                                            <span class="em-logo"><img src="@Url.Content(e.Logo!)" alt="Logo de @e.Nombre" loading="lazy" /></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="em-logo" style="background:@ColorAvatar(e.Nombre)">@Inicial(e.Nombre)</span>
+                                        }
                                         <div>
-
-                                            <p class="text-sm font-semibold text-white">
-                                                @empresa.Nombre
-                                            </p>
-
-                                            <p class="text-xs text-slate-500 mt-0.5">
-                                                ID #@empresa.IdEmpresa
-                                            </p>
-
+                                            <b>@e.Nombre</b>
+                                            <small>ID #@e.IdEmpresa</small>
                                         </div>
-
                                     </div>
-
                                 </td>
-
-
-                                <!-- NIT -->
-                                <td class="px-5 py-4">
-
-                                    <span class="text-sm text-slate-300">
-                                        @(string.IsNullOrWhiteSpace(empresa.Nit)
-                                            ? "Sin NIT"
-                                            : empresa.Nit)
-                                    </span>
-
-                                </td>
-
-
-                                <!-- CONTACTO -->
-                                <td class="px-5 py-4">
-
-                                    <div class="space-y-1">
-
-                                        @if (!string.IsNullOrWhiteSpace(empresa.Telefono))
-                                        {
-                                            <div class="flex items-center gap-2">
-
-                                                <i data-lucide="phone"
-                                                   class="w-3.5 h-3.5 text-slate-500">
-                                                </i>
-
-                                                <span class="text-xs text-slate-300">
-                                                    @empresa.Telefono
-                                                </span>
-
-                                            </div>
-                                        }
-
-                                        @if (!string.IsNullOrWhiteSpace(empresa.Correo))
-                                        {
-                                            <div class="flex items-center gap-2">
-
-                                                <i data-lucide="mail"
-                                                   class="w-3.5 h-3.5 text-slate-500">
-                                                </i>
-
-                                                <span class="text-xs text-slate-400">
-                                                    @empresa.Correo
-                                                </span>
-
-                                            </div>
-                                        }
-
-                                    </div>
-
-                                </td>
-
-
-                                <!-- RESPONSABLE -->
-                                <td class="px-5 py-4">
-
-                                    @if (empresa.IdUsuarioNavigation != null)
+                                <td>@if (string.IsNullOrWhiteSpace(e.Nit)) { <span class="em-nada">Sin NIT</span> } else { @e.Nit }</td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(e.Telefono) && string.IsNullOrWhiteSpace(e.Correo))
                                     {
-                                        <div>
-
-                                            <p class="text-sm text-slate-300">
-                                                @empresa.IdUsuarioNavigation.Nombres
-                                                @empresa.IdUsuarioNavigation.Apellidos
-                                            </p>
-
-                                            <p class="text-xs text-slate-500 mt-0.5">
-                                                Administrador
-                                            </p>
-
-                                        </div>
+                                        <span class="em-nada">Sin datos de contacto</span>
                                     }
                                     else
                                     {
-                                        <span class="text-xs text-slate-500">
-                                            Sin responsable
-                                        </span>
+                                        <div class="em-contacto">
+                                            @if (!string.IsNullOrWhiteSpace(e.Telefono))
+                                            {
+                                                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.6 3.5l2.6-.4 1.6 4.3-2 1.6a12.4 12.4 0 0 0 6.2 6.2l1.6-2 4.3 1.6-.4 2.6c-.2 1.2-1.3 2.1-2.5 2.1C10.4 19.5 4.5 13.6 4.5 6c0-1.2.9-2.3 2.1-2.5z" /></svg>@e.Telefono</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(e.Correo))
+                                            {
+                                                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3.5 6l8.5 7 8.5-7" /></svg>@e.Correo</span>
+                                            }
+                                        </div>
                                     }
-
                                 </td>
-
-
-                                <!-- ESCENARIOS -->
-                                <td class="px-5 py-4 text-center">
-
-                                    <span class="inline-flex items-center justify-center
-                                        min-w-9
-                                        rounded-lg
-                                        border border-blue-500/20
-                                        bg-blue-500/10
-                                        px-2.5 py-1
-                                        text-xs font-semibold
-                                        text-blue-400">
-
-                                        @(empresa.Escenarios?.Count ?? 0)
-
-                                    </span>
-
+                                <td>
+                                    <div class="em-resp">
+                                        <b>@e.Responsable</b>
+                                        <small>@e.RolResponsable</small>
+                                    </div>
                                 </td>
-
-
-                                <!-- ESTADO -->
-                                <td class="px-5 py-4 text-center">
-
-                                    @if (empresa.Estado == true)
-                                    {
-                                        <span class="inline-flex items-center gap-2
-                                            rounded-lg
-                                            border border-emerald-500/20
-                                            bg-emerald-500/10
-                                            px-3 py-1.5
-                                            text-xs font-medium
-                                            text-emerald-400">
-
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-
-                                            Activa
-
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="inline-flex items-center gap-2
-                                            rounded-lg
-                                            border border-red-500/20
-                                            bg-red-500/10
-                                            px-3 py-1.5
-                                            text-xs font-medium
-                                            text-red-400">
-
-                                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-
-                                            Inactiva
-
-                                        </span>
-                                    }
-
-                                </td>
-
-
-                                <!-- ACCIONES -->
-                                <td class="px-5 py-4">
-
-                                    <div class="flex items-center justify-end gap-2">
-
-                                        <!-- VER -->
-                                        <a asp-controller="AdminEmpresa"
-                                           asp-action="Details"
-                                           asp-route-id="@empresa.IdEmpresa"
-                                           class="inline-flex items-center gap-2
-                                            rounded-lg
-                                            border border-slate-700
-                                            bg-slate-900
-                                            px-3 py-2
-                                            text-xs font-medium
-                                            text-slate-300
-                                            hover:bg-slate-800
-                                            hover:text-white
-                                            transition">
-
-                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-
+                                <td class="em-centro"><span class="em-num @(e.Escenarios == 0 ? "cero" : "")">@e.Escenarios</span></td>
+                                <td><span class="em-chip @(e.Activa ? "activa" : "inactiva")">@(e.Activa ? "Activa" : "Inactiva")</span></td>
+                                <td>
+                                    <div class="em-acciones">
+                                        <a asp-action="Details" asp-route-id="@e.IdEmpresa" class="em-btn ver">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.8" /></svg>
                                             Ver
-
                                         </a>
-
-
-                                        <!-- EDITAR -->
-                                        <a asp-controller="AdminEmpresa"
-                                           asp-action="Edit"
-                                           asp-route-id="@empresa.IdEmpresa"
-                                           class="inline-flex items-center gap-2
-                                            rounded-lg
-                                            border border-blue-500/20
-                                            bg-blue-500/10
-                                            px-3 py-2
-                                            text-xs font-medium
-                                            text-blue-400
-                                            hover:bg-blue-500/20
-                                            transition">
-
-                                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-
+                                        <a asp-action="Edit" asp-route-id="@e.IdEmpresa" class="em-btn editar">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
                                             Editar
-
                                         </a>
-
-
-                                        <!-- ELIMINAR -->
-                                        <form asp-controller="AdminEmpresa"
-                                              asp-action="Delete"
-                                              asp-route-id="@empresa.IdEmpresa"
-                                              method="post"
-                                              class="inline">
-
-                                            @Html.AntiForgeryToken()
-
-                                            <button type="submit"
-                                                    onclick="return confirm('¿Está seguro de eliminar esta empresa?');"
-                                                    class="inline-flex items-center gap-2
-                                                rounded-lg
-                                                border border-red-500/20
-                                                bg-red-500/10
-                                                px-3 py-2
-                                                text-xs font-medium
-                                                text-red-400
-                                                hover:bg-red-500/20
-                                                transition">
-
-                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-
+                                        <form method="post" asp-action="Delete" asp-route-id="@e.IdEmpresa" class="em-form-eliminar" data-nombre="@e.Nombre">
+                                            <button type="submit" class="em-btn eliminar" disabled="@(e.Escenarios > 0)"
+                                                    title="@(e.Escenarios > 0 ? $"No se puede eliminar: tiene {e.Escenarios} escenario(s)" : "Eliminar empresa")">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
                                                 Eliminar
-
                                             </button>
-
                                         </form>
-
                                     </div>
-
                                 </td>
-
                             </tr>
                         }
-
                     </tbody>
-
                 </table>
+            </div>
 
+            <div class="em-pie">
+                <span>Mostrando @Model.MostrandoDesde - @Model.MostrandoHasta de @Model.TotalFiltradas empresa@(Model.TotalFiltradas == 1 ? "" : "s")</span>
+
+                <nav class="em-paginas" aria-label="Páginas">
+                    @if (Model.Pagina > 1)
+                    {
+                        <a href="@UrlPagina(Model.Pagina - 1)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></a>
+                    }
+                    else
+                    {
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></span>
+                    }
+
+                    @{
+                        int ini = Math.Max(1, Model.Pagina - 2);
+                        int fin = Math.Min(Model.TotalPaginas, ini + 4);
+                        ini = Math.Max(1, fin - 4);
+                    }
+                    @for (int p = ini; p <= fin; p++)
+                    {
+                        if (p == Model.Pagina)
+                        {
+                            <span class="actual">@p</span>
+                        }
+                        else
+                        {
+                            <a href="@UrlPagina(p)">@p</a>
+                        }
+                    }
+
+                    @if (Model.Pagina < Model.TotalPaginas)
+                    {
+                        <a href="@UrlPagina(Model.Pagina + 1)" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></a>
+                    }
+                    else
+                    {
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></span>
+                    }
+                </nav>
             </div>
         }
         else
         {
-            <!-- ESTADO VACÍO -->
-            <div class="py-16 px-6 text-center">
-
-                <div class="mx-auto w-14 h-14 rounded-2xl
-                    bg-slate-800
-                    flex items-center justify-center">
-
-                    <i data-lucide="building-2"
-                       class="w-7 h-7 text-slate-500">
-                    </i>
-
-                </div>
-
-                <h3 class="mt-4 text-base font-semibold text-white">
-                    No hay empresas registradas
-                </h3>
-
-                <p class="mt-1 text-sm text-slate-500">
-                    Comienza registrando la primera empresa de Sportia.
-                </p>
-
-                <a asp-controller="AdminEmpresa"
-                   asp-action="Create"
-                   class="inline-flex items-center gap-2
-                    mt-5
-                    rounded-xl
-                    bg-emerald-500
-                    hover:bg-emerald-400
-                    px-4 py-2.5
-                    text-sm font-semibold
-                    text-slate-950
-                    transition">
-
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-
-                    Nueva empresa
-
-                </a>
-
+            <div class="em-vacio">
+                <div class="em-vacio-icono">@Html.Raw(icoEdificio)</div>
+                @if (!string.IsNullOrEmpty(Model.Buscar))
+                {
+                    <h3>No se encontraron empresas</h3>
+                    <p>Prueba con otro nombre, NIT o correo.</p>
+                    <a asp-action="Index" class="em-btn ver">Ver todas las empresas</a>
+                }
+                else
+                {
+                    <h3>Aún no hay empresas registradas</h3>
+                    <p>Crea la primera empresa para empezar a publicar escenarios.</p>
+                    <a asp-action="Create" class="em-btn-nueva">Nueva empresa</a>
+                }
             </div>
         }
-
-    </div>
-
+    </section>
 </div>
 
-@section Scripts {
-
-    <script>
-        if (typeof lucide !== "undefined") {
-            lucide.createIcons();
-        }
-    </script>
-
-}
+<script>
+    document.querySelectorAll('.em-form-eliminar').forEach(f => f.addEventListener('submit', e => {
+        if (!confirm('¿Seguro que deseas eliminar la empresa ' + f.dataset.nombre + '? Esta acción no se puede deshacer.')) e.preventDefault();
+    }));
+</script>

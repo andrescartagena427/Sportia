@@ -1,340 +1,662 @@
-﻿@model IEnumerable<Sportia.Models.Pago>
+﻿@model Sportia.Models.ViewModels.AdminPagosViewModel
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Pagos";
     Layout = "_DashboardLayout";
 
-    var totalPagos = Model.Sum(p => p.MontoPagado);
-    // Las reservas canceladas no cuentan como dinero pendiente
-    bool Cancelada(Sportia.Models.Pago p) =>
-        (p.IdReservaNavigation?.IdEstadoNavigation?.Nombre ?? "").ToLower().Contains("cancel");
+    var co = new CultureInfo("es-CO");
+    string Dinero(decimal v) => "$" + v.ToString("N0", co);
 
-    var totalPendiente = Model
-        .Where(p => !Cancelada(p))
-        .GroupBy(p => p.IdReserva)
-        .Sum(g => g.OrderByDescending(p => p.IdPago)
-        .First().SaldoPendiente);
+    string UrlPagina(int pagina) => Url.Action("Index", "AdminPago", new
+    {
+        buscar = string.IsNullOrEmpty(Model.Buscar) ? null : Model.Buscar,
+        metodo = Model.IdMetodo,
+        desde = Model.Desde?.ToString("yyyy-MM-dd"),
+        hasta = Model.Hasta?.ToString("yyyy-MM-dd"),
+        pagina
+    }) ?? "#";
+
+    string ColorAvatar(string nombre)
+    {
+        string[] colores = { "#14b88a", "#2f6fed", "#6d3fe0", "#0ea5a5", "#e8508a", "#f59e0b" };
+        int h = 0;
+        foreach (char c in nombre) h = (h * 31 + c) & 0x7fffffff;
+        return colores[h % colores.Length];
+    }
+
+    string Iniciales(string nombre)
+    {
+        var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 0) return "?";
+        return (partes[0][..1] + (partes.Length > 1 ? partes[1][..1] : "")).ToUpper();
+    }
+
+    // Tipo de método para el color e icono
+    string TipoMetodo(string m)
+    {
+        var x = m.ToLower();
+        if (x.Contains("tarjeta") || x.Contains("crédito") || x.Contains("credito") || x.Contains("débito") || x.Contains("debito")) return "tarjeta";
+        if (x.Contains("efectivo")) return "efectivo";
+        return "digital";
+    }
+
+    string textoMetodo = Model.IdMetodo.HasValue
+        ? Model.Metodos.FirstOrDefault(m => m.IdMetodo == Model.IdMetodo)?.Nombre ?? "Todos los métodos"
+        : "Todos los métodos";
+
+    string textoFechas = (Model.Desde, Model.Hasta) switch
+    {
+        (null, null) => "Todas las fechas",
+        (DateOnly d, null) => "Desde " + d.ToString("dd/MM/yyyy"),
+        (null, DateOnly h) => "Hasta " + h.ToString("dd/MM/yyyy"),
+        (DateOnly d, DateOnly h) => d.ToString("dd/MM/yyyy") + " - " + h.ToString("dd/MM/yyyy")
+    };
+
+    const string icoTarjeta = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2.5\"/><path d=\"M3 10h18M7 15h4\"/></svg>";
+    const string icoEfectivo = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\"><rect x=\"2.5\" y=\"6\" width=\"19\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2.6\"/><path d=\"M6 9.5v.01M18 14.5v.01\"/></svg>";
+    const string icoDigital = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"6\" y=\"2.5\" width=\"12\" height=\"19\" rx=\"2.5\"/><path d=\"M11 18h2\"/></svg>";
+    const string icoPagos = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\"><rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2.5\"/><path d=\"M2.5 10h19M6.5 15h5\"/><circle cx=\"16.5\" cy=\"15\" r=\"1.6\"/></svg>";
 }
 
-<div class="space-y-6">
+@functions {
+    private Microsoft.AspNetCore.Html.IHtmlContent Variacion(double? v)
+    {
+        const string sube = "<svg viewBox=\"0 0 24 24\"><path d=\"M5 17L17 5M8 5h9v9\"/></svg>";
+        const string baja = "<svg viewBox=\"0 0 24 24\"><path d=\"M5 7l12 12M17 10v9H8\"/></svg>";
+        string html;
+        if (v == null) html = $"<span class=\"pg-var sube\">{sube}Nuevo este mes</span>";
+        else if (v == 0) html = "<span class=\"pg-var igual\"><svg viewBox=\"0 0 24 24\"><path d=\"M5 12h14\"/></svg>Sin cambios vs. mes anterior</span>";
+        else if (v > 0) html = $"<span class=\"pg-var sube\">{sube}+{v:0}% vs. mes anterior</span>";
+        else html = $"<span class=\"pg-var baja\">{baja}{v:0}% vs. mes anterior</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
+    }
+}
 
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+<style>
+    .pg {
+        --pg-card: #0f1a2c;
+        --pg-borde: #1e2c44;
+        --pg-borde-2: #263650;
+        --pg-texto: #eef3fa;
+        --pg-suave: #a3b0c4;
+        --pg-tenue: #6b7a92;
+        --pg-verde: #22d39a;
+        --pg-rojo: #f05d6c;
+        position: relative;
+        width: 100%;
+        color: var(--pg-texto);
+    }
+    .pg *, .pg *::before, .pg *::after { box-sizing: border-box; }
+    .pg svg { flex-shrink: 0; }
+    /* brillo verde de fondo detrás del encabezado */
+    .pg::before {
+        content: ""; position: absolute; z-index: 0; top: -60px; right: -40px; width: 60%; height: 320px;
+        background:
+            radial-gradient(closest-side, rgba(34, 211, 154, .14), transparent),
+            linear-gradient(115deg, transparent 40%, rgba(34, 211, 154, .07) 50%, transparent 60%);
+        pointer-events: none;
+    }
+    .pg > * { position: relative; z-index: 1; }
+    .pg > .pg-filtros { z-index: 5; } /* el panel de fechas queda encima de la tabla */
 
-        <div>
-            <h1 class="text-2xl font-bold text-white">
-                Pagos
-            </h1>
+    .pg-alerta { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding: 13px 16px; border-radius: 12px; font-size: 13px; }
+    .pg-alerta.ok { background: rgba(34, 211, 154, .10); border: 1px solid rgba(34, 211, 154, .30); color: var(--pg-verde); }
+    .pg-alerta.error { background: rgba(240, 93, 108, .10); border: 1px solid rgba(240, 93, 108, .30); color: var(--pg-rojo); }
+    .pg-alerta svg { width: 18px; height: 18px; }
 
-            <p class="mt-1 text-sm text-slate-400">
-                Administra los pagos realizados por los clientes
-            </p>
-        </div>
+    /* ---------- Encabezado ---------- */
+    .pg-cab { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    .pg-cab-izq { display: flex; align-items: center; gap: 22px; }
+    .pg-cab-icono {
+        width: 66px; height: 66px; border-radius: 16px; display: grid; place-items: center;
+        background: linear-gradient(145deg, #1a3d36, #0f2a26); border: 1px solid rgba(34, 211, 154, .4); color: var(--pg-verde);
+        box-shadow: 0 10px 30px rgba(34, 211, 154, .15);
+    }
+    .pg-cab-icono svg { width: 34px; height: 34px; }
+    .pg-cab h1 { margin: 0; font-size: 32px; line-height: 1.1; font-weight: 800; letter-spacing: -.5px; color: #fff; }
+    .pg-cab p { margin: 6px 0 0; font-size: 15px; color: var(--pg-suave); }
+    .pg-btn-nuevo {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 13px 24px; border-radius: 12px;
+        background: linear-gradient(135deg, #2ee6ac, #19c48d);
+        color: #04241a; font-size: 15px; font-weight: 800; text-decoration: none; white-space: nowrap;
+        box-shadow: 0 8px 24px rgba(34, 211, 154, .28);
+        transition: transform .15s ease;
+    }
+    .pg-btn-nuevo:hover { color: #04241a; transform: translateY(-1px); }
+    .pg-btn-nuevo svg { width: 20px; height: 20px; }
 
-        <a asp-controller="AdminPago"
-           asp-action="Create"
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">
+    /* ---------- Tarjetas ---------- */
+    .pg-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .pg-kpi {
+        position: relative; overflow: hidden;
+        display: flex; gap: 20px; padding: 22px 24px;
+        border-radius: 16px; border: 1px solid; min-width: 0;
+    }
+    .pg-kpi::after {
+        content: ""; position: absolute; right: -50px; bottom: -80px; width: 220px; height: 220px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, .07), transparent 65%); pointer-events: none;
+    }
+    .pg-kpi-icono { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; color: #fff; }
+    .pg-kpi-icono svg { width: 30px; height: 30px; }
+    .pg-kpi-cuerpo { min-width: 0; }
+    .pg-kpi-label { font-size: 13px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: #e3e9f3; }
+    .pg-kpi-num { margin-top: 6px; font-size: 32px; font-weight: 800; line-height: 1.1; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pg-kpi-desc { margin-top: 6px; font-size: 14px; color: #c9d3e2; }
+    .pg-kpi-pie { margin-top: 12px; font-size: 13px; }
+    .pg-var { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+    .pg-var svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .pg-var.sube { color: var(--pg-verde); }
+    .pg-var.baja { color: #ff8b97; }
+    .pg-var.igual { color: #d6dbe4; font-weight: 500; }
 
-            <i data-lucide="plus" class="h-5 w-5"></i>
+    .pg-kpi.verde { background: linear-gradient(150deg, #11463c, #0c2a28); border-color: rgba(34, 211, 154, .38); }
+    .pg-kpi.verde .pg-kpi-icono { background: linear-gradient(145deg, #1fbf8d, #0e8a68); }
+    .pg-kpi.azul { background: linear-gradient(150deg, #123a86, #0e2350); border-color: rgba(79, 140, 255, .45); }
+    .pg-kpi.azul .pg-kpi-icono { background: linear-gradient(145deg, #4f9bff, #1f63e0); }
+    .pg-kpi.ambar { background: linear-gradient(150deg, #4f3416, #2a2015); border-color: rgba(245, 158, 11, .42); }
+    .pg-kpi.ambar .pg-kpi-icono { background: linear-gradient(145deg, #ffb340, #e2850c); }
+    .pg-kpi.ambar .pg-kpi-num { color: #ffbd4a; }
 
-            Registrar pago
-        </a>
+    /* ---------- Filtros ---------- */
+    .pg-filtros {
+        display: flex; align-items: center; gap: 14px; padding: 10px; margin-bottom: 20px;
+        background: var(--pg-card); border: 1px solid var(--pg-borde); border-radius: 16px;
+    }
+    .pg-buscar { position: relative; flex: 1; min-width: 0; }
+    .pg-buscar > svg { position: absolute; left: 16px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--pg-suave); pointer-events: none; }
+    .pg-buscar input {
+        width: 100%; height: 46px; padding: 0 16px 0 50px;
+        background: #0a1322; border: 1px solid var(--pg-borde-2); border-radius: 11px;
+        color: var(--pg-texto); font-size: 14px; outline: none;
+    }
+    .pg-buscar input::placeholder { color: var(--pg-tenue); }
+    .pg-buscar input:focus { border-color: var(--pg-verde); }
+    .pg-sel { position: relative; width: 220px; }
+    .pg-sel.fechas { width: 250px; }
+    .pg-sel-caja {
+        display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px;
+        background: #0a1322; border: 1px solid var(--pg-borde-2); border-radius: 11px;
+        font-size: 14px; color: var(--pg-texto); cursor: pointer;
+    }
+    .pg-sel-caja svg { width: 18px; height: 18px; color: var(--pg-suave); }
+    .pg-sel-caja span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pg-sel select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .pg-sel select option { background: #0f1a2c; color: #eef3fa; }
+    .pg-panel {
+        display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 290px; padding: 16px;
+        background: #101c30; border: 1px solid var(--pg-borde-2); border-radius: 14px; box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    }
+    .pg-sel.abierto .pg-panel { display: block; }
+    .pg-panel label { display: block; margin-bottom: 12px; font-size: 12px; color: var(--pg-suave); }
+    .pg-panel input[type=date] {
+        display: block; width: 100%; margin-top: 6px; height: 40px; padding: 0 10px;
+        background: #0a1322; border: 1px solid var(--pg-borde-2); border-radius: 9px; color: var(--pg-texto); color-scheme: dark;
+    }
+    .pg-atajos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .pg-atajos button { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--pg-borde-2); background: transparent; color: var(--pg-suave); font-size: 12px; cursor: pointer; }
+    .pg-atajos button:hover { color: var(--pg-verde); border-color: var(--pg-verde); }
+    .pg-btn-buscar {
+        display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 24px;
+        border: 0; border-radius: 11px; background: linear-gradient(135deg, #2ee6ac, #19c48d);
+        color: #04241a; font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .pg-btn-buscar svg { width: 18px; height: 18px; }
 
-    </div>
+    /* ---------- Lista ---------- */
+    .pg-lista { background: var(--pg-card); border: 1px solid var(--pg-borde); border-radius: 18px; overflow: hidden; }
+    .pg-lista-cab { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 18px 14px; }
+    .pg-lista-titulo { display: flex; align-items: center; gap: 14px; }
+    .pg-lista-icono { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(145deg, #1fbf8d, #0e8a68); color: #fff; }
+    .pg-lista-icono svg { width: 20px; height: 20px; }
+    .pg-lista-cab h2 { margin: 0; font-size: 18px; font-weight: 800; color: #fff; }
+    .pg-lista-cab p { margin: 3px 0 0; font-size: 13px; color: var(--pg-suave); }
+    .pg-badge { padding: 6px 12px; border-radius: 999px; background: rgba(59, 130, 246, .15); color: #8fb8ff; font-size: 12px; font-weight: 700; white-space: nowrap; }
 
+    .pg-tabla-wrap { width: 100%; overflow-x: auto; }
+    .pg-tabla { width: 100%; min-width: 1100px; border-collapse: collapse; }
+    .pg-tabla th {
+        padding: 12px 14px; text-align: left; background: #0c1627;
+        font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #b6c2d4;
+        border-top: 1px solid var(--pg-borde); border-bottom: 1px solid var(--pg-borde); white-space: nowrap;
+    }
+    .pg-tabla td { padding: 11px 14px; font-size: 14px; color: #dbe3ef; border-bottom: 1px solid #18253a; vertical-align: middle; }
+    .pg-tabla tbody tr { transition: background .15s ease; }
+    .pg-tabla tbody tr:hover { background: #13213a; }
+    .pg-tabla tbody tr:last-child td { border-bottom: 0; }
+    .pg-tabla th:first-child, .pg-tabla td:first-child { padding-left: 24px; }
+    .pg-tabla th:last-child, .pg-tabla td:last-child { padding-right: 20px; }
+
+    .pg-cliente { display: flex; align-items: center; gap: 12px; }
+    .pg-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; color: #fff; font-size: 13px; font-weight: 700; }
+    .pg-cliente b, .pg-reserva b { display: block; font-weight: 600; color: #fff; white-space: nowrap; }
+    .pg-cliente small, .pg-reserva small { display: block; margin-top: 2px; font-size: 12px; color: var(--pg-tenue); white-space: nowrap; }
+    .pg-reserva b { font-weight: 500; }
+
+    .pg-metodo { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .pg-metodo svg { width: 16px; height: 16px; }
+    .pg-metodo.tarjeta { background: rgba(37, 99, 235, .22); border: 1px solid rgba(79, 140, 255, .35); color: #9cc0ff; }
+    .pg-metodo.efectivo { background: rgba(124, 77, 255, .2); border: 1px solid rgba(155, 107, 255, .35); color: #c9b2ff; }
+    .pg-metodo.digital { background: rgba(14, 165, 165, .18); border: 1px solid rgba(20, 200, 200, .32); color: #7fe3e3; }
+
+    .pg-monto { font-weight: 700; color: var(--pg-verde); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .pg-chip { display: inline-block; padding: 5px 11px; border-radius: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .pg-chip.pagado { background: rgba(34, 211, 154, .14); color: var(--pg-verde); }
+    .pg-chip.cancelada { background: rgba(240, 93, 108, .16); color: #ff8b97; }
+    .pg-chip.saldo { background: rgba(245, 158, 11, .14); color: #ffbd4a; }
+    .pg-fecha { white-space: nowrap; color: #c9d3e2; }
+
+    .pg-acciones { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .pg-acciones form { margin: 0; }
+    .pg-btn-ver {
+        display: inline-grid; place-items: center; height: 34px; padding: 0 14px; border-radius: 8px;
+        border: 1px solid var(--pg-borde-2); background: #0c1627; color: #fff; font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .pg-btn-ver:hover { border-color: var(--pg-verde); color: var(--pg-verde); }
+    .pg-btn-confirmar {
+        display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 8px;
+        background: var(--pg-verde); color: #04241a; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .pg-btn-confirmar.listo { box-shadow: 0 0 0 3px rgba(34, 211, 154, .35); }
+    .pg-btn-confirmar svg { width: 14px; height: 14px; }
+
+    .pg-menu { position: relative; }
+    .pg-menu-btn { width: 30px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #c9d3e2; cursor: pointer; }
+    .pg-menu-btn:hover { background: #172741; color: #fff; }
+    .pg-menu-btn svg { width: 18px; height: 18px; }
+    .pg-menu-lista {
+        display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 200px; padding: 6px;
+        background: #101c30; border: 1px solid var(--pg-borde-2); border-radius: 12px; box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    }
+    .pg-menu.abierto .pg-menu-lista { display: block; }
+    .pg-menu.arriba .pg-menu-lista { top: auto; bottom: calc(100% + 6px); }
+    .pg-menu-lista a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: #dbe3ef; font-size: 13px; text-decoration: none; white-space: nowrap; }
+    .pg-menu-lista a:hover { background: #172741; color: #fff; }
+    .pg-menu-lista svg { width: 16px; height: 16px; color: var(--pg-suave); }
+
+    .pg-pie { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-top: 1px solid var(--pg-borde); font-size: 14px; color: var(--pg-suave); }
+    .pg-paginas { display: flex; align-items: center; gap: 10px; }
+    .pg-paginas a, .pg-paginas span {
+        min-width: 38px; height: 38px; padding: 0 8px; display: grid; place-items: center;
+        border-radius: 9px; border: 1px solid var(--pg-borde-2); background: #0c1627;
+        color: #dbe3ef; font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .pg-paginas a:hover { border-color: var(--pg-verde); color: var(--pg-verde); }
+    .pg-paginas .actual { background: var(--pg-verde); border-color: var(--pg-verde); color: #04241a; }
+    .pg-paginas .apagado { opacity: .4; }
+    .pg-paginas svg { width: 16px; height: 16px; }
+
+    .pg-vacio { padding: 60px 20px; text-align: center; border-top: 1px solid var(--pg-borde); }
+    .pg-vacio h3 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; }
+    .pg-vacio p { margin: 8px 0 0; font-size: 13px; color: var(--pg-suave); }
+
+    @@media (max-width: 1200px) {
+        .pg-kpis { grid-template-columns: 1fr 1fr; }
+        .pg-filtros { flex-wrap: wrap; }
+        .pg-buscar { flex-basis: 100%; }
+        .pg-sel, .pg-sel.fechas { flex: 1 1 200px; width: auto; }
+    }
+    @@media (max-width: 760px) {
+        .pg-cab { flex-direction: column; align-items: flex-start; }
+        .pg-btn-nuevo { width: 100%; justify-content: center; }
+        .pg-kpis { grid-template-columns: 1fr; }
+        .pg-btn-buscar { flex: 1; justify-content: center; }
+        .pg-pie { flex-direction: column; }
+    }
+</style>
+
+<div class="pg">
 
     @if (TempData["Success"] != null)
     {
-        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-400">
-            @TempData["Success"]
+        <div class="pg-alerta ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5" /></svg>
+            <span>@TempData["Success"]</span>
         </div>
     }
-
     @if (TempData["Error"] != null)
     {
-        <div class="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-            @TempData["Error"]
+        <div class="pg-alerta error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+            <span>@TempData["Error"]</span>
         </div>
     }
 
-
-    <!-- ESTADISTICAS -->
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Total pagos
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-white">
-                @Model.Count()
-            </p>
-
+    <!-- ===================== ENCABEZADO ===================== -->
+    <div class="pg-cab">
+        <div class="pg-cab-izq">
+            <div class="pg-cab-icono">@Html.Raw(icoPagos)</div>
+            <div>
+                <h1>Pagos</h1>
+                <p>Administra los pagos realizados por los clientes</p>
+            </div>
         </div>
-
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Dinero recibido
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-emerald-400">
-                $@totalPagos.ToString("N0")
-            </p>
-
-        </div>
-
-
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Saldo pendiente
-            </p>
-
-            <p class="mt-2 text-3xl font-bold text-orange-400">
-                $@totalPendiente.ToString("N0")
-            </p>
-
-        </div>
-
+        <a asp-action="Create" class="pg-btn-nuevo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Registrar pago
+        </a>
     </div>
 
+    <!-- ===================== TARJETAS ===================== -->
+    <section class="pg-kpis">
+        <div class="pg-kpi verde">
+            <div class="pg-kpi-icono">@Html.Raw(icoPagos)</div>
+            <div class="pg-kpi-cuerpo">
+                <div class="pg-kpi-label">Total pagos</div>
+                <div class="pg-kpi-num">@Model.TotalPagos</div>
+                <div class="pg-kpi-desc">Pagos realizados</div>
+                <div class="pg-kpi-pie">@Variacion(Model.VariacionPagosMes)</div>
+            </div>
+        </div>
 
-    <!-- BUSCADOR -->
+        <div class="pg-kpi azul">
+            <div class="pg-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5V18a2 2 0 0 0 2 2h13V7.5H6A2 2 0 0 1 4 5.5v0A2 2 0 0 1 6 3.5h11v4" /><path d="M15.5 14h.01" /><circle cx="17.5" cy="16.5" r="3.6" fill="currentColor" fill-opacity=".25" /></svg>
+            </div>
+            <div class="pg-kpi-cuerpo">
+                <div class="pg-kpi-label">Dinero recibido</div>
+                <div class="pg-kpi-num" title="@Dinero(Model.DineroRecibido)">@Dinero(Model.DineroRecibido)</div>
+                <div class="pg-kpi-desc">Total de ingresos</div>
+                <div class="pg-kpi-pie">@Variacion(Model.VariacionDineroMes)</div>
+            </div>
+        </div>
 
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-
-        <form asp-action="Index"
-              method="get"
-              class="flex flex-col gap-3 md:flex-row">
-
-            <input type="text"
-                   name="buscar"
-                   value="@ViewBag.Buscar"
-                   placeholder="Buscar cliente, reserva, escenario o método..."
-                   class="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500" />
-
-            <button type="submit"
-                    class="rounded-xl bg-slate-800 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-700">
-
-                Buscar
-
-            </button>
-
-        </form>
-
-    </div>
-
-
-    <!-- TABLA -->
-
-    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
-
-        <div class="overflow-x-auto">
-
-            <table class="w-full min-w-[1000px]">
-
-                <thead class="border-b border-slate-800 bg-slate-950/50">
-
-                    <tr>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Cliente
-                        </th>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Reserva
-                        </th>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Método
-                        </th>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Pagado
-                        </th>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Saldo
-                        </th>
-
-                        <th class="px-6 py-4 text-left text-xs uppercase text-slate-500">
-                            Fecha
-                        </th>
-
-                        <th class="px-6 py-4 text-right text-xs uppercase text-slate-500">
-                            Acción
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody class="divide-y divide-slate-800">
-
-                    @if (Model.Any())
+        <div class="pg-kpi ambar">
+            <div class="pg-kpi-icono">
+                <svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="9" cy="6.5" rx="6" ry="2.6" /><path d="M3 9c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v2.6c0 1.4-2.7 2.6-6 2.6s-6-1.2-6-2.6z" opacity=".85" /><path d="M3 14.2c0 1.4 2.7 2.6 6 2.6v2.6c-3.3 0-6-1.2-6-2.6z" opacity=".7" /><ellipse cx="16" cy="13" rx="5" ry="2.2" /><path d="M11 15.2c0 1.2 2.2 2.2 5 2.2s5-1 5-2.2v2.4c0 1.2-2.2 2.2-5 2.2s-5-1-5-2.2z" opacity=".85" /></svg>
+            </div>
+            <div class="pg-kpi-cuerpo">
+                <div class="pg-kpi-label">Saldo pendiente</div>
+                <div class="pg-kpi-num">@Dinero(Model.SaldoPendiente)</div>
+                <div class="pg-kpi-desc">Pagos por confirmar</div>
+                <div class="pg-kpi-pie">
+                    @if (Model.PorConfirmar == 0)
                     {
-                        foreach (var pago in Model)
-                        {
-                            <tr class="transition hover:bg-slate-800/40">
-
-                                <td class="px-6 py-4">
-
-                                    <p class="font-semibold text-white">
-                                        @pago.IdReservaNavigation.IdClienteNavigation.Nombres
-                                        @pago.IdReservaNavigation.IdClienteNavigation.Apellidos
-                                    </p>
-
-                                </td>
-
-
-                                <td class="px-6 py-4">
-
-                                    <p class="text-sm font-semibold text-slate-300">
-                                        @pago.IdReservaNavigation.Codigo
-                                    </p>
-
-                                    <p class="text-xs text-slate-500">
-                                        @pago.IdReservaNavigation.IdEscenarioNavigation.Nombre
-                                    </p>
-
-                                </td>
-
-
-                                <td class="px-6 py-4">
-
-                                    <span class="rounded-lg bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
-                                        @pago.IdMetodoNavigation.Nombre
-                                    </span>
-
-                                </td>
-
-
-                                <td class="px-6 py-4">
-
-                                    <span class="font-bold text-emerald-400">
-                                        $@pago.MontoPagado.ToString("N0")
-                                    </span>
-
-                                </td>
-
-
-                                <td class="px-6 py-4">
-
-                                    @if (Cancelada(pago))
-                                    {
-                                        <span class="rounded-lg bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
-                                            Reserva cancelada
-                                        </span>
-                                    }
-                                    else if (pago.SaldoPendiente <= 0)
-                                    {
-                                        <span class="rounded-lg bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-                                            Pagado
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="font-semibold text-orange-400">
-                                            $@pago.SaldoPendiente.ToString("N0")
-                                        </span>
-                                    }
-
-                                </td>
-
-
-                                <td class="px-6 py-4 text-sm text-slate-400">
-
-                                    @(pago.FechaPago?.ToString("dd/MM/yyyy HH:mm")
-                                        ?? "Sin fecha")
-
-                                </td>
-
-
-                                <td class="px-6 py-4 text-right">
-
-                                    <div class="flex items-center justify-end gap-2">
-
-                                    @if (pago.SaldoPendiente > 0 && !Cancelada(pago))
-                                    {
-                                        <form asp-action="ConfirmarPago" asp-route-id="@pago.IdPago" method="post" class="form-confirmar-pago">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit"
-                                                    data-reserva="@pago.IdReservaNavigation?.Codigo"
-                                                    data-saldo="@pago.SaldoPendiente.ToString("N0")"
-                                                    title="Marcar como pagado cuando recibas el efectivo o la transferencia"
-                                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-slate-950 transition hover:bg-emerald-400">
-                                                <i data-lucide="check" class="h-3.5 w-3.5"></i>
-                                                Confirmar pago
-                                            </button>
-                                        </form>
-                                    }
-
-                                    <a asp-action="Details"
-                                       asp-route-id="@pago.IdPago"
-                                       class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
-
-                                        Ver
-
-                                    </a>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-                        }
+                        <span class="pg-var igual"><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg>Todo al día</span>
                     }
                     else
                     {
-                        <tr>
-
-                            <td colspan="7"
-                                class="px-6 py-16 text-center text-slate-500">
-
-                                No hay pagos registrados.
-
-                            </td>
-
-                        </tr>
+                        <span class="pg-var" style="color:#ffbd4a"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 1.5" /></svg>@Model.PorConfirmar reserva@(Model.PorConfirmar == 1 ? "" : "s") por confirmar</span>
                     }
+                </div>
+            </div>
+        </div>
+    </section>
 
-                </tbody>
+    <!-- ===================== FILTROS ===================== -->
+    <form method="get" asp-action="Index" class="pg-filtros" id="pgFiltros">
+        <input type="hidden" name="desde" id="pgDesde" value="@Model.Desde?.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="hasta" id="pgHasta" value="@Model.Hasta?.ToString("yyyy-MM-dd")" />
 
-            </table>
-
+        <div class="pg-buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input type="search" name="buscar" value="@Model.Buscar" placeholder="Buscar cliente, reserva, escenario o método..." autocomplete="off" />
         </div>
 
-    </div>
+        <div class="pg-sel">
+            <div class="pg-sel-caja">
+                @Html.Raw(icoTarjeta)
+                <span>@textoMetodo</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            <select name="metodo" aria-label="Método de pago" onchange="this.form.requestSubmit()">
+                <option value="">Todos los métodos</option>
+                @foreach (var m in Model.Metodos)
+                {
+                    <option value="@m.IdMetodo" selected="@(Model.IdMetodo == m.IdMetodo)">@m.Nombre</option>
+                }
+            </select>
+        </div>
 
+        <div class="pg-sel fechas" id="pgFechas">
+            <div class="pg-sel-caja" id="pgFechasCaja">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /></svg>
+                <span>@textoFechas</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            <div class="pg-panel">
+                <div class="pg-atajos">
+                    <button type="button" data-rango="hoy">Hoy</button>
+                    <button type="button" data-rango="mes">Este mes</button>
+                    <button type="button" data-rango="anterior">Mes anterior</button>
+                    <button type="button" data-rango="todo">Todas</button>
+                </div>
+                <label>Desde <input type="date" id="pgDesdeTmp" value="@Model.Desde?.ToString("yyyy-MM-dd")" /></label>
+                <label>Hasta <input type="date" id="pgHastaTmp" value="@Model.Hasta?.ToString("yyyy-MM-dd")" /></label>
+            </div>
+        </div>
+
+        <button type="submit" class="pg-btn-buscar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            Buscar
+        </button>
+    </form>
+
+    <!-- ===================== LISTA ===================== -->
+    <section class="pg-lista">
+        <div class="pg-lista-cab">
+            <div class="pg-lista-titulo">
+                <div class="pg-lista-icono">@Html.Raw(icoTarjeta)</div>
+                <div>
+                    <h2>Pagos registrados</h2>
+                    <p>Consulta y administra los pagos realizados por los clientes</p>
+                </div>
+            </div>
+            <span class="pg-badge">@Model.TotalFiltrados pago@(Model.TotalFiltrados == 1 ? "" : "s")</span>
+        </div>
+
+        @if (Model.Pagos.Any())
+        {
+            <div class="pg-tabla-wrap">
+                <table class="pg-tabla">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Reserva</th>
+                            <th>Método</th>
+                            <th>Pagado</th>
+                            <th>Saldo</th>
+                            <th>Fecha</th>
+                            <th style="text-align:right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Pagos)
+                        {
+                            var tipo = TipoMetodo(p.Metodo);
+                            bool pendiente = p.SaldoPendiente > 0 && !p.ReservaCancelada;
+                            <tr>
+                                <td>
+                                    <div class="pg-cliente">
+                                        <span class="pg-avatar" style="background:@ColorAvatar(p.Cliente)">@Iniciales(p.Cliente)</span>
+                                        <div>
+                                            <b>@p.Cliente</b>
+                                            <small>ID #@p.IdCliente</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="pg-reserva">
+                                        <b>@p.CodigoReserva</b>
+                                        <small>@p.Escenario</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="pg-metodo @tipo">@Html.Raw(tipo == "tarjeta" ? icoTarjeta : tipo == "efectivo" ? icoEfectivo : icoDigital) @p.Metodo</span>
+                                </td>
+                                <td><span class="pg-monto">@Dinero(p.MontoPagado)</span></td>
+                                <td>
+                                    @if (p.ReservaCancelada)
+                                    {
+                                        <span class="pg-chip cancelada">Reserva cancelada</span>
+                                    }
+                                    else if (p.SaldoPendiente <= 0)
+                                    {
+                                        <span class="pg-chip pagado">Pagado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pg-chip saldo">@Dinero(p.SaldoPendiente)</span>
+                                    }
+                                </td>
+                                <td class="pg-fecha">@(p.FechaPago?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha")</td>
+                                <td>
+                                    <div class="pg-acciones">
+                                        @if (pendiente)
+                                        {
+                                            <form asp-action="ConfirmarPago" asp-route-id="@p.IdPago" method="post" class="pg-form-confirmar">
+                                                <button type="submit" class="pg-btn-confirmar" data-saldo="@p.SaldoPendiente.ToString("N0", co)"
+                                                        title="Marcar como pagado cuando recibas el efectivo o la transferencia">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                                    Confirmar
+                                                </button>
+                                            </form>
+                                        }
+                                        <a asp-action="Details" asp-route-id="@p.IdPago" class="pg-btn-ver">Ver</a>
+                                        <div class="pg-menu">
+                                            <button type="button" class="pg-menu-btn" title="Más opciones" aria-haspopup="true">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="18.5" r="1.7" /></svg>
+                                            </button>
+                                            <div class="pg-menu-lista">
+                                                <a asp-action="Details" asp-route-id="@p.IdPago">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.8" /></svg>
+                                                    Ver detalle del pago
+                                                </a>
+                                                <a asp-controller="Reservas" asp-action="Index" asp-route-buscar="@p.CodigoReserva" asp-route-desde="2000-01-01" asp-route-hasta="2100-12-31">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18" /></svg>
+                                                    Ver la reserva
+                                                </a>
+                                                <a asp-controller="AdminCliente" asp-action="Details" asp-route-id="@p.IdCliente">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6" /></svg>
+                                                    Ver el cliente
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pg-pie">
+                <span>Mostrando @Model.MostrandoDesde - @Model.MostrandoHasta de @Model.TotalFiltrados pago@(Model.TotalFiltrados == 1 ? "" : "s")</span>
+                <nav class="pg-paginas" aria-label="Páginas">
+                    @if (Model.Pagina > 1)
+                    {
+                        <a href="@UrlPagina(Model.Pagina - 1)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></a>
+                    }
+                    else
+                    {
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" /></svg></span>
+                    }
+                    @{
+                        int ini = Math.Max(1, Model.Pagina - 2);
+                        int fin = Math.Min(Model.TotalPaginas, ini + 4);
+                        ini = Math.Max(1, fin - 4);
+                    }
+                    @for (int n = ini; n <= fin; n++)
+                    {
+                        if (n == Model.Pagina)
+                        {
+                            <span class="actual">@n</span>
+                        }
+                        else
+                        {
+                            <a href="@UrlPagina(n)">@n</a>
+                        }
+                    }
+                    @if (Model.Pagina < Model.TotalPaginas)
+                    {
+                        <a href="@UrlPagina(Model.Pagina + 1)" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></a>
+                    }
+                    else
+                    {
+                        <span class="apagado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></span>
+                    }
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="pg-vacio">
+                <h3>No hay pagos para mostrar</h3>
+                <p>Cambia la búsqueda, el método o las fechas.</p>
+            </div>
+        }
+    </section>
 </div>
-
 
 @section Scripts {
     <script>
-        // "Confirmar pago" pide un segundo clic para evitar errores
-        document.querySelectorAll('.form-confirmar-pago').forEach(form => {
-            const boton = form.querySelector('button[type=submit]');
-            const textoOriginal = boton.innerHTML;
-            let listo = false, temporizador = null;
+        (function () {
+            const form = document.getElementById('pgFiltros');
 
-            form.addEventListener('submit', e => {
-                if (listo) { boton.disabled = true; return; }
-                e.preventDefault();
-                listo = true;
-                boton.textContent = '¿Recibiste $' + boton.dataset.saldo + '? Clic de nuevo';
-                boton.classList.add('ring-2', 'ring-emerald-300');
-                clearTimeout(temporizador);
-                temporizador = setTimeout(() => {
-                    listo = false;
-                    boton.innerHTML = textoOriginal;
-                    boton.classList.remove('ring-2', 'ring-emerald-300');
-                    if (window.lucide) lucide.createIcons();
-                }, 5000);
+            // ---------- Rango de fechas ----------
+            const fechas = document.getElementById('pgFechas');
+            const dTmp = document.getElementById('pgDesdeTmp');
+            const hTmp = document.getElementById('pgHastaTmp');
+            const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+            document.getElementById('pgFechasCaja').addEventListener('click', () => fechas.classList.toggle('abierto'));
+            document.addEventListener('click', e => { if (!e.target.closest('#pgFechas')) fechas.classList.remove('abierto'); });
+
+            fechas.querySelectorAll('[data-rango]').forEach(b => b.addEventListener('click', () => {
+                const hoy = new Date();
+                let d = new Date(hoy), h = new Date(hoy);
+                if (b.dataset.rango === 'mes') { d = new Date(hoy.getFullYear(), hoy.getMonth(), 1); h = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0); }
+                if (b.dataset.rango === 'anterior') { d = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); h = new Date(hoy.getFullYear(), hoy.getMonth(), 0); }
+                if (b.dataset.rango === 'todo') { dTmp.value = ''; hTmp.value = ''; }
+                else { dTmp.value = iso(d); hTmp.value = iso(h); }
+                form.requestSubmit();
+            }));
+
+            // Al buscar se usan las fechas escritas en el panel
+            form.addEventListener('submit', () => {
+                document.getElementById('pgDesde').value = dTmp.value;
+                document.getElementById('pgHasta').value = hTmp.value;
+                // no enviar parámetros vacíos
+                form.querySelectorAll('input[type=hidden], input[type=search], select').forEach(i => { i.disabled = !i.value; });
             });
-        });
+
+            // ---------- Menú de tres puntos ----------
+            document.querySelectorAll('.pg-menu-btn').forEach(btn => btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const menu = btn.closest('.pg-menu');
+                const abierto = menu.classList.contains('abierto');
+                document.querySelectorAll('.pg-menu.abierto').forEach(m => m.classList.remove('abierto'));
+                if (!abierto) {
+                    menu.classList.toggle('arriba', btn.getBoundingClientRect().bottom > window.innerHeight - 150);
+                    menu.classList.add('abierto');
+                }
+            }));
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.pg-menu')) document.querySelectorAll('.pg-menu.abierto').forEach(m => m.classList.remove('abierto'));
+            });
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.pg-menu.abierto').forEach(m => m.classList.remove('abierto'));
+                    fechas.classList.remove('abierto');
+                }
+            });
+
+            // ---------- "Confirmar" pide un segundo clic para evitar errores ----------
+            document.querySelectorAll('.pg-form-confirmar').forEach(f => {
+                const boton = f.querySelector('button');
+                const original = boton.innerHTML;
+                let listo = false, t = null;
+                f.addEventListener('submit', e => {
+                    if (listo) { boton.disabled = true; return; }
+                    e.preventDefault();
+                    listo = true;
+                    boton.textContent = '¿Recibiste $' + boton.dataset.saldo + '? Clic de nuevo';
+                    boton.classList.add('listo');
+                    clearTimeout(t);
+                    t = setTimeout(() => { listo = false; boton.innerHTML = original; boton.classList.remove('listo'); }, 5000);
+                });
+            });
+        })();
     </script>
 }

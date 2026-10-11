@@ -59,8 +59,6 @@
             <input type="hidden"
                    asp-for="IdEmpresa" />
 
-            <input type="hidden"
-                   asp-for="Logo" />
 
             <div asp-validation-summary="ModelOnly"
                  class="rounded-xl
@@ -186,6 +184,7 @@
                 </label>
 
                 <select asp-for="IdUsuario"
+                        asp-items="ViewBag.Usuarios"
                         class="w-full rounded-xl
                     border border-slate-800
                     bg-slate-950
@@ -193,16 +192,10 @@
                     text-sm text-white
                     focus:border-emerald-500
                     focus:outline-none">
-
-                    @foreach (var usuario in ViewBag.Usuarios)
-                    {
-                        <option value="@usuario.IdUsuario">
-                            @usuario.Nombres @usuario.Apellidos
-                            - @usuario.Correo
-                        </option>
-                    }
-
+                    <option value="">Seleccione un usuario</option>
                 </select>
+
+                <span asp-validation-for="IdUsuario" class="mt-1 block text-xs text-red-400"></span>
 
             </div>
 

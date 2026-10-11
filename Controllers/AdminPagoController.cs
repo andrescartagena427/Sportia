@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Sportia.Models;
+using Sportia.Models.ViewModels;
 
 namespace Sportia.Controllers
 {
@@ -17,40 +18,142 @@ namespace Sportia.Controllers
         // =====================================================
         // LISTAR PAGOS
         // =====================================================
-        public async Task<IActionResult> Index(string? buscar)
+        public async Task<IActionResult> Index(string? buscar, int? metodo, DateOnly? desde, DateOnly? hasta, int pagina = 1)
         {
             if (!EsAdmin())
             {
                 return RedirectToAction("Index", "Login");
             }
 
-            IQueryable<Pago> pagos = _context.Pagos
-                .Include(p => p.IdReservaNavigation)
-                    .ThenInclude(r => r.IdClienteNavigation)
-                .Include(p => p.IdReservaNavigation)
-                    .ThenInclude(r => r.IdEscenarioNavigation)
-                .Include(p => p.IdReservaNavigation)
-                    .ThenInclude(r => r.IdEstadoNavigation)
-                .Include(p => p.IdMetodoNavigation);
-
-            if (!string.IsNullOrWhiteSpace(buscar))
+            if (desde.HasValue && hasta.HasValue && hasta < desde)
             {
-                buscar = buscar.Trim();
-
-                pagos = pagos.Where(p =>
-                    p.IdReservaNavigation.Codigo.Contains(buscar) ||
-                    p.IdReservaNavigation.IdClienteNavigation.Nombres.Contains(buscar) ||
-                    p.IdReservaNavigation.IdClienteNavigation.Apellidos.Contains(buscar) ||
-                    p.IdReservaNavigation.IdEscenarioNavigation.Nombre.Contains(buscar) ||
-                    p.IdMetodoNavigation.Nombre.Contains(buscar)
-                );
+                (desde, hasta) = (hasta, desde);
             }
 
-            pagos = pagos.OrderByDescending(p => p.FechaPago);
+            // Todos los pagos con lo necesario para la tabla
+            var todos = await _context.Pagos
+                .AsNoTracking()
+                .Select(p => new
+                {
+                    p.IdPago,
+                    p.IdReserva,
+                    p.IdMetodo,
+                    p.MontoPagado,
+                    p.SaldoPendiente,
+                    p.FechaPago,
+                    Codigo = p.IdReservaNavigation.Codigo,
+                    IdCliente = p.IdReservaNavigation.IdCliente,
+                    Cliente = p.IdReservaNavigation.IdClienteNavigation.Nombres + " " + p.IdReservaNavigation.IdClienteNavigation.Apellidos,
+                    Escenario = p.IdReservaNavigation.IdEscenarioNavigation.Nombre,
+                    Metodo = p.IdMetodoNavigation.Nombre,
+                    Estado = p.IdReservaNavigation.IdEstadoNavigation.Nombre
+                })
+                .ToListAsync();
 
-            ViewBag.Buscar = buscar;
+            // ---------- Comparación del mes (todos los pagos) ----------
+            var hoy = DateTime.Today;
+            var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
+            var inicioMesAnterior = inicioMes.AddMonths(-1);
+            var esteMes = todos.Where(p => p.FechaPago >= inicioMes).ToList();
+            var mesAnterior = todos.Where(p => p.FechaPago >= inicioMesAnterior && p.FechaPago < inicioMes).ToList();
 
-            return View(await pagos.ToListAsync());
+            // ---------- Filtros ----------
+            string texto = (buscar ?? "").Trim();
+            var filtrados = todos.AsEnumerable();
+
+            if (texto.Length > 0)
+            {
+                filtrados = filtrados.Where(p =>
+                    Contiene(p.Codigo, texto) ||
+                    Contiene(p.Cliente, texto) ||
+                    Contiene(p.Escenario, texto) ||
+                    Contiene(p.Metodo, texto));
+            }
+
+            if (metodo.HasValue && metodo > 0)
+            {
+                filtrados = filtrados.Where(p => p.IdMetodo == metodo);
+            }
+
+            if (desde.HasValue)
+            {
+                var d = desde.Value.ToDateTime(TimeOnly.MinValue);
+                filtrados = filtrados.Where(p => p.FechaPago >= d);
+            }
+
+            if (hasta.HasValue)
+            {
+                var h = hasta.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
+                filtrados = filtrados.Where(p => p.FechaPago < h);
+            }
+
+            var lista = filtrados
+                .OrderByDescending(p => p.FechaPago ?? DateTime.MinValue)
+                .ThenByDescending(p => p.IdPago)
+                .ToList();
+
+            bool Cancelada(string? estado) => (estado ?? "").ToLower().Contains("cancel");
+
+            // Saldo pendiente: el último pago de cada reserva (sin reservas canceladas)
+            var pendientesPorReserva = lista
+                .Where(p => !Cancelada(p.Estado))
+                .GroupBy(p => p.IdReserva)
+                .Select(g => g.OrderByDescending(p => p.IdPago).First().SaldoPendiente)
+                .Where(s => s > 0)
+                .ToList();
+
+            const int tamano = 10;
+            int paginas = Math.Max(1, (int)Math.Ceiling(lista.Count / (double)tamano));
+            pagina = Math.Clamp(pagina, 1, paginas);
+
+            var vm = new AdminPagosViewModel
+            {
+                Buscar = texto,
+                IdMetodo = metodo,
+                Desde = desde,
+                Hasta = hasta,
+                Metodos = await _context.MetodosPagos.AsNoTracking().OrderBy(m => m.Nombre).ToListAsync(),
+
+                TotalPagos = lista.Count,
+                DineroRecibido = lista.Sum(p => p.MontoPagado),
+                SaldoPendiente = pendientesPorReserva.Sum(),
+                PorConfirmar = pendientesPorReserva.Count,
+                VariacionPagosMes = Variacion(esteMes.Count, mesAnterior.Count),
+                VariacionDineroMes = Variacion((double)esteMes.Sum(p => p.MontoPagado), (double)mesAnterior.Sum(p => p.MontoPagado)),
+
+                Pagina = pagina,
+                TamanoPagina = tamano,
+                TotalFiltrados = lista.Count,
+                Pagos = lista.Skip((pagina - 1) * tamano).Take(tamano).Select(p => new PagoFilaViewModel
+                {
+                    IdPago = p.IdPago,
+                    IdCliente = p.IdCliente,
+                    Cliente = p.Cliente.Trim(),
+                    CodigoReserva = p.Codigo,
+                    Escenario = p.Escenario,
+                    Metodo = p.Metodo,
+                    MontoPagado = p.MontoPagado,
+                    SaldoPendiente = p.SaldoPendiente,
+                    ReservaCancelada = Cancelada(p.Estado),
+                    FechaPago = p.FechaPago
+                }).ToList()
+            };
+
+            return View(vm);
+        }
+
+        private static bool Contiene(string? valor, string texto) =>
+            !string.IsNullOrEmpty(valor) && valor.Contains(texto, StringComparison.OrdinalIgnoreCase);
+
+        // null = el mes anterior no tuvo pagos para comparar
+        private static double? Variacion(double actual, double anterior)
+        {
+            if (anterior == 0)
+            {
+                return actual == 0 ? 0 : null;
+            }
+
+            return Math.Round((actual - anterior) / anterior * 100, 0);
         }
 
 
